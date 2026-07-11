@@ -1,0 +1,91 @@
+{
+    "class_diaries": {
+        "diary_b3c3d1ff42d0428b8d9bb2bc724fe142": {
+            "id": "diary_b3c3d1ff42d0428b8d9bb2bc724fe142",
+            "faculty_id": "73c080d9-429d-4a30-a446-75b61d91d2a2",
+            "faculty_name": "prakash",
+            "date": "2026-06-12",
+            "subject": "Constitutional Law",
+            "course": "BA LLB",
+            "semester": "3",
+            "section": "Section A",
+            "hour": "Hour 1",
+            "unit": "Unit I",
+            "topic": "fundamental rights",
+            "subtopic": "rights of equality",
+            "teaching_method": "PPT Presentation",
+            "learning_outcome": "students understood rights of equality",
+            "class_activity": "Group Discussion",
+            "remarks": "",
+            "status": "Submitted",
+            "deviation_reason": "",
+            "revised_date": "",
+            "attachment_url": "",
+            "attachment_name": "",
+            "created_at": "2026-06-12T15:30:08.502054",
+            "updated_at": "2026-06-12T15:30:08.502054"
+        },
+        "diary_9803b6baa95e4466a5860205c938787b": {
+            "id": "diary_9803b6baa95e4466a5860205c938787b",
+            "faculty_id": "73c080d9-429d-4a30-a446-75b61d91d2a2",
+            "faculty_name": "prakash",
+            "date": "2026-06-12",
+            "subject": "Constitutional Law",
+            "course": "BA LLB",
+            "semester": "3",
+            "section": "A",
+            "hour": "Hour 1",
+            "unit": "Unit I",
+            "topic": "fundamental rights",
+            "subtopic": "rights of equality",
+            "teaching_method": "PPT Presentation",
+            "learning_outcome": "nil",
+            "class_activity": "Group Discussion",
+            "remarks": "nil",
+            "status": "Submitted",
+            "deviation_reason": "",
+            "revised_date": "",
+            "attachment_url": "",
+            "attachment_name": "",
+            "created_at": "2026-06-12T15:33:07.799384",
+            "updated_at": "2026-06-12T15:33:07.799384"
+        }
+    },
+    "academic_activities": [],
+    "notifications": [],
+    "audit_logs": [
+        {
+            "id": "audit_2a75ae482ee246a2845da0b1e685e42a",
+            "user": "prakash",
+            "role": "FACULTY",
+            "action": "Diary Created",
+            "timestamp": "2026-06-12T15:30:08.502054",
+            "ip_address": "127.0.0.1",
+            "remarks": "Logged class for Constitutional Law (2026-06-12)"
+        },
+        {
+            "id": "audit_02879ba5b05247f3aecd809a6a5e0fac",
+            "user": "prakash",
+            "role": "FACULTY",
+            "action": "Diary Created",
+            "timestamp": "2026-06-12T15:33:07.799384",
+            "ip_address": "127.0.0.1",
+            "remarks": "Logged class for Constitutional Law (2026-06-12)"
+        }
+    ],
+    "lesson_plans": {
+        "Constitutional Law": {
+            "Unit I": [
+                "Introduction to Subject",
+                "Basic Principles"
+            ],
+            "Unit II": [
+                "Historical Context",
+                "Key Milestones"
+            ]
+        }
+    },
+    "subject_allocations": [],
+    "timetable": [],
+    "attendance_mock": {}
+}

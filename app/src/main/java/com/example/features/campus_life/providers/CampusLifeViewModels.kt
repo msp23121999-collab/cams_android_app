@@ -14,7 +14,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import androidx.paging.map
 
 class ClubsViewModelFactory(private val repository: StudentRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -176,6 +183,29 @@ class ClubsViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ClubsState())
     val uiState: StateFlow<ClubsState> = _uiState.asStateFlow()
 
+    val clubsPagingFlow: Flow<PagingData<Club>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> repository.getClubsPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                Club(
+                    id = dto.id,
+                    name = dto.name,
+                    description = dto.description,
+                    category = dto.category,
+                    membersCount = dto.membersCount,
+                    role = dto.userRole,
+                    icon = when(dto.category) {
+                        "Academic" -> Icons.Filled.Mic
+                        "Tech" -> Icons.Filled.Code
+                        else -> Icons.Filled.TheaterComedy
+                    }
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
+
     init {
         fetchClubs()
     }
@@ -237,6 +267,27 @@ class CircularsViewModel(private val repository: StudentRepository) : ViewModel(
     private val _uiState = MutableStateFlow(CircularsState())
     val uiState: StateFlow<CircularsState> = _uiState.asStateFlow()
 
+    val noticesPagingFlow: Flow<PagingData<CircularNotice>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> repository.getNoticesPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                CircularNotice(
+                    id = dto.id,
+                    title = dto.title,
+                    body = dto.body,
+                    category = dto.category ?: "",
+                    priority = "Medium",
+                    publishDate = dto.date ?: "",
+                    publisherName = "Admin",
+                    publisherRole = "Admin",
+                    audienceType = "All Students"
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
+
     init {
         fetchCirculars()
     }
@@ -251,9 +302,9 @@ class CircularsViewModel(private val repository: StudentRepository) : ViewModel(
                         id = dto.id,
                         title = dto.title,
                         body = dto.body,
-                        category = dto.category,
+                        category = dto.category ?: "",
                         priority = "Medium",
-                        publishDate = dto.date,
+                        publishDate = dto.date ?: "",
                         publisherName = "Admin",
                         publisherRole = "Admin",
                         audienceType = "All Students"
@@ -356,6 +407,31 @@ data class GrievancesState(
 class GrievancesViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(GrievancesState())
     val uiState: StateFlow<GrievancesState> = _uiState.asStateFlow()
+
+    val grievancesPagingFlow: Flow<PagingData<Grievance>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> repository.getGrievancesPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                Grievance(
+                    id = dto.id,
+                    date = dto.date,
+                    studentName = "Rahul Verma", // Current user
+                    regNo = "2022LC014",
+                    category = dto.category,
+                    subject = dto.subject,
+                    priority = dto.priority,
+                    assignedOfficer = dto.assignedOfficer ?: "Unassigned",
+                    status = dto.status,
+                    description = dto.description,
+                    resolutionDate = dto.resolutionDate ?: "-",
+                    rating = dto.resolutionRating ?: 0,
+                    feedback = dto.resolutionFeedback ?: ""
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         fetchGrievances()
@@ -679,6 +755,7 @@ class LegalSkillsViewModel(private val repository: StudentRepository) : ViewMode
 
 data class LexSphereState(
     val drives: List<InternshipDrive> = emptyList(),
+    val alumni: List<AlumniMentorDto> = emptyList(),
     val applications: List<InternshipApplication> = emptyList(),
     val isLoading: Boolean = true,
     val searchQuery: String = ""
@@ -697,10 +774,11 @@ class LexSphereViewModel(private val repository: StudentRepository) : ViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val dtos = repository.getInternshipDrives()
+                val alumniList = repository.getAlumniNetwork()
                 val drives = dtos.map { dto ->
                     InternshipDrive(dto.id, dto.company, dto.role, dto.stipend, dto.status, dto.deadline)
                 }
-                _uiState.update { it.copy(drives = drives, isLoading = false) }
+                _uiState.update { it.copy(drives = drives, alumni = alumniList, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }
             }
@@ -728,6 +806,20 @@ data class InternshipsState(
 class InternshipsViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(InternshipsState())
     val uiState: StateFlow<InternshipsState> = _uiState.asStateFlow()
+
+    val internshipsPagingFlow: Flow<PagingData<InternshipRecord>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> repository.getInternshipsListPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                InternshipRecord(
+                    dto.id, dto.organization, dto.sector, dto.role,
+                    dto.startDate, dto.endDate, dto.mentor, dto.description, dto.status
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         fetchInternships()
@@ -867,12 +959,25 @@ class ActivityPointsViewModel(private val repository: StudentRepository) : ViewM
     fun submitApplication(app: ActivityPointApplication) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            delay(500)
-            _uiState.update { it.copy(
-                applications = listOf(app) + it.applications,
-                isLoading = false,
-                successMsg = "Application submitted successfully!"
-            ) }
+            try {
+                val success = repository.claimActivityPoints(
+                    title = app.title,
+                    category = app.category,
+                    description = app.description,
+                    points = 0 // Initially claimed 0 or calculate from app logic
+                )
+                if (success) {
+                    fetchApplications() // Refresh list from backend
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        successMsg = "Application submitted successfully!"
+                    ) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, errorMsg = "Failed to submit application") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, errorMsg = e.message) }
+            }
         }
     }
 
@@ -990,6 +1095,39 @@ class ProjectShowcaseViewModel(private val repository: StudentRepository) : View
 class LegalEventsViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(LegalEventsState())
     val uiState: StateFlow<LegalEventsState> = _uiState.asStateFlow()
+
+    val legalEventsPagingFlow: Flow<PagingData<LegalEvent>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> repository.getLegalEventsPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                LegalEvent(
+                    id = dto.id,
+                    title = dto.title,
+                    category = dto.category,
+                    speaker = Speaker(dto.speakerName, "Expert", "Legal Domain", "Expert bio", "EX"),
+                    date = dto.date,
+                    time = dto.time,
+                    duration = "90 min",
+                    status = when(dto.status) {
+                        "REG_OPEN" -> EventStatus.REG_OPEN
+                        "COMPLETED" -> EventStatus.COMPLETED
+                        else -> EventStatus.UPCOMING
+                    },
+                    mode = "Online",
+                    platform = "Zoom",
+                    meetingLink = "",
+                    totalSeats = 100,
+                    availableSeats = 50,
+                    registrationDeadline = dto.date,
+                    description = "",
+                    agenda = emptyList(),
+                    activityPoints = dto.activityPoints
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         fetchEventsData()

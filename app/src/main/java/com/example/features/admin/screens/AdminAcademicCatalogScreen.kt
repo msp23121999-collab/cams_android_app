@@ -19,8 +19,23 @@ import com.example.core.ui.CamsCard
 import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminAcademicCatalogViewModel
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.core.network.ApiClient
+
 @Composable
-fun AdminAcademicCatalogScreen(onNavigate: (String) -> Unit) {
+fun AdminAcademicCatalogScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminAcademicCatalogViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return AdminAcademicCatalogViewModel(AdminRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Degree Setup", "Course Setup")
 
@@ -50,10 +65,14 @@ fun AdminAcademicCatalogScreen(onNavigate: (String) -> Unit) {
             }
             
             Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                if (selectedTabIndex == 0) {
-                    DegreeSetupView()
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
-                    CourseSetupView()
+                    if (selectedTabIndex == 0) {
+                        DegreeSetupView(uiState.degrees)
+                    } else {
+                        CourseSetupView(uiState.courses)
+                    }
                 }
             }
         }
@@ -61,18 +80,14 @@ fun AdminAcademicCatalogScreen(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun DegreeSetupView() {
-    val degrees = listOf(
-        DegreeItem("B.Tech Computer Science", "4 Years", "8 Semesters"),
-        DegreeItem("M.Tech AI & Data Science", "2 Years", "4 Semesters")
-    )
+private fun DegreeSetupView(degrees: List<com.example.features.admin.models.AdminDegree>) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(degrees) { degree ->
             CamsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(degree.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
                     Spacer(Modifier.height(4.dp))
-                    Text("${degree.duration} • ${degree.semesters}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("${degree.durationYears ?: 0} Years • Level: ${degree.programLevel ?: "N/A"}", fontSize = 13.sp, color = CamsTextSecondary)
                 }
             }
         }
@@ -80,24 +95,16 @@ private fun DegreeSetupView() {
 }
 
 @Composable
-private fun CourseSetupView() {
-    val courses = listOf(
-        CourseItem("CS101", "Introduction to Programming", "3 Credits"),
-        CourseItem("ME201", "Thermodynamics", "4 Credits"),
-        CourseItem("EE102", "Basic Electrical", "3 Credits")
-    )
+private fun CourseSetupView(courses: List<com.example.features.admin.models.AdminCourse>) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(courses) { course ->
             CamsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(course.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
                     Spacer(Modifier.height(4.dp))
-                    Text("${course.code} • ${course.credits}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("${course.code} • ${course.credits ?: 0} Credits • Sem ${course.semester}", fontSize = 13.sp, color = CamsTextSecondary)
                 }
             }
         }
     }
 }
-
-data class DegreeItem(val name: String, val duration: String, val semesters: String)
-data class CourseItem(val code: String, val name: String, val credits: String)

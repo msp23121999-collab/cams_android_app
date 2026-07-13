@@ -31,7 +31,8 @@ import com.example.core.ui.CamsCard
 import com.example.core.ui.CamsScreen
 import com.example.features.campus_life.providers.*
 import com.example.features.campus_life.models.*
-import com.example.core.theme.*
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,8 +42,10 @@ fun LegalEventsHubScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedEvent by remember { mutableStateOf<LegalEvent?>(null) }
+    val pagingItems = viewModel.legalEventsPagingFlow.collectAsLazyPagingItems()
 
     CamsScreen(
+        scrollable = true,
         title = "Legal Events Hub",
         subtitle = "Judge Lectures • Workshops • Debates",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) }
@@ -94,13 +97,33 @@ fun LegalEventsHubScreen(
             } else {
                 when (uiState.activeTab) {
                     "Upcoming", "Past", "Registered" -> {
-                        uiState.filteredEvents.forEach { event ->
-                            LegalEventCard(
-                                event = event,
-                                onDetail = { selectedEvent = event },
-                                onRegister = { viewModel.registerForEvent(event.id) }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                        if (pagingItems.loadState.refresh is LoadState.Loading) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Text("No events found in this category.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                            }
+                        } else {
+                            for (index in 0 until pagingItems.itemCount) {
+                                val event = pagingItems[index]
+                                if (event != null) {
+                                    val matchesSearch = uiState.search.isEmpty() || event.title.contains(uiState.search, true) || event.speaker.name.contains(uiState.search, true)
+                                    val matchesTab = when(uiState.activeTab) {
+                                        "Upcoming" -> event.status != EventStatus.COMPLETED && event.status != EventStatus.CANCELLED
+                                        "Past" -> event.status == EventStatus.COMPLETED
+                                        "Registered" -> event.isRegistered
+                                        else -> true
+                                    }
+                                    if (matchesSearch && matchesTab) {
+                                        LegalEventCard(
+                                            event = event,
+                                            onDetail = { selectedEvent = event },
+                                            onRegister = { viewModel.registerForEvent(event.id) }
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                    }
+                                }
+                            }
                         }
                     }
                     "Ask Judge" -> {
@@ -226,7 +249,7 @@ fun AskJudgeSection(
     var topic by remember { mutableStateOf("") }
     var question by remember { mutableStateOf("") }
 
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.imePadding()) {
         CamsCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 Text("Submit Your Question", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
@@ -299,19 +322,25 @@ fun AskJudgeSection(
         }
 
         Text("My Submitted Questions", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
-        questions.forEach { q ->
-            CamsCard(modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Surface(shape = RoundedCornerShape(50), color = CamsBackground) {
-                            Text(q.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsNavy))
+        if (questions.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                Text("No questions submitted yet.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+            }
+        } else {
+            questions.forEach { q ->
+                CamsCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Surface(shape = RoundedCornerShape(50), color = CamsBackground) {
+                                Text(q.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsNavy))
+                            }
+                            Text(q.submittedAt, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
                         }
-                        Text(q.submittedAt, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(q.question, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("${q.topic} • ${q.eventTitle}", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(q.question, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("${q.topic} • ${q.eventTitle}", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
                 }
             }
         }
@@ -333,35 +362,41 @@ fun DebateArenaSection(debates: List<DebateEntry>) {
             }
         }
 
-        debates.forEach { debate ->
-            CamsCard(modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Surface(shape = RoundedCornerShape(50), color = if (debate.status == "Live") Color(0xFFFEF2F2) else CamsBackground) {
-                            Text(debate.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = if (debate.status == "Live") Color.Red else CamsTextSecondary))
+        if (debates.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("No debates currently available.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+            }
+        } else {
+            debates.forEach { debate ->
+                CamsCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Surface(shape = RoundedCornerShape(50), color = if (debate.status == "Live") Color(0xFFFEF2F2) else CamsBackground) {
+                                Text(debate.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = if (debate.status == "Live") Color.Red else CamsTextSecondary))
+                            }
+                            Text(debate.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = CamsTextSecondary)
                         }
-                        Text(debate.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = CamsTextSecondary)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(debate.title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        EventMetaItem(Icons.Filled.CalendarToday, debate.date, modifier = Modifier.weight(1f))
-                        EventMetaItem(Icons.Filled.Scale, debate.topic, modifier = Modifier.weight(1f))
-                    }
-
-                    if (debate.status == "Completed" && debate.studentScore != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(debate.title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                        
                         Spacer(modifier = Modifier.height(16.dp))
-                        Surface(shape = RoundedCornerShape(16.dp), color = CamsBackground, modifier = Modifier.fillMaxWidth()) {
-                            Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text("YOUR SCORE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
-                                    Text("${debate.studentScore}/100", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsNavy)
-                                }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("RANK", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
-                                    Text("#${debate.rank}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsNavy)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EventMetaItem(Icons.Filled.CalendarToday, debate.date, modifier = Modifier.weight(1f))
+                            EventMetaItem(Icons.Filled.Scale, debate.topic, modifier = Modifier.weight(1f))
+                        }
+
+                        if (debate.status == "Completed" && debate.studentScore != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Surface(shape = RoundedCornerShape(16.dp), color = CamsBackground, modifier = Modifier.fillMaxWidth()) {
+                                Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column {
+                                        Text("YOUR SCORE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
+                                        Text("${debate.studentScore}/100", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsNavy)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("RANK", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
+                                        Text("#${debate.rank}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsNavy)
+                                    }
                                 }
                             }
                         }

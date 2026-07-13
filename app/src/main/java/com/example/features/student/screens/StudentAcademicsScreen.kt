@@ -30,6 +30,7 @@ import com.example.core.ui.CamsScreen
 import com.example.core.ui.CamsCard
 import com.example.features.student.widgets.StudentDrawer
 import com.example.features.student.widgets.StudentBaseScreen
+import com.example.core.ui.shimmerEffect
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,13 +52,19 @@ fun StudentAcademicsScreen(
         scrollable = false
     ) {
         if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxWidth().height(60.dp).shimmerEffect())
+                Box(modifier = Modifier.fillMaxWidth().height(400.dp).shimmerEffect())
             }
         } else if (uiState.error != null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(uiState.error!!, color = Color.Red)
-            }
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error!!,
+                onRetry = { viewModel.fetchAcademicsData() },
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             // Tab Switcher
             Row(
@@ -134,10 +141,11 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("Weekly Class Schedule", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Weekly Class Schedule", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("Academic Year 2025-26", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
             }
+            Spacer(Modifier.width(8.dp))
             Surface(
                 color = Color(0xFF10B981).copy(alpha = 0.1f),
                 shape = RoundedCornerShape(16.dp),
@@ -174,7 +182,7 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
                         "Fri" -> "Friday"
                         else -> day
                     }
-                    Divider(color = Color.LightGray.copy(alpha = 0.3f))
+                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
                     Row(modifier = Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.width(60.dp).padding(horizontal = 12.dp)) {
                             Text(day, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -193,7 +201,7 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
                                             verticalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(slot.subjectName, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = LexNovaPurple, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                            Text(slot.roomNo, fontSize = 12.sp, color = LexNovaPurple.copy(alpha = 0.8f))
+                                            Text(slot.roomNo, fontSize = 12.sp, color = LexNovaPurple.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
                                     }
                                 } else {
@@ -240,19 +248,20 @@ private fun SubjectsContent() {
                 )
                 
                 subjects.forEachIndexed { index, (name, credits) ->
-                    if (index > 0) Divider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 12.dp))
+                    if (index > 0) HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Box(modifier = Modifier.size(32.dp).background(LexNovaPurple.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
                                 Text("${index+1}", color = LexNovaPurple, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.width(12.dp))
-                            Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
+                        Spacer(Modifier.width(8.dp))
                         Surface(
                             color = CamsBackground,
                             shape = RoundedCornerShape(8.dp)

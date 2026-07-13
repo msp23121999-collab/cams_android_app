@@ -22,7 +22,20 @@ class ParentAttendanceViewModel(private val repository: ParentRepository) : View
     private val _uiState = MutableStateFlow(ParentAttendanceState())
     val uiState: StateFlow<ParentAttendanceState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -30,8 +43,8 @@ class ParentAttendanceViewModel(private val repository: ParentRepository) : View
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val records = repository.getAttendance()
-                val subjects = repository.getSubjectAttendance()
+                val records = repository.getAttendance(currentChildId)
+                val subjects = repository.getSubjectAttendance(currentChildId)
                 
                 _uiState.update { it.copy(
                     attendanceRecords = records,

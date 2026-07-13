@@ -18,8 +18,23 @@ import com.example.core.ui.CamsCard
 import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminBatchSetupViewModel
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.core.network.ApiClient
+
 @Composable
-fun AdminBatchSetupScreen(onNavigate: (String) -> Unit) {
+fun AdminBatchSetupScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminBatchSetupViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return AdminBatchSetupViewModel(AdminRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
     AdminBaseScreen(
         title = "Batch Setup",
         currentRoute = AppRoutes.ADMIN_BATCH_SETUP,
@@ -34,19 +49,19 @@ fun AdminBatchSetupScreen(onNavigate: (String) -> Unit) {
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val batches = listOf(
-                BatchItem("CS 2023-2027", "Computer Science", "120 Students"),
-                BatchItem("ME 2023-2027", "Mechanical Eng", "90 Students"),
-                BatchItem("EE 2023-2027", "Electrical Eng", "100 Students")
-            )
-            
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(batches) { batch ->
-                    CamsCard {
-                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                            Text(batch.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                            Spacer(Modifier.height(4.dp))
-                            Text("${batch.department} • ${batch.students}", fontSize = 13.sp, color = CamsTextSecondary)
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.batches) { batch ->
+                        CamsCard {
+                            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                                Text(batch.year, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                                Spacer(Modifier.height(4.dp))
+                                Text("Status: ${batch.status}", fontSize = 13.sp, color = CamsTextSecondary)
+                            }
                         }
                     }
                 }
@@ -54,5 +69,3 @@ fun AdminBatchSetupScreen(onNavigate: (String) -> Unit) {
         }
     }
 }
-
-data class BatchItem(val name: String, val department: String, val students: String)

@@ -94,7 +94,7 @@ fun PrincipalInfrastructureScreen(onNavigate: (String) -> Unit) {
                             
                             if (i == 0) {
                                 Spacer(Modifier.height(8.dp))
-                                Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                                 Spacer(Modifier.height(8.dp))
                                 Text("L2", fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Black)
                                 Text("Batch 2026-2031", fontSize = 12.sp, color = CamsTextSecondary)

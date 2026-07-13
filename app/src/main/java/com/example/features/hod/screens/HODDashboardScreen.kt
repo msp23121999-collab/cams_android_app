@@ -90,7 +90,7 @@ fun HODDashboardScreen(
                     uiState.activities.forEachIndexed { index, activity ->
                         ActivityItem(activity.title, activity.time, Icons.Filled.Circle, Color(0xFF3B82F6))
                         if (index < uiState.activities.size - 1) {
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 12.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 12.dp))
                         }
                     }
                 }

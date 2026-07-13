@@ -52,7 +52,7 @@ fun OnlineMeetingsScreen(
     var selectedMeeting by remember { mutableStateOf<OnlineMeeting?>(null) }
     val context = LocalContext.current
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Online Meetings",
         subtitle = "Virtual Academic Hub",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) }

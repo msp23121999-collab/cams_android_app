@@ -22,7 +22,20 @@ class ParentMarksViewModel(private val repository: ParentRepository) : ViewModel
     private val _uiState = MutableStateFlow(ParentMarksState())
     val uiState: StateFlow<ParentMarksState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -30,8 +43,8 @@ class ParentMarksViewModel(private val repository: ParentRepository) : ViewModel
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val marks = repository.getInternalMarks()
-                val perf = repository.getPerformanceAnalytics()
+                val marks = repository.getInternalMarks(currentChildId)
+                val perf = repository.getPerformanceAnalytics(currentChildId)
                 
                 _uiState.update { it.copy(
                     internalMarks = marks,

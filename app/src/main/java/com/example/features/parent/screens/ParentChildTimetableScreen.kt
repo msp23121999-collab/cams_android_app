@@ -97,94 +97,103 @@ fun ParentChildTimetableScreen(
                 val timetableForDay = uiState.timetable.find { it.dayName == selectedDay }
 
                 if (timetableForDay == null || timetableForDay.periods.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f).padding(40.dp), contentAlignment = Alignment.Center) {
                         Text("No schedule available for $selectedDay", color = CamsTextSecondary)
                     }
                 } else {
-                    timetableForDay.periods.forEach { period ->
-                        val isFree = period.subjectName.lowercase().contains("free") || period.subjectName.lowercase().contains("break")
-                        val cardBg = if (isFree) MaterialTheme.colorScheme.background else Color.White
-                        val accentColor = if (isFree) Color(0xFF64748B) else CamsNavy
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = cardBg),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(timetableForDay.periods) { period ->
+                            val isFree = period.subjectName.lowercase().contains("free") || period.subjectName.lowercase().contains("break")
+                            val cardBg = if (isFree) MaterialTheme.colorScheme.background else Color.White
+                            val accentColor = if (isFree) Color(0xFF64748B) else CamsNavy
+    
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = cardBg),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
-                                // Time Column
-                                Column(
-                                    modifier = Modifier.width(90.dp),
-                                    verticalArrangement = Arrangement.Center
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        "Period ${period.periodNo}",
-                                        fontWeight = FontWeight.Bold,
-                                        color = accentColor,
-                                        fontSize = 12.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        period.time,
-                                        fontSize = 13.sp,
-                                        color = CamsTextSecondary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                // Subject Detail Column
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        period.subjectName,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 15.sp,
-                                        color = CamsTextPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    // Time Column
+                                    Column(
+                                        modifier = Modifier.width(90.dp),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
-                                        Surface(
-                                            color = accentColor.copy(alpha = 0.08f),
-                                            shape = RoundedCornerShape(6.dp)
-                                        ) {
-                                            Text(
-                                                period.subjectCode,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = accentColor,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-
                                         Text(
-                                            period.room,
-                                            fontSize = 12.sp,
+                                            "Period ${period.periodNo}",
+                                            fontWeight = FontWeight.Bold,
+                                            color = accentColor,
+                                            fontSize = 12.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            period.time,
+                                            fontSize = 13.sp,
                                             color = CamsTextSecondary,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Medium
                                         )
                                     }
-                                    if (period.instructor != "None") {
-                                        Spacer(modifier = Modifier.height(4.dp))
+    
+                                    Spacer(modifier = Modifier.width(16.dp))
+    
+                                    // Subject Detail Column
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            "Instructor: ${period.instructor}",
-                                            fontSize = 13.sp,
-                                            color = CamsTextSecondary.copy(alpha = 0.8f)
+                                            period.subjectName,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 15.sp,
+                                            color = CamsTextPrimary,
+                                            maxLines = 2,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Surface(
+                                                color = accentColor.copy(alpha = 0.08f),
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    period.subjectCode,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = accentColor,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+    
+                                            Text(
+                                                period.room,
+                                                fontSize = 12.sp,
+                                                color = CamsTextSecondary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        if (period.instructor != "None") {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                "Instructor: ${period.instructor}",
+                                                fontSize = 13.sp,
+                                                color = CamsTextSecondary.copy(alpha = 0.8f),
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }

@@ -78,6 +78,7 @@ object AppRoutes {
     const val PARENT_CONTACT = "/parent/contact"
     const val PARENT_PROFILE = "/parent/profile"
     const val PARENT_TIMETABLE = "/parent/timetable"
+    const val PARENT_SETTINGS = "/parent/settings"
     
     const val FACULTY_DASHBOARD = "/faculty/dashboard"
     const val FACULTY_PROFILE = "/faculty/profile"
@@ -197,9 +198,11 @@ object AppRoutes {
     const val ASSIGNMENTS = "/student/assignments"
     const val FEES = "/student/fees"
     const val CIRCULARS = "/student/circulars"
+    const val STUDENT_HALL_TICKET = "/student/hall-ticket"
     const val STUDENT_PROFILE = "/student/profile"
     const val STUDENT_CALENDAR = "/student/calendar"
     const val STUDENT_ACADEMICS = "/student/academics"
+    const val STUDENT_SETTINGS = "/student/settings"
 }
 
 @Composable
@@ -370,6 +373,28 @@ fun AppNavigation(
                         }
                     }
                 ) 
+            }
+        }
+        
+        composable(AppRoutes.STUDENT_HALL_TICKET) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("STUDENT"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                val hallTicketViewModel: com.example.features.student.providers.HallTicketViewModel = viewModel(
+                    factory = com.example.features.student.providers.HallTicketViewModelFactory(container.studentRepository)
+                )
+                com.example.features.student.screens.hallticket.HallTicketScreen(
+                    viewModel = hallTicketViewModel,
+                    currentRoute = AppRoutes.STUDENT_HALL_TICKET,
+                    onNavigate = { route ->
+                        if (route != AppRoutes.STUDENT_HALL_TICKET) {
+                            navigateToRoute(route)
+                        }
+                    }
+                )
             }
         }
         
@@ -790,6 +815,27 @@ fun AppNavigation(
             }
         }
         
+        composable(AppRoutes.STUDENT_SETTINGS) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("STUDENT"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                val viewModel: com.example.features.student.providers.StudentProfileViewModel = viewModel(factory = com.example.features.student.providers.StudentProfileViewModelFactory(container.studentRepository))
+                com.example.features.student.screens.StudentSettingsScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route ->
+                        if (route == "LOGOUT") {
+                            showLogoutDialog = true
+                        } else {
+                            navigateToRoute(route)
+                        }
+                    }
+                )
+            }
+        }
+
         composable(AppRoutes.ONLINE_MEETINGS) { 
             RoleGuard(
                 currentRole = authState.role,
@@ -912,6 +958,27 @@ fun AppNavigation(
                     viewModel = viewModel,
                     onNavigate = { route ->
                         if (route != AppRoutes.PARENT_TIMETABLE) {
+                            navigateToRoute(route)
+                        }
+                    }
+                )
+            }
+        }
+        
+        composable(AppRoutes.PARENT_SETTINGS) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("PARENT"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                val viewModel: com.example.features.parent.providers.ParentProfileViewModel = viewModel(factory = com.example.features.parent.providers.ParentProfileViewModelFactory(container.parentRepository))
+                com.example.features.parent.screens.ParentSettingsScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route ->
+                        if (route == "LOGOUT") {
+                            showLogoutDialog = true
+                        } else {
                             navigateToRoute(route)
                         }
                     }
@@ -1364,9 +1431,12 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODTimetableManagementScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                })
+                com.example.features.hod.screens.HODTimetableManagementScreen(
+                    viewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = com.example.features.hod.providers.HODTimetableViewModelFactory(com.example.CamsApplication.instance.container.hodRepository)
+                    ),
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
         
@@ -1403,7 +1473,12 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODApprovalsScreen(onNavigate = { route -> navigateToRoute(route) })
+                com.example.features.hod.screens.HODApprovalsScreen(
+                    viewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = com.example.features.hod.providers.HODApprovalsViewModelFactory(com.example.CamsApplication.instance.container.hodRepository)
+                    ),
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
         
@@ -1538,9 +1613,12 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODCircularsScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                })
+                com.example.features.hod.screens.HODCircularsScreen(
+                    viewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = com.example.features.hod.providers.HODCircularsViewModelFactory(com.example.CamsApplication.instance.container.apiService)
+                    ),
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
         

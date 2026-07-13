@@ -125,6 +125,14 @@ fun StudentDrawer(
             colors = drawerItemColors
         )
         NavigationDrawerItem(
+            icon = { Icon(Icons.Filled.ConfirmationNumber, contentDescription = null) },
+            label = { Text("Hall Ticket") },
+            selected = currentRoute == AppRoutes.STUDENT_HALL_TICKET,
+            onClick = { onNavigate(AppRoutes.STUDENT_HALL_TICKET) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            colors = drawerItemColors
+        )
+        NavigationDrawerItem(
             icon = { Icon(Icons.Filled.Book, contentDescription = null) },
             label = { Text("Study Materials") },
             selected = currentRoute.startsWith("/student/materials"),
@@ -273,6 +281,22 @@ fun StudentDrawer(
             label = { Text("LexSphere Portal") },
             selected = currentRoute == AppRoutes.LEXSPHERE,
             onClick = { onNavigate(AppRoutes.LEXSPHERE) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            colors = drawerItemColors
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Filled.Report, contentDescription = null) },
+            label = { Text("Grievances") },
+            selected = currentRoute == "/student/grievances",
+            onClick = { onNavigate("/student/grievances") },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            colors = drawerItemColors
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+            label = { Text("Settings") },
+            selected = currentRoute == AppRoutes.STUDENT_SETTINGS,
+            onClick = { onNavigate(AppRoutes.STUDENT_SETTINGS) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             colors = drawerItemColors
         )

@@ -67,24 +67,40 @@ fun FeeStatusScreen(
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = LexNovaPurple)
                 }
-            } else if (uiState.feeLedger != null) {
+            } else if (uiState.error != null) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text(uiState.error ?: "Failed to load fees", color = Color.Red)
+                }
+            } else if (uiState.feeLedger == null) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No fee records found.", color = CamsTextSecondary)
+                }
+            } else {
                 val ledger = uiState.feeLedger!!
                 
                 // Top Banner Card
                 CamsCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Child Fee Ledger Accounts", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                            Text("Review fees for ${uiState.childProfile?.fullName ?: "your child"}", style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+                            Text("Child Fee Ledger Accounts", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text("Review fees for ${uiState.childProfile?.fullName ?: "your child"}", style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
+                        val context = androidx.compose.ui.platform.LocalContext.current
                         Button(
-                            onClick = { isDownloading = true },
+                            onClick = { 
+                                isDownloading = true
+                                val currentChildId = viewModel.currentChildId ?: ""
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val url = "${com.example.core.config.AppConfig.BASE_URL}/api/v1/parents/child/fee/download?child_id=$currentChildId"
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "Fee_Receipt_$currentChildId", token)
+                                isDownloading = false
+                            },
                             enabled = !isDownloading,
                             colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Icon(if (isDownloading) Icons.Filled.CheckCircle else Icons.Filled.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(if (isDownloading) Icons.Filled.CheckCircle else Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(if (isDownloading) "Generating..." else "Download PDF", fontSize = 12.sp)
                         }
@@ -100,12 +116,27 @@ fun FeeStatusScreen(
                     Triple("Outstanding", "₹${ledger.pendingBalance}", Color(0xFFEF4444))
                 )
 
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    cards.forEach { (label, value, color) ->
-                        CamsCard(modifier = Modifier.width(150.dp)) {
-                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-                            Spacer(Modifier.height(4.dp))
-                            Text(value, fontSize = 18.sp, fontWeight = FontWeight.Black, color = color)
+                BoxWithConstraints {
+                    val isTablet = maxWidth > 600.dp
+                    if (isTablet) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            cards.forEach { (label, value, color) ->
+                                CamsCard(modifier = Modifier.weight(1f)) {
+                                    Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(value, fontSize = 18.sp, fontWeight = FontWeight.Black, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    } else {
+                        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            cards.forEach { (label, value, color) ->
+                                CamsCard(modifier = Modifier.width(150.dp)) {
+                                    Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(value, fontSize = 18.sp, fontWeight = FontWeight.Black, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                }
+                            }
                         }
                     }
                 }
@@ -116,8 +147,8 @@ fun FeeStatusScreen(
                     CamsCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(record.feeType, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                                Text("Due: ${record.dueDate ?: "N/A"}", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text(record.feeType, fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text("Due: ${record.dueDate ?: "N/A"}", fontSize = 12.sp, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("₹${record.amount}", fontWeight = FontWeight.Black, color = CamsNavy)

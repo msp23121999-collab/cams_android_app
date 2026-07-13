@@ -2,13 +2,51 @@ package com.example.core.repository
 
 import com.example.core.network.CamsApiService
 import com.example.features.parent.models.*
+import com.example.core.datastore.ParentPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 class ParentRepositoryImpl(
-    private val apiService: CamsApiService
+    private val apiService: CamsApiService,
+    private val parentPreferences: ParentPreferences
 ) : ParentRepository {
 
-    override suspend fun getChildProfile(): ChildProfileExtended {
-        val response = apiService.getParentChildProfile()
+    override val selectedChildId: Flow<String?> = parentPreferences.getSelectedChild()
+
+    private var currentChildId: String? = null
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            selectedChildId.collect { id ->
+                currentChildId = id
+            }
+        }
+    }
+
+    override suspend fun setSelectedChildId(childId: String) {
+        parentPreferences.saveSelectedChild(childId)
+    }
+
+    override suspend fun getChildrenList(): List<ChildSummary> {
+        val response = apiService.getParentChildren()
+        if (response.isSuccessful && response.body() != null) {
+            return response.body()!!.map {
+                ChildSummary(
+                    id = it.id,
+                    fullName = it.fullName,
+                    rollNo = it.rollNo,
+                    profilePhotoUrl = it.profilePhotoUrl
+                )
+            }
+        }
+        return emptyList()
+    }
+
+    override suspend fun getChildProfile(childId: String?): ChildProfileExtended {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildProfile(idToUse)
         if (response.isSuccessful && response.body() != null) {
             val dto = response.body()!!
             return ChildProfileExtended(
@@ -46,8 +84,9 @@ class ParentRepositoryImpl(
         throw Exception("Failed to fetch child profile")
     }
 
-    override suspend fun getInternalMarks(): List<ChildInternalMark> {
-        val response = apiService.getParentChildMarks()
+    override suspend fun getInternalMarks(childId: String?): List<ChildInternalMark> {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildMarks(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
                 ChildInternalMark(it.subject, it.academicYear, it.internal1, it.internal2, it.model, it.assignments, it.attendance, it.total)
@@ -56,8 +95,9 @@ class ParentRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getPerformanceAnalytics(): List<PerformanceData> {
-        val response = apiService.getParentChildPerformance()
+    override suspend fun getPerformanceAnalytics(childId: String?): List<PerformanceData> {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildPerformance(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
                 PerformanceData(it.semester, it.gpa, it.attendance)
@@ -66,8 +106,9 @@ class ParentRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getFeeStatus(): ChildFeeLedger {
-        val response = apiService.getParentChildFees()
+    override suspend fun getFeeStatus(childId: String?): ChildFeeLedger {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildFees(idToUse)
         if (response.isSuccessful && response.body() != null) {
             val dto = response.body()!!
             return ChildFeeLedger(
@@ -86,18 +127,19 @@ class ParentRepositoryImpl(
         throw Exception("Failed to fetch fee status")
     }
 
-    override suspend fun getNotices(): List<CollegeNotice> {
+    override suspend fun getNotices(childId: String?): List<CollegeNotice> {
         val response = apiService.getNotices()
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
-                CollegeNotice(it.id, it.title, it.category, "Medium", it.body, it.date, it.date, "All", "Admin", "CAMS")
+                CollegeNotice(it.id, it.title, it.category ?: "General", "Medium", it.body, it.date ?: "N/A", it.date ?: "N/A", "All", "Admin", "CAMS")
             }
         }
         return emptyList()
     }
 
-    override suspend fun getAttendance(): List<AttendanceRecord> {
-        val response = apiService.getParentChildAttendance()
+    override suspend fun getAttendance(childId: String?): List<AttendanceRecord> {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildAttendance(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
                 AttendanceRecord(it.date, it.status)
@@ -106,8 +148,9 @@ class ParentRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getSubjectAttendance(): List<SubjectAttendance> {
-        val response = apiService.getParentChildSubjectAttendance()
+    override suspend fun getSubjectAttendance(childId: String?): List<SubjectAttendance> {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildSubjectAttendance(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
                 SubjectAttendance(it.subject, it.totalClasses, it.attendedClasses, it.percentage)
@@ -116,8 +159,9 @@ class ParentRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getTimetable(): List<TimetableDay> {
-        val response = apiService.getParentChildTimetable()
+    override suspend fun getTimetable(childId: String?): List<TimetableDay> {
+        val idToUse = childId ?: currentChildId
+        val response = apiService.getParentChildTimetable(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { dayDto ->
                 TimetableDay(dayDto.day, dayDto.periods.map { pDto ->
@@ -126,5 +170,14 @@ class ParentRepositoryImpl(
             }
         }
         return emptyList()
+    }
+
+    override suspend fun changePassword(currentPassword: String, newPassword: String) {
+        val response = apiService.changePassword(
+            com.example.core.network.ChangePasswordRequest(currentPassword, newPassword)
+        )
+        if (!response.isSuccessful) {
+            throw Exception("Failed to change password: ${response.code()}")
+        }
     }
 }

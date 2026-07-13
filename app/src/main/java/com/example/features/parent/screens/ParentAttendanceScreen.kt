@@ -67,20 +67,31 @@ fun ParentAttendanceScreen(
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = CamsNavy)
                 }
-            } else {
-                // Summary Stats
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AttendanceStatCard("Present", uiState.attendanceRecords.count { it.status == "Present" }.toString(), Color(0xFF10B981), Modifier.weight(1f))
-                    AttendanceStatCard("Absent", uiState.attendanceRecords.count { it.status == "Absent" }.toString(), Color(0xFFEF4444), Modifier.weight(1f))
-                    AttendanceStatCard("Overall", "88%", CamsNavy, Modifier.weight(1f))
+            } else if (uiState.error != null) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text(uiState.error ?: "Failed to load attendance", color = Color.Red)
                 }
+            } else if (uiState.attendanceRecords.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No attendance records found.", color = CamsTextSecondary)
+                }
+            } else {
+                BoxWithConstraints {
+                    val isTablet = maxWidth > 600.dp
+                    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        // Summary Stats
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            AttendanceStatCard("Present", uiState.attendanceRecords.count { it.status == "Present" }.toString(), Color(0xFF10B981), Modifier.weight(1f))
+                            AttendanceStatCard("Absent", uiState.attendanceRecords.count { it.status == "Absent" }.toString(), Color(0xFFEF4444), Modifier.weight(1f))
+                            AttendanceStatCard("Overall", "88%", CamsNavy, Modifier.weight(1f))
+                        }
 
                 Text("Attendance Calendar - June 2024", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                 
                 CamsCard {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(7),
-                        modifier = Modifier.height(200.dp),
+                        modifier = Modifier.heightIn(min = 200.dp, max = 350.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         userScrollEnabled = false
@@ -122,8 +133,8 @@ fun ParentAttendanceScreen(
                     CamsCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(subject.subject, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                                Text("${subject.present}/${subject.totalClasses} Classes attended", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text(subject.subject, fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text("${subject.present}/${subject.totalClasses} Classes attended", fontSize = 12.sp, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             }
                             Text("${subject.percentage}%", fontWeight = FontWeight.Black, fontSize = 18.sp, color = if (subject.percentage < 75) Color.Red else CamsNavy)
                         }
@@ -138,7 +149,10 @@ fun ParentAttendanceScreen(
                     }
                 }
                 
+                
                 Spacer(Modifier.height(16.dp))
+                    }
+                }
             }
         }
     }
@@ -148,8 +162,8 @@ fun ParentAttendanceScreen(
 private fun AttendanceStatCard(label: String, value: String, color: Color, modifier: Modifier) {
     CamsCard(modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = color)
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }
 }

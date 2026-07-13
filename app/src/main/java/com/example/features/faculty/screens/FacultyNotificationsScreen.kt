@@ -22,8 +22,18 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyNotificationsViewModel
+import com.example.features.faculty.providers.FacultyNotificationsViewModelFactory
+import com.example.core.network.ApiClient
+
 @Composable
 fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyNotificationsViewModelFactory(repository) }
+    val viewModel: FacultyNotificationsViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     FacultyBaseScreen(scrollable = false, 
         title = "Notifications",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_NOTIFICATIONS,
@@ -34,16 +44,19 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            val notifications = listOf(
-                Notification("Exam Duty Assigned", "You have been assigned as invigilator for CS101 on 20th Oct.", "2 hours ago", Icons.Filled.Assignment, Color(0xFF3B82F6)),
-                Notification("New Research Grant", "Your proposal for DST-SERB has been approved for initial funding.", "1 day ago", Icons.Filled.Science, Color(0xFF10B981)),
-                Notification("Meeting Reminder", "Academic council meeting starts in 30 minutes.", "30 mins ago", Icons.Filled.Schedule, Color(0xFFF59E0B)),
-                Notification("Student Grievance", "A new grievance has been filed regarding internal marks by Zaid Khan.", "5 hours ago", Icons.Filled.Warning, Color(0xFFEF4444))
-            )
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(notifications) { notification ->
-                    NotificationItem(notification)
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else if (uiState.notifications.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No new notifications", color = CamsTextSecondary)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.notifications) { notification ->
+                        NotificationItem(notification)
+                    }
                 }
             }
         }
@@ -51,7 +64,7 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun NotificationItem(notification: Notification) {
+private fun NotificationItem(notification: com.example.core.network.NotificationDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -66,10 +79,10 @@ private fun NotificationItem(notification: Notification) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(notification.color.copy(alpha = 0.1f), CircleShape),
+                    .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(notification.icon, null, tint = notification.color, modifier = Modifier.size(20.dp))
+                Icon(if (notification.isRead) Icons.Filled.Notifications else Icons.Filled.NotificationsActive, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -78,7 +91,7 @@ private fun NotificationItem(notification: Notification) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(notification.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp)
-                    Text(notification.time, fontSize = 13.sp, color = Color(0xFF64748B))
+                    Text(notification.date.take(10), fontSize = 13.sp, color = Color(0xFF64748B))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(notification.message, fontSize = 13.sp, color = CamsTextSecondary, lineHeight = 18.sp)
@@ -86,5 +99,3 @@ private fun NotificationItem(notification: Notification) {
         }
     }
 }
-
-data class Notification(val title: String, val message: String, val time: String, val icon: ImageVector, val color: Color)

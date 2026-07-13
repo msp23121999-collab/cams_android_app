@@ -1,17 +1,28 @@
 package com.example.features.extracurriculars.providers
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.core.repository.StudentRepository
 import com.example.features.extracurriculars.models.AcademicPublication
 import com.example.features.extracurriculars.models.InnovationProject
 import com.example.features.extracurriculars.models.ServiceLogEntry
 import com.example.features.extracurriculars.models.ServiceOpportunity
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+class ExtracurricularsViewModelFactory(private val repository: StudentRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ExtracurricularsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ExtracurricularsViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 data class ExtracurricularsState(
     val serviceOpportunities: List<ServiceOpportunity> = emptyList(),
@@ -22,7 +33,7 @@ data class ExtracurricularsState(
     val error: String? = null
 )
 
-class ExtracurricularsViewModel : ViewModel() {
+class ExtracurricularsViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ExtracurricularsState())
     val uiState: StateFlow<ExtracurricularsState> = _uiState.asStateFlow()
 
@@ -32,42 +43,58 @@ class ExtracurricularsViewModel : ViewModel() {
 
     fun fetchData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            delay(1000)
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val communityData = repository.getCommunityServiceData()
+                val projectsDto = repository.getInnovationProjects()
 
-            val mockOpportunities = listOf(
-                ServiceOpportunity("1", "Legal Aid Camp", "Justice For All", "2024-03-15", "Rural Center", 15, 8, listOf("Legal Aid", "Community")),
-                ServiceOpportunity("2", "Environmental Law Awareness", "Green Earth NGO", "2024-03-22", "City Square", 20, 5, listOf("Environment", "Awareness")),
-                ServiceOpportunity("3", "RTI Filing Workshop", "Transparency Init", "2024-04-05", "Campus Hall", 30, 4, listOf("Workshop", "Rights"))
-            )
+                val opportunities = communityData?.opportunities?.map { dto ->
+                    ServiceOpportunity(
+                        id = dto.id.toString(),
+                        title = dto.title,
+                        ngoName = dto.organizer,
+                        date = dto.date,
+                        location = dto.location,
+                        spotsAvailable = dto.slots,
+                        hours = dto.duration.toIntOrNull() ?: 0,
+                        tags = dto.tags
+                    )
+                } ?: emptyList()
 
-            val mockLogs = listOf(
-                ServiceLogEntry("1", "Human Rights Campaign", "2023-11-10", 12, "Verified"),
-                ServiceLogEntry("2", "Slum Legal Aid Clinic", "2024-01-20", 8, "Verified"),
-                ServiceLogEntry("3", "Cyber Crime Awareness", "2024-02-15", 5, "Pending")
-            )
+                val logs = communityData?.logs?.map { dto ->
+                    ServiceLogEntry(
+                        id = dto.id.toString(),
+                        title = dto.title,
+                        date = dto.date,
+                        hours = dto.hours,
+                        status = dto.status
+                    )
+                } ?: emptyList()
 
-            val mockProjects = listOf(
-                InnovationProject("1", "LexNova Enterprise", "AI-powered legal workspace.", "Legal Technology", "Dr. A. Sharma", listOf("Student A", "Student B"), 120, 45),
-                InnovationProject("2", "Project Nyaya", "Access to justice for underprivileged.", "Community Projects", "Prof. B. Singh", listOf("Student C", "Student D"), 85, 20),
-                InnovationProject("3", "Constitutional Morality DB", "Database of landmark judgements.", "Research", "Dr. C. Patel", listOf("Student E"), 95, 30),
-                InnovationProject("4", "LawyerUp", "Marketplace connecting clients with junior advocates.", "Startups", "Prof. D. Kumar", listOf("Student F", "Student G"), 150, 60)
-            )
+                val projects = projectsDto.map { dto ->
+                    InnovationProject(
+                        id = dto.id.toString(),
+                        title = dto.title,
+                        abstractText = dto.abstract,
+                        category = "Legal Technology", // Fallback, not in DTO
+                        mentor = "Faculty Mentor", // Fallback, not in DTO
+                        teamMembers = dto.authors,
+                        likes = dto.likes,
+                        comments = dto.comments
+                    )
+                }
 
-            val mockPublications = listOf(
-                AcademicPublication("1", "AI in Judicial Decision Making", "An analysis of algorithmic bias...", "Legal Technology", "Published", "Best Paper Award", "2023-10-05", "Dr. A. Sharma", true),
-                AcademicPublication("2", "Corporate Governance Post-2020", "A review of new regulations...", "Corporate Law", "Under Review", null, "2024-01-12", "Prof. B. Singh", false),
-                AcademicPublication("3", "IPR in the Metaverse", "Navigating trademark disputes...", "IPR", "Published", null, "2023-12-20", "Dr. C. Patel", true)
-            )
-
-            _uiState.update {
-                it.copy(
-                    serviceOpportunities = mockOpportunities,
-                    serviceLogs = mockLogs,
-                    innovationProjects = mockProjects,
-                    publications = mockPublications,
-                    isLoading = false
-                )
+                _uiState.update {
+                    it.copy(
+                        serviceOpportunities = opportunities,
+                        serviceLogs = logs,
+                        innovationProjects = projects,
+                        publications = emptyList(), // No backend endpoint available yet
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load") }
             }
         }
     }

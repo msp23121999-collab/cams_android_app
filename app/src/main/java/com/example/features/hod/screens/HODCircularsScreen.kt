@@ -20,8 +20,16 @@ import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.hod.widgets.HODBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.hod.providers.HODCircularsViewModel
+
 @Composable
-fun HODCircularsScreen(onNavigate: (String) -> Unit) {
+fun HODCircularsScreen(
+    viewModel: HODCircularsViewModel,
+    onNavigate: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     HODBaseScreen(
         title = "Department Circulars",
         currentRoute = "/hod/circulars",
@@ -38,23 +46,27 @@ fun HODCircularsScreen(onNavigate: (String) -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val circulars = listOf(
-                Circular("NAAC Documentation", "Urgent: Complete department criteria by Oct 20.", "15 Oct 2023"),
-                Circular("Faculty Meeting", "Meeting regarding semester exams schedule.", "12 Oct 2023"),
-                Circular("Research Workshop", "Workshop on Research Methodology for all faculty.", "10 Oct 2023")
-            )
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(circulars) { circular ->
-                    CamsCard {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(40.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.Announcement, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
-                            }
-                            Column {
-                                Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
-                                Text(circular.content, fontSize = 13.sp, color = CamsTextSecondary)
-                                Text(circular.date, fontSize = 13.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else if (uiState.circulars.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                    Text("No circulars found", color = CamsTextSecondary)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.circulars) { circular ->
+                        CamsCard {
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(40.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Filled.Announcement, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                                }
+                                Column {
+                                    Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
+                                    Text(circular.body, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 2)
+                                    Text(circular.date ?: "", fontSize = 13.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -63,5 +75,3 @@ fun HODCircularsScreen(onNavigate: (String) -> Unit) {
         }
     }
 }
-
-data class Circular(val title: String, val content: String, val date: String)

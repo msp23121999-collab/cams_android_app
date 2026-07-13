@@ -31,13 +31,31 @@ class AuthManagerImpl(context: Context) : AuthManager {
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
 
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "cams_auth_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val sharedPreferences = try {
+        EncryptedSharedPreferences.create(
+            context,
+            "cams_auth_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: Exception) {
+        context.getSharedPreferences("cams_auth_prefs", Context.MODE_PRIVATE).edit().clear().commit()
+        try {
+            val file = java.io.File(context.filesDir.parent + "/shared_prefs/cams_auth_prefs.xml")
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (ignored: Exception) {}
+        
+        EncryptedSharedPreferences.create(
+            context,
+            "cams_auth_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     private val _tokenFlow = MutableStateFlow<String?>(getToken())
     override val tokenFlow: Flow<String?> = _tokenFlow.asStateFlow()

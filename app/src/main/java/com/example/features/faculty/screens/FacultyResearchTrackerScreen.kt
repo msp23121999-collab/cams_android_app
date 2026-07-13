@@ -21,8 +21,18 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyResearchViewModel
+import com.example.features.faculty.providers.FacultyResearchViewModelFactory
+import com.example.core.network.ApiClient
+
 @Composable
 fun FacultyResearchTrackerScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyResearchViewModelFactory(repository) }
+    val viewModel: FacultyResearchViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Publications", "Mentorship", "Grants")
 
@@ -92,9 +102,9 @@ fun FacultyResearchTrackerScreen(onNavigate: (String) -> Unit) {
 
             // Content based on tab
             when (selectedTab) {
-                0 -> FacultyPublicationsList()
-                1 -> StudentMentorshipList()
-                2 -> ResearchGrantsList()
+                0 -> FacultyPublicationsList(uiState.researchEntries.filter { it.researchType == "Journal Article" || it.researchType == "Publication" || it.researchType == "Conference Paper" })
+                1 -> StudentMentorshipList(uiState.mentorStudents)
+                2 -> ResearchGrantsList(uiState.researchEntries.filter { it.researchType == "Grant" || it.grantAmount != null })
             }
         }
     }
@@ -127,13 +137,7 @@ private fun ResearchStatsCard(
 }
 
 @Composable
-private fun FacultyPublicationsList() {
-    val papers = listOf(
-        Paper("AI in Higher Education", "International Journal of CS", "Published", "2023"),
-        Paper("Blockchain for Academic Credentials", "IEEE Access", "Under Review", "2023"),
-        Paper("Quantum Computing Paradigms", "Computing Surveys", "Published", "2022")
-    )
-
+private fun FacultyPublicationsList(papers: List<com.example.features.faculty.models.ResearchEntry>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(papers) { paper ->
             Card(
@@ -150,14 +154,14 @@ private fun FacultyPublicationsList() {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(paper.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                            Text(paper.journal, fontSize = 13.sp, color = CamsNavy)
+                            Text(paper.publication ?: "Unknown Journal", fontSize = 13.sp, color = CamsNavy)
                         }
                         Surface(
                             color = if(paper.status == "Published") Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFF3B82F6).copy(alpha = 0.1f),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                paper.status,
+                                paper.status ?: "Pending",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -169,7 +173,7 @@ private fun FacultyPublicationsList() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.CalendarToday, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(paper.year, fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(paper.publicationDate?.take(4) ?: "N/A", fontSize = 13.sp, color = CamsTextSecondary)
                     }
                 }
             }
@@ -178,13 +182,7 @@ private fun FacultyPublicationsList() {
 }
 
 @Composable
-private fun StudentMentorshipList() {
-    val students = listOf(
-        ResearchMentee("Abhinav Gupta", "NLP and LLMs", "Thesis Phase"),
-        ResearchMentee("Ria Sharma", "Cybersecurity", "Proposal Phase"),
-        ResearchMentee("Zaid Khan", "Machine Learning", "Data Collection")
-    )
-
+private fun StudentMentorshipList(students: List<com.example.core.network.FacultyMentorshipStudentDto>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(students) { mentee ->
             Card(
@@ -200,14 +198,14 @@ private fun StudentMentorshipList() {
                 ) {
                     Column {
                         Text(mentee.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text(mentee.topic, fontSize = 12.sp, color = CamsNavy)
+                        Text(mentee.rollNo, fontSize = 12.sp, color = CamsNavy)
                     }
                     Surface(
                         color = CamsNavy.copy(alpha = 0.05f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            mentee.phase,
+                            "Semester ${mentee.semester ?: "N/A"}",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             fontSize = 13.sp,
                             color = CamsNavy,
@@ -221,12 +219,7 @@ private fun StudentMentorshipList() {
 }
 
 @Composable
-private fun ResearchGrantsList() {
-    val grants = listOf(
-        Grant("Smart City IoT", "DST India", "₹ 15,00,000", "Approved"),
-        Grant("Deep Learning for Health", "AICTE", "₹ 8,00,000", "Applied")
-    )
-
+private fun ResearchGrantsList(grants: List<com.example.features.faculty.models.ResearchEntry>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(grants) { grant ->
             Card(
@@ -241,17 +234,17 @@ private fun ResearchGrantsList() {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(grant.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text(grant.amount, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                        Text("₹ ${grant.grantAmount ?: "0.0"}", fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Source: ${grant.source}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("Source: ${grant.publisher ?: "Unknown"}", fontSize = 13.sp, color = CamsTextSecondary)
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         color = if(grant.status == "Approved") Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFF59E0B).copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            grant.status,
+                            grant.status ?: "Pending",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -264,6 +257,4 @@ private fun ResearchGrantsList() {
     }
 }
 
-data class Paper(val title: String, val journal: String, val status: String, val year: String)
-data class ResearchMentee(val name: String, val topic: String, val phase: String)
-data class Grant(val title: String, val source: String, val amount: String, val status: String)
+

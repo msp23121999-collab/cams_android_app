@@ -330,20 +330,28 @@ private fun WidgetCard(label: String, value: String, color: Color, modifier: Mod
 private fun ApplicationHistory(uiState: com.example.features.student.providers.LeavesState) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Recent Applications", fontWeight = FontWeight.Black, color = LexNovaSlateDark)
-        uiState.leaves.forEach { record ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(record.type, fontWeight = FontWeight.Black, fontSize = 14.sp)
-                            Text("${record.startDate} - ${record.endDate}", fontSize = 13.sp, color = LexNovaSlateAccent)
+        if (uiState.leaves.isEmpty()) {
+            com.example.core.ui.EmptyStateView(
+                icon = Icons.Filled.History,
+                title = "No Applications Yet",
+                message = "You haven't applied for any leaves or ODs."
+            )
+        } else {
+            uiState.leaves.forEach { record ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column {
+                                Text(record.type, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                                Text("${record.startDate} - ${record.endDate}", fontSize = 13.sp, color = LexNovaSlateAccent)
+                            }
+                            StatusBadge(record.status)
                         }
-                        StatusBadge(record.status)
                     }
                 }
             }

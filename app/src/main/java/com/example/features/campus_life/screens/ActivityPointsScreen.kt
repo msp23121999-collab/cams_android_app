@@ -44,7 +44,7 @@ fun ActivityPointsScreen(
     var showSubmitModal by remember { mutableStateOf(false) }
     var selectedApp by remember { mutableStateOf<ActivityPointApplication?>(null) }
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Activity Points",
         subtitle = "Additional Credits Tracker",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -65,7 +65,18 @@ fun ActivityPointsScreen(
 
         // Applications Log
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("SUBMISSIONS LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("SUBMISSIONS LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+                Button(
+                    onClick = { showSubmitModal = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Submit New", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black))
+                }
+            }
             
             if (uiState.applications.isEmpty()) {
                 EmptyApplicationsView()
@@ -215,7 +226,7 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
             shape = RoundedCornerShape(32.dp),
             color = Color.White
         ) {
-            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Filled.AddCircle, contentDescription = null, tint = CamsNavy)
                     Text("Apply for Credits", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))

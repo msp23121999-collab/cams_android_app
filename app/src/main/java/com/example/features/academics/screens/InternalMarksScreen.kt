@@ -82,7 +82,13 @@ fun InternalMarksScreen(
             ) {
                 StudentProfileCard()
                 InternalMarksSummary(uiState.marks)
-                MarksTable(uiState.marks)
+                if (uiState.marks.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No internal marks available yet.", color = CamsTextSecondary)
+                    }
+                } else {
+                    MarksTable(uiState.marks)
+                }
             }
         }
     }
@@ -94,9 +100,9 @@ fun StudentProfileCard() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -111,7 +117,7 @@ fun StudentProfileCard() {
                     color = CamsNavy
                 )
             }
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "John Smith",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
@@ -169,7 +175,7 @@ fun SummaryStatCard(modifier: Modifier, label: String, value: String, icon: Imag
     CamsCard(
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -206,7 +212,7 @@ fun MarksTable(marks: List<InternalMarkRecord>) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(CamsBackground)
-                    .padding(16.dp),
+                    .padding(vertical = 12.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.ListAlt, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(18.dp))

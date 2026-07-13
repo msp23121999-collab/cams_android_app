@@ -57,7 +57,7 @@ fun LexSphereScreen(
             )
         }
     ) {
-        CamsScreen(scrollable = false,
+        CamsScreen(scrollable = true,
             title = "LexSphere",
             subtitle = "Professional Network & Placement",
             navigationIcon = {

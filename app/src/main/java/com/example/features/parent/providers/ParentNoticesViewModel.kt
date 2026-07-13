@@ -21,7 +21,20 @@ class ParentNoticesViewModel(private val repository: ParentRepository) : ViewMod
     private val _uiState = MutableStateFlow(ParentNoticesState())
     val uiState: StateFlow<ParentNoticesState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -29,7 +42,7 @@ class ParentNoticesViewModel(private val repository: ParentRepository) : ViewMod
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val notices = repository.getNotices()
+                val notices = repository.getNotices(currentChildId)
                 _uiState.update { it.copy(notices = notices, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

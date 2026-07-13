@@ -19,7 +19,16 @@ data class LeaveApproval(
     val leaveType: String,
     val startDate: String,
     val endDate: String,
-    val reason: String
+    val reason: String,
+    val departmentName: String? = null
+)
+
+data class PrincipalPendingFaculty(
+    val id: String,
+    val email: String,
+    val fullName: String,
+    val departmentName: String,
+    val designation: String?
 )
 
 data class TimetableApproval(

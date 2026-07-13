@@ -21,7 +21,20 @@ class ParentProfileViewModel(private val repository: ParentRepository) : ViewMod
     private val _uiState = MutableStateFlow(ParentProfileState())
     val uiState: StateFlow<ParentProfileState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -29,10 +42,20 @@ class ParentProfileViewModel(private val repository: ParentRepository) : ViewMod
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val profile = repository.getChildProfile()
+                val profile = repository.getChildProfile(currentChildId)
                 _uiState.update { it.copy(childProfileExtended = profile, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            try {
+                repository.changePassword(currentPassword, newPassword)
+            } catch (e: Exception) {
+                throw e
             }
         }
     }

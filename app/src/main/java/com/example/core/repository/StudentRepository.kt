@@ -9,35 +9,49 @@ import retrofit2.Response
 interface StudentRepository {
     suspend fun getDashboard(): DashboardResponse?
     suspend fun getProfile(): StudentProfileResponse?
+    suspend fun updateProfile(profile: StudentProfileResponse): StudentProfileResponse?
+    suspend fun submitForVerification(): StudentProfileResponse?
+    suspend fun getMentorshipRecord(): MentorshipRecord?
     suspend fun getAttendance(): AttendanceSummaryResponse?
     suspend fun getInternalMarks(): List<InternalMarkDto>
     suspend fun getTimetable(): List<TimetableSlotDto>
     suspend fun getFees(): StudentFeeSummaryResponse?
-    suspend fun getStudyMaterials(): List<StudyMaterialDto>
     suspend fun getAssignments(): List<AssignmentDto>
+    suspend fun getAssignmentsPaged(skip: Int, limit: Int): Response<List<AssignmentDto>>
+    suspend fun getStudyMaterials(): List<StudyMaterialDto>
+    suspend fun getStudyMaterialsPaged(skip: Int, limit: Int): Response<List<StudyMaterialDto>>
     suspend fun submitAssignment(asgId: String, file: String?, text: String?): Boolean
     suspend fun getLeaves(): List<LeaveRequestDto>
+    suspend fun getHallTickets(): List<HallTicketDto>
     suspend fun applyLeave(type: String, fromDate: String, toDate: String, reason: String): Boolean
     suspend fun getNotices(): List<NoticeDto>
+    suspend fun getNoticesPaged(skip: Int, limit: Int): Response<List<NoticeDto>>
     suspend fun getAcademicCalendar(): List<CalendarEventDto>
     suspend fun getGrievances(): List<GrievanceDto>
+    suspend fun getGrievancesPaged(skip: Int, limit: Int): Response<List<GrievanceDto>>
     suspend fun raiseGrievance(category: String, description: String): Boolean
     suspend fun getOnlineMeetings(): List<OnlineMeetingDto>
     suspend fun getLegalEvents(): List<LegalEventDto>
+    suspend fun getLegalEventsPaged(skip: Int, limit: Int): Response<List<LegalEventDto>>
     suspend fun getClubs(): List<ClubDto>
+    suspend fun getClubsPaged(skip: Int, limit: Int): Response<List<ClubDto>>
     suspend fun getSyllabus(): List<SyllabusDto>
     suspend fun getNotifications(): List<NotificationDto>
+    suspend fun getNotificationsPaged(skip: Int, limit: Int): Response<List<NotificationDto>>
     suspend fun joinClub(id: Int)
     suspend fun getCouncilData(): CouncilDataDto?
     suspend fun submitGrievance(category: String, priority: String, subject: String, description: String)
     suspend fun getLexNovaStats(): List<LexNovaKpiDto>
     suspend fun getInternshipDrives(): List<InternshipDriveDto>
+    suspend fun getAlumniNetwork(): List<AlumniMentorDto>
     suspend fun getInternshipsList(): List<InternshipRecordDto>
+    suspend fun getInternshipsListPaged(skip: Int, limit: Int): Response<List<InternshipRecordDto>>
     suspend fun getCertificationsList(): List<CertificationRecordDto>
     suspend fun getActivityPoints(): List<ActivityPointDto>
     suspend fun claimActivityPoints(title: String, category: String, description: String, points: Int): Boolean
     suspend fun getCommunityServiceData(): CommunityServiceDataDto?
     suspend fun getInnovationProjects(): List<InnovationProjectDto>
+    suspend fun changePassword(currentPassword: String, newPassword: String)
 }
 
 class StudentRepositoryImpl(
@@ -98,6 +112,58 @@ class StudentRepositoryImpl(
         } else null
     }
 
+    override suspend fun updateProfile(profile: StudentProfileResponse): StudentProfileResponse? {
+        val dto = StudentProfileDto(
+            fullName = profile.fullName,
+            dob = profile.dateOfBirth,
+            gender = profile.gender,
+            bloodGroup = profile.bloodGroup,
+            nationality = profile.nationality,
+            phone = profile.mobileNumber,
+            currentAddress = profile.currentAddress,
+            permanentAddress = profile.permanentAddress,
+            aadhaarNo = profile.aadhaarNumber,
+            passportNo = null,
+            communityCategory = profile.communityCategory,
+            religion = null,
+            fatherName = profile.fatherName,
+            motherName = profile.motherName,
+            verificationStatus = profile.verificationStatus,
+            semester = profile.semester,
+            department = profile.departmentName
+        )
+        val response = apiService.updateStudentProfile(dto)
+        if (response.isSuccessful) {
+            return getProfile() // Fetch fresh profile
+        }
+        return null
+    }
+
+    override suspend fun submitForVerification(): StudentProfileResponse? {
+        val response = apiService.submitStudentProfile()
+        if (response.isSuccessful) {
+            return getProfile() // Fetch fresh profile
+        }
+        return null
+    }
+
+    override suspend fun getMentorshipRecord(): MentorshipRecord? {
+        val response = apiService.getMentorshipRecord()
+        if (response.isSuccessful) {
+            val dto = response.body()
+            if (dto != null) {
+                return MentorshipRecord(
+                    meetingLog = dto.meetingLog ?: "",
+                    academicReview = dto.academicReview ?: "",
+                    improvementPlan = dto.improvementPlan ?: "",
+                    remarks = dto.remarks ?: "",
+                    followUp = dto.followUp ?: ""
+                )
+            }
+        }
+        return null
+    }
+
     override suspend fun getAttendance(): AttendanceSummaryResponse? {
         val response = apiService.getAttendance()
         return if (response.isSuccessful) response.body() else null
@@ -118,14 +184,22 @@ class StudentRepositoryImpl(
         return if (response.isSuccessful) response.body() else null
     }
 
-    override suspend fun getStudyMaterials(): List<StudyMaterialDto> {
-        val response = apiService.getStudyMaterials()
+    override suspend fun getAssignments(): List<AssignmentDto> {
+        val response = apiService.getAssignments(0, 100)
         return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
     }
 
-    override suspend fun getAssignments(): List<AssignmentDto> {
-        val response = apiService.getAssignments()
+    override suspend fun getAssignmentsPaged(skip: Int, limit: Int): Response<List<AssignmentDto>> {
+        return apiService.getAssignments(skip, limit)
+    }
+
+    override suspend fun getStudyMaterials(): List<StudyMaterialDto> {
+        val response = apiService.getStudyMaterials(0, 100)
         return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+
+    override suspend fun getStudyMaterialsPaged(skip: Int, limit: Int): Response<List<StudyMaterialDto>> {
+        return apiService.getStudyMaterials(skip, limit)
     }
 
     override suspend fun submitAssignment(asgId: String, file: String?, text: String?): Boolean {
@@ -138,14 +212,23 @@ class StudentRepositoryImpl(
         return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
     }
 
+    override suspend fun getHallTickets(): List<HallTicketDto> {
+        val response = apiService.getHallTickets()
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+
     override suspend fun applyLeave(type: String, fromDate: String, toDate: String, reason: String): Boolean {
         val response = apiService.applyLeave(LeaveApplicationRequest(type = type, fromDate = fromDate, toDate = toDate, reason = reason))
         return response.isSuccessful
     }
 
     override suspend fun getNotices(): List<NoticeDto> {
-        val response = apiService.getNotices()
+        val response = apiService.getNotices(0, 100)
         return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+
+    override suspend fun getNoticesPaged(skip: Int, limit: Int): Response<List<NoticeDto>> {
+        return apiService.getNotices(skip, limit)
     }
 
     override suspend fun getAcademicCalendar(): List<CalendarEventDto> {
@@ -153,17 +236,45 @@ class StudentRepositoryImpl(
         return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
     }
 
-    override suspend fun getGrievances(): List<GrievanceDto> = apiService.getStudentGrievances().body() ?: emptyList()
+    override suspend fun getGrievances(): List<GrievanceDto> {
+        val response = apiService.getStudentGrievances(0, 100)
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+    
+    override suspend fun getGrievancesPaged(skip: Int, limit: Int): Response<List<GrievanceDto>> {
+        return apiService.getStudentGrievances(skip, limit)
+    }
 
     override suspend fun raiseGrievance(category: String, description: String): Boolean {
         val response = apiService.raiseGrievance(GrievanceRaiseRequest(category, "General", description))
         return response.isSuccessful
     }
     override suspend fun getOnlineMeetings(): List<OnlineMeetingDto> = apiService.getStudentMeetings().body() ?: emptyList()
-    override suspend fun getLegalEvents(): List<LegalEventDto> = apiService.getStudentLegalEvents().body() ?: emptyList()
-    override suspend fun getClubs(): List<ClubDto> = apiService.getStudentClubs().body() ?: emptyList()
+    override suspend fun getLegalEvents(): List<LegalEventDto> {
+        val response = apiService.getStudentLegalEvents(0, 100)
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+    override suspend fun getLegalEventsPaged(skip: Int, limit: Int): Response<List<LegalEventDto>> {
+        return apiService.getStudentLegalEvents(skip, limit)
+    }
+    
+    override suspend fun getClubs(): List<ClubDto> {
+        val response = apiService.getStudentClubs(0, 100)
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+    override suspend fun getClubsPaged(skip: Int, limit: Int): Response<List<ClubDto>> {
+        return apiService.getStudentClubs(skip, limit)
+    }
+    
     override suspend fun getSyllabus(): List<SyllabusDto> = apiService.getSyllabus().body() ?: emptyList()
-    override suspend fun getNotifications(): List<NotificationDto> = apiService.getNotifications().body() ?: emptyList()
+    override suspend fun getNotifications(): List<NotificationDto> {
+        val response = apiService.getNotifications(0, 100)
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+    
+    override suspend fun getNotificationsPaged(skip: Int, limit: Int): Response<List<NotificationDto>> {
+        return apiService.getNotifications(skip, limit)
+    }
     override suspend fun joinClub(id: Int) { apiService.joinClub(id) }
     override suspend fun getCouncilData(): CouncilDataDto? = apiService.getCouncilData().body()
     override suspend fun submitGrievance(category: String, priority: String, subject: String, description: String) {
@@ -171,7 +282,15 @@ class StudentRepositoryImpl(
     }
     override suspend fun getLexNovaStats(): List<LexNovaKpiDto> = apiService.getLexNovaStats().body() ?: emptyList()
     override suspend fun getInternshipDrives(): List<InternshipDriveDto> = apiService.getInternshipDrives().body() ?: emptyList()
-    override suspend fun getInternshipsList(): List<InternshipRecordDto> = apiService.getInternships().body() ?: emptyList()
+    override suspend fun getAlumniNetwork(): List<AlumniMentorDto> = apiService.getAlumniNetwork().body() ?: emptyList()
+    override suspend fun getInternshipsList(): List<InternshipRecordDto> {
+        val response = apiService.getInternships(0, 100)
+        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+    }
+    
+    override suspend fun getInternshipsListPaged(skip: Int, limit: Int): Response<List<InternshipRecordDto>> {
+        return apiService.getInternships(skip, limit)
+    }
     override suspend fun getCertificationsList(): List<CertificationRecordDto> = apiService.getCertifications().body() ?: emptyList()
     override suspend fun getActivityPoints(): List<ActivityPointDto> = apiService.getActivityPoints().body() ?: emptyList()
 
@@ -181,4 +300,13 @@ class StudentRepositoryImpl(
     }
     override suspend fun getCommunityServiceData(): CommunityServiceDataDto? = apiService.getCommunityService().body()
     override suspend fun getInnovationProjects(): List<InnovationProjectDto> = apiService.getInnovationProjects().body() ?: emptyList()
+    
+    override suspend fun changePassword(currentPassword: String, newPassword: String) {
+        val response = apiService.changePassword(
+            com.example.core.network.ChangePasswordRequest(currentPassword, newPassword)
+        )
+        if (!response.isSuccessful) {
+            throw Exception("Failed to change password: ${response.code()}")
+        }
+    }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.core.theme.*
 import com.example.features.student.widgets.StudentDrawer
 import com.example.core.ui.CamsScreen
@@ -69,6 +70,10 @@ fun StudentAcademicCalendarScreen(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = CamsNavy)
                     }
+                } else if (uiState.events.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No events scheduled.", color = CamsTextSecondary)
+                    }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(uiState.events) { event ->
@@ -102,8 +107,8 @@ private fun CalendarEventItem(event: CalendarEventModel) {
             ) {
                 Icon(Icons.Filled.Event, null, tint = event.color, modifier = Modifier.size(20.dp))
             }
-            Column {
-                Text(event.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(event.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(Icons.Filled.CalendarToday, null, tint = Color(0xFF64748B), modifier = Modifier.size(12.dp))
                     Text(event.date, fontSize = 12.sp, color = Color(0xFF64748B))

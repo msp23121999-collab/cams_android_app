@@ -59,23 +59,29 @@ class TimetableViewModel(
                     )
                 }
                 
-                // Also fetch subjects for the academics tab
-                val mockSubjects = listOf(
-                    AcademicSubject(code = "LAW301", name = "Constitutional Law I", credits = 4, semester = 5, type = "CORE", faculty = "Dr. John Doe"),
-                    AcademicSubject(code = "LAW302", name = "Criminal Law", credits = 4, semester = 5, type = "CORE", faculty = "Prof. Jane Smith")
-                )
+                val syllabusDtos = studentRepository.getSyllabus()
+                val subjects = syllabusDtos.map { dto ->
+                    AcademicSubject(
+                        code = dto.subjectCode,
+                        name = dto.subjectName,
+                        credits = 4, // Default fallback
+                        semester = dto.semester,
+                        type = "CORE", // Default fallback
+                        faculty = "Assigned Faculty" // Fallback since faculty isn't in SyllabusDto
+                    )
+                }
 
                 val summary = AcademicSummary(
-                    totalSubjects = mockSubjects.size,
-                    totalCredits = mockSubjects.sumOf { it.credits },
-                    coreSubjects = mockSubjects.count { it.type == "CORE" },
-                    currentSemester = 5
+                    totalSubjects = subjects.size,
+                    totalCredits = subjects.sumOf { it.credits },
+                    coreSubjects = subjects.count { it.type == "CORE" },
+                    currentSemester = subjects.firstOrNull()?.semester ?: 1
                 )
 
                 _uiState.update { 
                     it.copy(
                         timetable = periods, 
-                        subjects = mockSubjects,
+                        subjects = subjects,
                         summary = summary,
                         isLoading = false
                     ) 

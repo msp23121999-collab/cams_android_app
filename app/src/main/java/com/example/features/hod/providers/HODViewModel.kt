@@ -111,3 +111,137 @@ class HODStudentViewModelFactory(private val repository: HODRepository) : ViewMo
         return HODStudentViewModel(repository) as T
     }
 }
+// --- HOD Approvals ViewModel ---
+data class HODApprovalsState(
+    val pendingLeaves: List<com.example.core.network.LeaveRequestDto> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+class HODApprovalsViewModel(private val repository: HODRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(HODApprovalsState())
+    val uiState: StateFlow<HODApprovalsState> = _uiState.asStateFlow()
+
+    init { loadPendingLeaves() }
+
+    fun loadPendingLeaves() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val data = repository.getPendingLeaveApprovals()
+                _uiState.update { it.copy(pendingLeaves = data, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+
+    fun approveLeave(id: String, status: String, remarks: String?) {
+        viewModelScope.launch {
+            try {
+                repository.approveLeave(id, status, remarks)
+                loadPendingLeaves()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+}
+
+class HODApprovalsViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return HODApprovalsViewModel(repository) as T
+    }
+}
+// --- HOD Circulars ViewModel ---
+data class HODCircularsState(
+    val circulars: List<com.example.core.network.NoticeDto> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+class HODCircularsViewModel(private val apiService: com.example.core.network.CamsApiService) : ViewModel() {
+    private val _uiState = MutableStateFlow(HODCircularsState())
+    val uiState: StateFlow<HODCircularsState> = _uiState.asStateFlow()
+
+    init { loadCirculars() }
+
+    fun loadCirculars() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val response = apiService.getNotices()
+                if (response.isSuccessful) {
+                    _uiState.update { it.copy(circulars = response.body() ?: emptyList(), isLoading = false) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, error = response.message()) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+}
+
+class HODCircularsViewModelFactory(private val apiService: com.example.core.network.CamsApiService) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return HODCircularsViewModel(apiService) as T
+    }
+}
+// --- HOD Timetable ViewModel ---
+data class HODTimetableState(
+    val metadata: com.example.core.network.HODTimetableMetadataDto? = null,
+    val selectedSectionId: String? = null,
+    val timetableSlots: List<com.example.core.network.TimetableSlotDto> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+class HODTimetableViewModel(private val repository: HODRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(HODTimetableState())
+    val uiState: StateFlow<HODTimetableState> = _uiState.asStateFlow()
+
+    init { loadMetadata() }
+
+    fun loadMetadata() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val metadata = repository.getTimetableMetadata()
+                val selectedSectionId = metadata.sections.firstOrNull()?.id
+                _uiState.update { it.copy(metadata = metadata, selectedSectionId = selectedSectionId, isLoading = selectedSectionId != null) }
+                
+                if (selectedSectionId != null) {
+                    loadSectionTimetable(selectedSectionId)
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+
+    fun selectSection(sectionId: String) {
+        _uiState.update { it.copy(selectedSectionId = sectionId) }
+        loadSectionTimetable(sectionId)
+    }
+
+    private fun loadSectionTimetable(sectionId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val slots = repository.getTimetableSection(sectionId)
+                _uiState.update { it.copy(timetableSlots = slots, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+}
+
+class HODTimetableViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return HODTimetableViewModel(repository) as T
+    }
+}

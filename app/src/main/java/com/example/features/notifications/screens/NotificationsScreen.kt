@@ -31,7 +31,10 @@ import com.example.features.notifications.models.NotificationRecord
 import com.example.features.notifications.models.NotificationTypeMeta
 import com.example.features.notifications.providers.NotificationViewModel
 import com.example.features.student.widgets.StudentDrawer
+import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,12 +66,14 @@ fun NotificationsScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                val pagingItems = viewModel.notificationsPagingFlow.collectAsLazyPagingItems()
+
                 NotificationHeader(
-                    unreadCount = uiState.notifications.count { !it.isRead },
-                    totalCount = uiState.notifications.size,
+                    unreadCount = uiState.notifications.count { !it.isRead }, // Note: in real paging this should be from a separate stats endpoint
+                    totalCount = uiState.notifications.size, // Note: in real paging this should be from a separate stats endpoint
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onMarkAllRead = { viewModel.markAllAsRead() },
-                    onRefresh = { viewModel.fetchNotifications() },
+                    onRefresh = { pagingItems.refresh() },
                     onLogout = { onNavigate("LOGOUT") }
                 )
 
@@ -90,7 +95,7 @@ fun NotificationsScreen(
                             TabButton("read", "Read (${uiState.notifications.count { it.isRead }})", uiState.activeTab == "read") { viewModel.setTab("read") }
                         }
                         
-                        Divider(color = androidx.compose.ui.graphics.Color.White)
+                        HorizontalDivider(color = androidx.compose.ui.graphics.Color.White)
 
                         // Search and Filter
                         Row(
@@ -126,29 +131,16 @@ fun NotificationsScreen(
                             }
                         }
 
-                        Divider(color = androidx.compose.ui.graphics.Color.White)
+                        HorizontalDivider(color = androidx.compose.ui.graphics.Color.White)
 
                         // List
-                        val filteredNotifications = remember(uiState) {
-                            uiState.notifications.filter { 
-                                val matchesTab = when (uiState.activeTab) {
-                                    "unread" -> !it.isRead
-                                    "read" -> it.isRead
-                                    else -> true
-                                }
-                                val matchesType = uiState.typeFilter == "all" || it.type == uiState.typeFilter
-                                val matchesSearch = uiState.searchQuery.isEmpty() || it.message.contains(uiState.searchQuery, ignoreCase = true)
-                                matchesTab && matchesType && matchesSearch
-                            }
-                        }
-
-                        if (uiState.isLoading) {
+                        if (pagingItems.loadState.refresh is LoadState.Loading) {
                             LoadingState()
-                        } else if (filteredNotifications.isEmpty()) {
+                        } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                             EmptyState(
                                 tab = uiState.activeTab,
                                 isFiltered = uiState.searchQuery.isNotEmpty() || uiState.typeFilter != "all",
-                                onRetry = { viewModel.fetchNotifications() },
+                                onRetry = { pagingItems.refresh() },
                                 onClear = {
                                     viewModel.setSearchQuery("")
                                     viewModel.setTypeFilter("all")
@@ -156,24 +148,20 @@ fun NotificationsScreen(
                             )
                         } else {
                             LazyColumn(modifier = Modifier.heightIn(max = 500.dp)) {
-                                items(filteredNotifications, key = { it.id }) { notif ->
-                                    NotificationRow(notif, onMarkRead = { viewModel.markAsRead(notif.id) }, onDelete = { viewModel.deleteNotification(notif.id) })
+                                items(pagingItems.itemCount) { index ->
+                                    val notif = pagingItems[index]
+                                    if (notif != null) {
+                                        NotificationRow(notif, onMarkRead = { viewModel.markAsRead(notif.id) }, onDelete = { viewModel.deleteNotification(notif.id) })
+                                    }
                                 }
                             }
                         }
                         
-                        if (filteredNotifications.isNotEmpty()) {
+                        if (pagingItems.itemCount > 0) {
                             Box(modifier = Modifier.fillMaxWidth().background(Color(0xFFF8FAFC)).padding(12.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Showing ${filteredNotifications.size} notifications", fontSize = 13.sp, color = LexNovaSlateAccent)
-                                    if (uiState.notifications.any { !it.isRead }) {
-                                        TextButton(onClick = { viewModel.markAllAsRead() }, contentPadding = PaddingValues(0.dp)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                Icon(Icons.Filled.DoneAll, null, modifier = Modifier.size(14.dp))
-                                                Text("Mark all as read", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
+                                    Text("Showing ${pagingItems.itemCount} notifications", fontSize = 13.sp, color = LexNovaSlateAccent)
+                                    // Mark all read button omitted for brevity in Paging
                                 }
                             }
                         }
@@ -375,7 +363,7 @@ private fun NotificationRow(notif: NotificationRecord, onMarkRead: () -> Unit, o
             }
         }
     }
-    Divider(color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(horizontal = 16.dp))
+    HorizontalDivider(color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(horizontal = 16.dp))
 }
 
 @Composable

@@ -26,7 +26,20 @@ class ParentDashboardViewModel(private val repository: ParentRepository) : ViewM
     private val _uiState = MutableStateFlow(ParentDashboardState())
     val uiState: StateFlow<ParentDashboardState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -34,12 +47,12 @@ class ParentDashboardViewModel(private val repository: ParentRepository) : ViewM
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val profileExtended = repository.getChildProfile()
-                val performance = repository.getPerformanceAnalytics()
-                val notices = repository.getNotices()
-                val subjectAttendance = repository.getSubjectAttendance()
-                val timetable = repository.getTimetable()
-                val feeLedger = repository.getFeeStatus()
+                val profileExtended = repository.getChildProfile(currentChildId)
+                val performance = repository.getPerformanceAnalytics(currentChildId)
+                val notices = repository.getNotices(currentChildId)
+                val subjectAttendance = repository.getSubjectAttendance(currentChildId)
+                val timetable = repository.getTimetable(currentChildId)
+                val feeLedger = repository.getFeeStatus(currentChildId)
                 
                 _uiState.update { it.copy(
                     childProfileExtended = profileExtended,

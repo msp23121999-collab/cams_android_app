@@ -10,6 +10,12 @@ class CamsApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         container = DefaultAppContainer(this)
+    }
+
+    companion object {
+        lateinit var instance: CamsApplication
+            private set
     }
 }

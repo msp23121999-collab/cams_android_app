@@ -312,8 +312,8 @@ fun LoginScreen(
                         // Enterprise Quick Access Demo Login Button (Fills credentials, user presses SIGN IN)
                         Button(
                             onClick = {
-                                email = "${currentRole.lowercase()}@cams.edu"
-                                password = "password"
+                                email = "${currentRole.lowercase()}@cams.local"
+                                password = "Password@123"
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),

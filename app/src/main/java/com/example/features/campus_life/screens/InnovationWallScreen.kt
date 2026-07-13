@@ -41,7 +41,7 @@ fun InnovationWallScreen(
     
     val categories = listOf("All Projects", "Research", "Legal Technology", "Community Projects", "Startups")
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Innovation Wall",
         subtitle = "Showcasing student-led breakthroughs",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -105,11 +105,21 @@ fun InnovationWallScreen(
                 }
             }
 
-            // Project Grid
             val filteredProjects = if (activeFilter == "All Projects") uiState.projects else uiState.projects.filter { it.category == activeFilter }
             
-            filteredProjects.forEach { project ->
-                InnovationProjectCard(project)
+            if (filteredProjects.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.Lightbulb, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("No projects found in this category.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                }
+            } else {
+                filteredProjects.forEach { project ->
+                    InnovationProjectCard(project)
+                }
             }
             
             Spacer(modifier = Modifier.height(20.dp))

@@ -46,7 +46,7 @@ fun StudentCouncilScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Student Council",
         subtitle = "Student Governance Portal",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -109,9 +109,8 @@ fun StudentCouncilScreen(
                 // Representatives
                 RepresentativesCard(uiState.representatives)
 
-                // Next Meeting
-                MeetingCard()
-                
+                // Next Meeting removed due to lack of ViewModel state
+
                 Spacer(modifier = Modifier.height(20.dp))
         }
     }
@@ -260,42 +259,3 @@ private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
     }
 }
 
-@Composable
-private fun MeetingCard() {
-    CamsCard {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(18.dp))
-                Text("Next Open Meeting", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = CamsBackground),
-                border = BorderStroke(1.dp, CamsNavy.copy(alpha = 0.1f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Townhall on Fest Budget", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.AccessTime, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(12.dp))
-                        Text("Oct 18, 2026 • 4:00 PM", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.Place, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(12.dp))
-                        Text("Main Auditorium", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
-                    ) {
-                        Text("RSVP Now", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                    }
-                }
-            }
-        }
-    }
-}

@@ -50,7 +50,7 @@ object ApiClient {
         .add(KotlinJsonAdapterFactory())
         .build()
 
-    fun createHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+    fun createHttpClient(authInterceptor: AuthInterceptor, apiCacheDao: com.example.core.database.dao.ApiCacheDao): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
@@ -59,6 +59,7 @@ object ApiClient {
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(BaseUrlInterceptor())
+            .addInterceptor(RoomCacheInterceptor(apiCacheDao))
             .addInterceptor(NetworkErrorInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

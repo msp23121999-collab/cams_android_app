@@ -38,7 +38,7 @@ fun ProjectShowcaseScreen(
     val uiState by viewModel.uiState.collectAsState()
     var activeTab by remember { mutableStateOf("all") }
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Academic Showcase",
         subtitle = "Research papers and dissertations authored by students",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },

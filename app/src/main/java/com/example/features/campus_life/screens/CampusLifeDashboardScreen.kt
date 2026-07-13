@@ -51,7 +51,7 @@ fun CampusLifeDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Campus Life",
         subtitle = "Connect, Collaborate and Contribute",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -100,9 +100,9 @@ fun CampusLifeDashboardScreen(
             Column {
                 SectionHeader(Icons.Filled.GridView, "Experience Modules")
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    uiState.modules.forEach { module ->
-                        ExperienceModuleCard(Modifier.weight(1f), module, onNavigate)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.modules) { module ->
+                        ExperienceModuleCard(Modifier.width(140.dp), module, onNavigate)
                     }
                 }
             }
@@ -272,12 +272,16 @@ private fun ExperienceModuleCard(modifier: Modifier, module: ExperienceModule, o
                 Text(
                     module.title,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary
+                    color = CamsTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     module.description,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
-                    color = CamsTextSecondary
+                    color = CamsTextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

@@ -24,6 +24,12 @@ import com.example.features.parent.providers.ParentNoticesViewModel
 import com.example.features.parent.widgets.ParentDrawer
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParentNoticesScreen(
@@ -34,8 +40,17 @@ fun ParentNoticesScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     
+    
     var selectedCategory by remember { mutableStateOf("ALL") }
     var selectedPriority by remember { mutableStateOf("ALL") }
+    var searchQuery by remember { mutableStateOf("") }
+    var debouncedQuery by remember { mutableStateOf("") }
+    
+    LaunchedEffect(searchQuery) {
+        delay(300)
+        debouncedQuery = searchQuery
+    }
+
     var activeNotice by remember { mutableStateOf<CollegeNotice?>(null) }
     
     val categories = listOf("ALL", "Academic Announcement", "Examination Notice", "Department Circular", "Event Notification", "General Information")
@@ -53,7 +68,7 @@ fun ParentNoticesScreen(
             )
         }
     ) {
-        CamsScreen(scrollable = false,
+        CamsScreen(scrollable = true,
             title = "Notices",
             subtitle = "Academic Circulars & Event Notifications",
             navigationIcon = {
@@ -77,6 +92,25 @@ fun ParentNoticesScreen(
                 CamsCard {
                     Text("Filter Circulars", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                     Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Search notices...") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         FilterDropdown(
                             label = "Category",
@@ -97,7 +131,10 @@ fun ParentNoticesScreen(
                 val filteredNotices = uiState.notices.filter { notice ->
                     val matchCategory = selectedCategory == "ALL" || notice.category == selectedCategory
                     val matchPriority = selectedPriority == "ALL" || notice.priority.uppercase() == selectedPriority.uppercase()
-                    matchCategory && matchPriority
+                    val matchSearch = debouncedQuery.isEmpty() || 
+                        notice.title.contains(debouncedQuery, ignoreCase = true) || 
+                        notice.body.contains(debouncedQuery, ignoreCase = true)
+                    matchCategory && matchPriority && matchSearch
                 }
 
                 if (filteredNotices.isEmpty()) {
@@ -133,7 +170,7 @@ fun ParentNoticesScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(notice.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                            Text(notice.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(notice.body, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 2)
                             Spacer(modifier = Modifier.height(12.dp))
@@ -204,8 +241,8 @@ fun NoticeDialog(notice: CollegeNotice, onDismiss: () -> Unit) {
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text(notice.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                            Text(notice.category, style = MaterialTheme.typography.labelSmall.copy(color = Color(0xFF64748B)))
+                            Text(notice.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(notice.category, style = MaterialTheme.typography.labelSmall.copy(color = Color(0xFF64748B)), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
                     IconButton(onClick = onDismiss) {

@@ -1,16 +1,27 @@
 package com.example.features.career.providers
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.core.repository.StudentRepository
 import com.example.features.career.models.ActivityPointClaim
 import com.example.features.career.models.InternshipDrive
 import com.example.features.career.models.StudentCertification
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+class CareerViewModelFactory(private val repository: StudentRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CareerViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CareerViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 data class CareerState(
     val drives: List<InternshipDrive> = emptyList(),
@@ -20,7 +31,7 @@ data class CareerState(
     val error: String? = null
 )
 
-class CareerViewModel : ViewModel() {
+class CareerViewModel(private val repository: StudentRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(CareerState())
     val uiState: StateFlow<CareerState> = _uiState.asStateFlow()
 
@@ -30,35 +41,59 @@ class CareerViewModel : ViewModel() {
 
     fun fetchData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            delay(1000)
+            _uiState.update { it.copy(isLoading = true, error = null) }
             
-            val mockDrives = listOf(
-                InternshipDrive("1", "Supreme Court of India", "Judicial Clerk", "New Delhi", "Interview", "Assist honorable judges with legal research.", "Unpaid"),
-                InternshipDrive("2", "Tier-1 Law Firm", "Legal Intern", "Mumbai", "Assessment", "Corporate law research and drafting.", "₹15,000/mo"),
-                InternshipDrive("3", "Tech Corp Legal", "In-house Intern", "Bangalore", "Applied", "Contract review and compliance.", "₹20,000/mo"),
-                InternshipDrive("4", "Human Rights NGO", "Research Intern", "Remote", "Selected", "Human rights advocacy research.", "Unpaid")
-            )
-            
-            val mockCertifications = listOf(
-                StudentCertification("c1", "Advanced Corporate Law", "LexAcademy", "2023-05-10", null, "CRED1234", true),
-                StudentCertification("c2", "IP Rights & Patents", "WIPO", "2023-08-15", null, "CRED5678", true),
-                StudentCertification("c3", "Mediation & Arbitration", "NALSAR", "2024-01-05", "2026-01-05", "CRED9012", false)
-            )
+            try {
+                // Fetch from repository
+                val drivesDtos = repository.getInternshipDrives()
+                val certDtos = repository.getCertificationsList()
+                val pointDtos = repository.getActivityPoints()
 
-            val mockClaims = listOf(
-                ActivityPointClaim("ap1", "Moot Court Competition", "Advocacy", "2023-11-20", 50, "Approved"),
-                ActivityPointClaim("ap2", "Legal Aid Clinic Volunteer", "Community", "2023-12-10", 30, "Approved"),
-                ActivityPointClaim("ap3", "Published Research Paper", "Research", "2024-01-15", 40, "Pending")
-            )
+                val drives = drivesDtos.map { dto ->
+                    InternshipDrive(
+                        id = dto.id,
+                        companyName = dto.company,
+                        role = dto.role,
+                        location = "Remote/Hybrid", // Using a default as backend doesn't provide location yet
+                        applicationStatus = dto.status,
+                        description = "Check application portal for details",
+                        stipend = dto.stipend
+                    )
+                }
 
-            _uiState.update { 
-                it.copy(
-                    drives = mockDrives,
-                    certifications = mockCertifications,
-                    activityClaims = mockClaims,
-                    isLoading = false
-                )
+                val certs = certDtos.map { dto ->
+                    StudentCertification(
+                        id = dto.id,
+                        name = dto.title,
+                        issuer = dto.issuer,
+                        issueDate = dto.date,
+                        expiryDate = null,
+                        credentialId = dto.id,
+                        isVerified = dto.isVerified
+                    )
+                }
+
+                val claims = pointDtos.map { dto ->
+                    ActivityPointClaim(
+                        id = dto.id,
+                        activityName = dto.title,
+                        category = dto.category,
+                        date = dto.date,
+                        pointsClaimed = dto.pointsClaimed,
+                        status = dto.status
+                    )
+                }
+
+                _uiState.update { 
+                    it.copy(
+                        drives = drives,
+                        certifications = certs,
+                        activityClaims = claims,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }

@@ -85,8 +85,7 @@ fun AttendanceRegisterScreen(
                     ) {
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
+                                .fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
@@ -142,7 +141,7 @@ fun AttendanceRegisterScreen(
                 CamsCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
+                    Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -183,7 +182,7 @@ fun AttendanceRegisterScreen(
                             ) {
                                 Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Export PDF", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                                Text("Export PDF", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
 
@@ -229,10 +228,20 @@ fun CountCard(label: String, count: Int, color: Color, modifier: Modifier = Modi
     CamsCard(
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(4.dp)) {
-            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+        Column {
+            Text(
+                label.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(count.toString(), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = color))
+            Text(
+                count.toString(),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = color),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -318,7 +327,7 @@ fun SubjectsTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
                             .weight(1f)
                             .padding(2.dp),
                     ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
+                        Column {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(name, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = CamsTextPrimary)
@@ -394,7 +403,7 @@ fun TrendsTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(8.dp)) {
+                Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
                             Text(name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
@@ -567,7 +576,7 @@ fun AdvisoryPanel(onNavigate: (String) -> Unit) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(CamsNavy.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.Mail, contentDescription = null, tint = CamsNavy)
             }

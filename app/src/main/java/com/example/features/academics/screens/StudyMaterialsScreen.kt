@@ -40,6 +40,8 @@ import com.example.features.academics.models.StudyMaterial
 import com.example.features.student.providers.StudyMaterialsViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,22 +118,30 @@ fun StudyMaterialsScreen(
                     }
                 }
 
-                val filteredMaterials = uiState.materials.filter {
-                    (selectedCategory == "All" || it.category == selectedCategory) &&
-                    (it.title.contains(searchQuery, ignoreCase = true) || 
-                     it.subject.contains(searchQuery, ignoreCase = true) ||
-                     it.facultyName.contains(searchQuery, ignoreCase = true))
-                }
+                val pagingItems = viewModel.materialsPagingFlow.collectAsLazyPagingItems()
 
-                if (filteredMaterials.isEmpty()) {
+                if (pagingItems.loadState.refresh is LoadState.Loading) {
+                    MaterialsSkeleton()
+                } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                     EmptyMaterialsState()
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(filteredMaterials) { material ->
-                            MaterialCard(material)
+                        items(pagingItems.itemCount) { index ->
+                            val material = pagingItems[index]
+                            if (material != null) {
+                                val matchesCategory = selectedCategory == "All" || material.category == selectedCategory
+                                val matchesSearch = searchQuery.isEmpty() ||
+                                        material.title.contains(searchQuery, ignoreCase = true) || 
+                                        material.subject.contains(searchQuery, ignoreCase = true) ||
+                                        material.facultyName.contains(searchQuery, ignoreCase = true)
+                                        
+                                if (matchesCategory && matchesSearch) {
+                                    MaterialCard(material)
+                                }
+                            }
                         }
                         item { Spacer(Modifier.height(20.dp)) }
                     }
@@ -147,7 +157,7 @@ fun MaterialCard(material: StudyMaterial) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -177,7 +187,9 @@ fun MaterialCard(material: StudyMaterial) {
                         Text(
                             text = material.subject,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = CamsNavy
+                            color = CamsNavy,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

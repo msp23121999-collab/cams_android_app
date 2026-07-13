@@ -56,7 +56,7 @@ fun AdminDrawer(
                 }
             }
 
-            Divider(color = Color(0xFFF3F4F6))
+            HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(20.dp))
 
             // Navigation Items
@@ -72,7 +72,7 @@ fun AdminDrawer(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Divider(color = Color(0xFFF3F4F6))
+            HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(10.dp))
             
             DrawerItem("Logout", Icons.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)

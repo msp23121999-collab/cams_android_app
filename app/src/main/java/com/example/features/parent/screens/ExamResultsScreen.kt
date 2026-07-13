@@ -38,6 +38,7 @@ fun ExamResultsScreen(
     onNavigate: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     ParentBaseScreen(
         title = "Exam Results",
@@ -50,8 +51,21 @@ fun ExamResultsScreen(
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = LexNovaPurple)
             }
+        } else if (uiState.error != null) {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Text(uiState.error ?: "Failed to load results", color = Color.Red)
+            }
+        } else if (uiState.performance.isEmpty() && uiState.internalMarks.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Text("No exam results available.", color = CamsTextSecondary)
+            }
         } else {
-            PerformanceAnalytics(uiState.performance)
+            PerformanceAnalytics(uiState.performance) {
+                val currentChildId = viewModel.currentChildId ?: ""
+                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                val url = "${com.example.core.config.AppConfig.BASE_URL}/api/v1/parents/child/marks/download?child_id=$currentChildId"
+                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "Exam_Results_$currentChildId", token)
+            }
             
             Text(
                 "Internal Examination Marks",
@@ -67,7 +81,7 @@ fun ExamResultsScreen(
 }
 
 @Composable
-fun PerformanceAnalytics(performance: List<com.example.features.parent.models.PerformanceData>) {
+fun PerformanceAnalytics(performance: List<com.example.features.parent.models.PerformanceData>, onDownloadClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -78,7 +92,10 @@ fun PerformanceAnalytics(performance: List<com.example.features.parent.models.Pe
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.School, contentDescription = null, tint = LexNovaPurple)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Semester Results & CGPA", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text("Semester Results & CGPA", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
+                IconButton(onClick = onDownloadClick) {
+                    Icon(Icons.Filled.Download, contentDescription = "Download PDF", tint = LexNovaPurple)
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -187,37 +204,43 @@ fun InternalMarksTable(marks: List<com.example.features.parent.models.ChildInter
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        val scrollState = rememberScrollState()
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.horizontalScroll(scrollState).background(MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        BoxWithConstraints {
+            val isTablet = maxWidth > 600.dp
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .then(if (!isTablet) Modifier.horizontalScroll(scrollState) else Modifier)
             ) {
-                Text("Subject", modifier = Modifier.width(150.dp), fontWeight = FontWeight.Bold)
-                Text("Year", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Internal", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Assgn", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Pres", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Viva", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Attd", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold)
-                Text("Total", modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, color = LexNovaPurple)
-            }
-            
-            marks.forEach { mark ->
                 Row(
-                    modifier = Modifier.horizontalScroll(scrollState).padding(16.dp),
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(mark.subjectName, modifier = Modifier.width(150.dp))
-                    Text(mark.academicYear, modifier = Modifier.width(80.dp))
-                    Text(mark.internalExamMark, modifier = Modifier.width(80.dp))
-                    Text(mark.assignmentMark, modifier = Modifier.width(80.dp))
-                    Text(mark.presentationMark, modifier = Modifier.width(80.dp))
-                    Text(mark.vivaVoiceMark, modifier = Modifier.width(80.dp))
-                    Text(mark.attendanceMark, modifier = Modifier.width(80.dp))
-                    Text(mark.totalMark, modifier = Modifier.width(80.dp), fontWeight = FontWeight.Bold, color = LexNovaPurple)
+                    Text("Subject", modifier = if (isTablet) Modifier.weight(2f) else Modifier.width(150.dp), fontWeight = FontWeight.Bold)
+                    Text("Year", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Internal", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Assgn", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Pres", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Viva", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Attd", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold)
+                    Text("Total", modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold, color = LexNovaPurple)
                 }
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                
+                marks.forEach { mark ->
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(mark.subjectName, modifier = if (isTablet) Modifier.weight(2f) else Modifier.width(150.dp), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(mark.academicYear, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.internalExamMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.assignmentMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.presentationMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.vivaVoiceMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.attendanceMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp))
+                        Text(mark.totalMark, modifier = if (isTablet) Modifier.weight(1f) else Modifier.width(80.dp), fontWeight = FontWeight.Bold, color = LexNovaPurple)
+                    }
+                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                }
             }
         }
     }

@@ -39,6 +39,7 @@ fun ProjectShowcaseScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSubmissionModal by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -74,6 +75,10 @@ fun ProjectShowcaseScreen(
             BoxWithConstraints(modifier = Modifier.padding(paddingValues)) {
                 val isTablet = maxWidth > 600.dp
                 
+                val filteredPublications = uiState.publications.filter {
+                    it.title.contains(searchQuery, ignoreCase = true) || it.guide.contains(searchQuery, ignoreCase = true)
+                }
+                
                 if (uiState.isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = LexNovaPurple)
@@ -87,7 +92,16 @@ fun ProjectShowcaseScreen(
                             Column(modifier = Modifier.weight(2f)) {
                                 Text("All Submissions", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                                 Spacer(modifier = Modifier.height(16.dp))
-                                PublicationsList(uiState.publications)
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                    placeholder = { Text("Search papers or guides...") },
+                                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                                    shape = RoundedCornerShape(25.dp),
+                                    singleLine = true
+                                )
+                                PublicationsList(filteredPublications)
                             }
                         }
                     } else {
@@ -99,8 +113,17 @@ fun ProjectShowcaseScreen(
                             item {
                                 Text("All Submissions", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                                 Spacer(modifier = Modifier.height(16.dp))
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                    placeholder = { Text("Search papers or guides...") },
+                                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                                    shape = RoundedCornerShape(25.dp),
+                                    singleLine = true
+                                )
                             }
-                            items(uiState.publications) { pub ->
+                            items(filteredPublications) { pub ->
                                 PublicationCard(pub)
                                 Spacer(modifier = Modifier.height(16.dp))
                             }

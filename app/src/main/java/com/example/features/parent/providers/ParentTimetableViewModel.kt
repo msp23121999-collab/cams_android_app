@@ -21,7 +21,20 @@ class ParentTimetableViewModel(private val repository: ParentRepository) : ViewM
     private val _uiState = MutableStateFlow(ParentTimetableState())
     val uiState: StateFlow<ParentTimetableState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -29,7 +42,7 @@ class ParentTimetableViewModel(private val repository: ParentRepository) : ViewM
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val timetable = repository.getTimetable()
+                val timetable = repository.getTimetable(currentChildId)
                 _uiState.update { it.copy(timetable = timetable, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

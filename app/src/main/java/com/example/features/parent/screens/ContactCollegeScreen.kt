@@ -60,14 +60,27 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
         ) {
             Text("Emergency Contacts", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
             
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ContactSmallCard("Principal", "+91 98765 43210", Icons.Filled.Person, Modifier.weight(1f))
-                ContactSmallCard("Registrar", "+91 98765 01234", Icons.Filled.Badge, Modifier.weight(1f))
-            }
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ContactSmallCard("Exam Cell", "+91 98765 99999", Icons.Filled.Description, Modifier.weight(1f))
-                ContactSmallCard("Admissions", "+91 98765 88888", Icons.Filled.School, Modifier.weight(1f))
+            BoxWithConstraints {
+                val isTablet = maxWidth > 600.dp
+                if (isTablet) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        ContactSmallCard("Principal", "+91 98765 43210", Icons.Filled.Person, Modifier.weight(1f))
+                        ContactSmallCard("Registrar", "+91 98765 01234", Icons.Filled.Badge, Modifier.weight(1f))
+                        ContactSmallCard("Exam Cell", "+91 98765 99999", Icons.Filled.Description, Modifier.weight(1f))
+                        ContactSmallCard("Admissions", "+91 98765 88888", Icons.Filled.School, Modifier.weight(1f))
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ContactSmallCard("Principal", "+91 98765 43210", Icons.Filled.Person, Modifier.weight(1f))
+                            ContactSmallCard("Registrar", "+91 98765 01234", Icons.Filled.Badge, Modifier.weight(1f))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ContactSmallCard("Exam Cell", "+91 98765 99999", Icons.Filled.Description, Modifier.weight(1f))
+                            ContactSmallCard("Admissions", "+91 98765 88888", Icons.Filled.School, Modifier.weight(1f))
+                        }
+                    }
+                }
             }
 
             Text("Submit an Inquiry", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
@@ -122,9 +135,9 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
                             Icon(Icons.Filled.LocationOn, null, tint = CamsNavy)
                         }
                     }
-                    Column {
-                        Text("LexNova University Campus", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text("Sector 44, Academic District, New Delhi - 110001", fontSize = 12.sp, color = CamsTextSecondary)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("LexNova University Campus", fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text("Sector 44, Academic District, New Delhi - 110001", fontSize = 12.sp, color = CamsTextSecondary, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -136,14 +149,23 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
 
 @Composable
 private fun ContactSmallCard(role: String, phone: String, icon: ImageVector, modifier: Modifier) {
-    CamsCard(modifier = modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    CamsCard(
+        modifier = modifier,
+        onClick = {
+            val intent = android.content.Intent(android.content.Intent.ACTION_DIAL).apply {
+                data = android.net.Uri.parse("tel:$phone")
+            }
+            context.startActivity(intent)
+        }
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Box(Modifier.size(40.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.height(8.dp))
-            Text(role, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-            Text(phone, fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
+            Text(role, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(phone, fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }
 }

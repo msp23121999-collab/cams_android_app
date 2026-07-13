@@ -41,7 +41,7 @@ fun CommunityServiceScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Community Service",
         subtitle = "Social Impact Portal",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -64,8 +64,13 @@ fun CommunityServiceScreen(
                     TextButton(onClick = {}) { Text("Browse All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFF10B981))) }
                 }
                 
-                uiState.opportunities.forEach { opp ->
-                    ServiceOpportunityItem(opp)
+                
+                if (uiState.opportunities.isEmpty()) {
+                    Text("No upcoming opportunities at the moment.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                } else {
+                    uiState.opportunities.forEach { opp ->
+                        ServiceOpportunityItem(opp)
+                    }
                 }
             }
 
@@ -75,10 +80,14 @@ fun CommunityServiceScreen(
                 
                 CamsCard(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        uiState.logs.forEachIndexed { index, log ->
-                            ServiceLogItem(log)
-                            if (index < uiState.logs.size - 1) {
-                                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                        if (uiState.logs.isEmpty()) {
+                            Text("No service logs recorded yet.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+                        } else {
+                            uiState.logs.forEachIndexed { index, log ->
+                                ServiceLogItem(log)
+                                if (index < uiState.logs.size - 1) {
+                                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                                }
                             }
                         }
                         

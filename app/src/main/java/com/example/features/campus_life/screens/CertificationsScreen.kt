@@ -107,6 +107,19 @@ fun CertificationsScreen(
                 }
             }
 
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Your Certificates", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
+                Button(
+                    onClick = { showUploadModal = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Upload New", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black))
+                }
+            }
+
             // Cert List
             val filteredList = uiState.certifications.filter {
                 (uiState.categoryFilter == "All" || it.category == uiState.categoryFilter) &&
@@ -180,10 +193,27 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
                 }
                 
                 if (cert.verified) {
-                    Surface(color = Color(0xFFECFDF5), shape = CircleShape) {
+                    var showVerifyDialog by remember { mutableStateOf(false) }
+                    
+                    Surface(
+                        color = Color(0xFFECFDF5), 
+                        shape = CircleShape,
+                        modifier = Modifier.clickable { showVerifyDialog = true }
+                    ) {
                         Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Filled.Verified, contentDescription = null, tint = Color(0xFF059669), modifier = Modifier.size(12.dp))
                             Text("Verified", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = Color(0xFF059669)))
+                        }
+                    }
+                    
+                    if (showVerifyDialog) {
+                        DigitalSignatureDialog(cert = cert, onDismiss = { showVerifyDialog = false })
+                    }
+                } else {
+                    Surface(color = Color(0xFFFFFBEB), shape = CircleShape) {
+                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Filled.PendingActions, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(12.dp))
+                            Text("Pending", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFFD97706)))
                         }
                     }
                 }
@@ -295,7 +325,7 @@ fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord) -> U
             shape = RoundedCornerShape(32.dp),
             color = Color.White
         ) {
-            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Filled.UploadFile, contentDescription = null, tint = Purple600)
                     Text("Upload Certificate", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
@@ -348,4 +378,29 @@ fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord) -> U
             }
         }
     }
+}
+
+@Composable
+fun DigitalSignatureDialog(cert: CertificationRecord, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Digital Signature Verified", fontWeight = FontWeight.Bold, color = Color(0xFF059669)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().height(150.dp).background(CamsBackground, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.QrCode2, contentDescription = "QR Code", modifier = Modifier.size(100.dp), tint = CamsNavy)
+                }
+                Text("Issuer: ${cert.authority}", style = MaterialTheme.typography.bodyMedium)
+                Text("Issued to: ${cert.title}", style = MaterialTheme.typography.bodyMedium)
+                Text("Date: ${cert.date}", style = MaterialTheme.typography.bodyMedium)
+                Text("Signature Hash: SHA-256: 0x8F9A...4C21", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                Text("Blockchain Tx: tx_904xca11...", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))) {
+                Text("Close")
+            }
+        }
+    )
 }

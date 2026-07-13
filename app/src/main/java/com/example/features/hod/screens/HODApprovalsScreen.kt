@@ -25,8 +25,16 @@ import com.example.core.theme.CamsTextPrimary
 import com.example.core.theme.CamsTextSecondary
 import com.example.features.hod.widgets.HODBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.hod.providers.HODApprovalsViewModel
+
 @Composable
-fun HODApprovalsScreen(onNavigate: (String) -> Unit) {
+fun HODApprovalsScreen(
+    viewModel: HODApprovalsViewModel,
+    onNavigate: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     HODBaseScreen(scrollable = false, 
         title = "Pending Approvals",
         subtitle = "Manage faculty requests, mark approvals, and departmental decisions",
@@ -99,45 +107,54 @@ fun HODApprovalsScreen(onNavigate: (String) -> Unit) {
                     }
 
                     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val approvals = listOf(
-                            Triple("Leave Request", "Dr. Alan Turing", "Personal Leave (3 Days)"),
-                            Triple("Marks Approval", "Prof. Jane Smith", "CS302 Final Marks"),
-                            Triple("Attendance Shortage", "Dr. Grace Hopper", "Student ID: 10293")
-                        )
-                        items(approvals.size) { i ->
-                            val approval = approvals[i]
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                                    contentAlignment = Alignment.Center
+                        if (uiState.isLoading) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = Color(0xFF4F46E5))
+                                }
+                            }
+                        } else if (uiState.pendingLeaves.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                                    Text("No pending approvals", color = CamsTextSecondary)
+                                }
+                            }
+                        } else {
+                            items(uiState.pendingLeaves.size) { i ->
+                                val approval = uiState.pendingLeaves[i]
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Filled.Notifications, null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
-                                }
-                                Spacer(Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(approval.first, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("${approval.second} • ${approval.third}", fontSize = 12.sp, color = CamsTextSecondary)
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    IconButton(
-                                        onClick = { },
-                                        modifier = Modifier.size(32.dp).background(Color(0xFFFFF1F2), RoundedCornerShape(8.dp))
+                                    Box(
+                                        modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Filled.Close, null, tint = Color(0xFFE11D48), modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Filled.Notifications, null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
                                     }
-                                    IconButton(
-                                        onClick = { },
-                                        modifier = Modifier.size(32.dp).background(Color(0xFFECFDF5), RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(Icons.Filled.Check, null, tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(16.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("${approval.type} Leave", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("${approval.userName ?: "Unknown"} • ${approval.startDate} to ${approval.endDate}", fontSize = 12.sp, color = CamsTextSecondary)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        IconButton(
+                                            onClick = { viewModel.approveLeave(approval.id, "REJECTED", null) },
+                                            modifier = Modifier.size(32.dp).background(Color(0xFFFFF1F2), RoundedCornerShape(8.dp))
+                                        ) {
+                                            Icon(Icons.Filled.Close, null, tint = Color(0xFFE11D48), modifier = Modifier.size(16.dp))
+                                        }
+                                        IconButton(
+                                            onClick = { viewModel.approveLeave(approval.id, "APPROVED", null) },
+                                            modifier = Modifier.size(32.dp).background(Color(0xFFECFDF5), RoundedCornerShape(8.dp))
+                                        ) {
+                                            Icon(Icons.Filled.Check, null, tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
+                                        }
                                     }
                                 }
                             }

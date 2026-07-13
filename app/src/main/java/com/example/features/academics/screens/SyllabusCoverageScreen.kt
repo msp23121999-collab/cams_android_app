@@ -113,7 +113,7 @@ private fun HeaderSection() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -158,7 +158,7 @@ private fun SubjectCard(
             .fillMaxWidth()
             .clickable { onToggle() },
     ) {
-        Column {
+        Column(modifier = Modifier.padding(16.dp)) {
             // Header Row
             Column(modifier = Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -262,10 +262,10 @@ private fun TrackingItem(item: LessonPlanItem) {
         color = CamsBackground.copy(alpha = 0.5f),
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.unit, fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsNavy)
-                Text(item.plannedTopic, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
+                Text(item.unit, fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsNavy, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.plannedTopic, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (item.actualTopic != null && item.actualTopic != item.plannedTopic) {
                     Text("Taught: ${item.actualTopic}", fontSize = 13.sp, color = CamsTextSecondary)
                 }

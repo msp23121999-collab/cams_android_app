@@ -2,8 +2,12 @@ package com.example.core.network
 
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Body
 import retrofit2.http.Path
+import retrofit2.http.Multipart
+import retrofit2.http.Part
+import retrofit2.http.Query
 import retrofit2.Response
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -61,6 +65,22 @@ data class StudentProfileDto(
     val department: String? = null
 )
 
+@JsonClass(generateAdapter = true)
+data class HallTicketDto(
+    val id: String,
+    @Json(name = "student_id") val studentId: String,
+    @Json(name = "exam_id") val examId: String,
+    @Json(name = "is_eligible") val isEligible: Boolean = true,
+    @Json(name = "ineligibility_reason") val ineligibilityReason: String? = null,
+    @Json(name = "is_issued") val isIssued: Boolean = false,
+    @Json(name = "student_signature_url") val studentSignatureUrl: String? = null,
+    @Json(name = "principal_signature_url") val principalSignatureUrl: String? = null,
+    @Json(name = "coe_signature_url") val coeSignatureUrl: String? = null,
+    @Json(name = "student_name") val studentName: String? = null,
+    @Json(name = "exam_center") val examCenter: String? = null,
+    @Json(name = "exam_date") val examDate: String? = null
+)
+
 interface CamsApiService {
 
     @POST("auth/login")
@@ -75,23 +95,38 @@ interface CamsApiService {
     @GET("students/profile")
     suspend fun getStudentProfile(): Response<StudentProfileDto>
 
+    @PUT("students/profile")
+    suspend fun updateStudentProfile(@Body profile: StudentProfileDto): Response<StudentProfileDto>
+
+    @POST("students/profile/submit")
+    suspend fun submitStudentProfile(): Response<StudentProfileDto>
+
+    @GET("students/mentorship-record")
+    suspend fun getMentorshipRecord(): Response<MentorshipRecordDto>
+
     @GET("students/attendance")
     suspend fun getAttendance(): Response<AttendanceSummaryResponse>
 
     @GET("students/marks")
     suspend fun getInternalMarks(): Response<List<InternalMarkDto>>
 
-    @GET("students/fees")
+    @GET("fees/")
     suspend fun getFees(): Response<StudentFeeSummaryResponse>
 
     @GET("students/timetable")
     suspend fun getTimetable(): Response<List<TimetableSlotDto>>
 
     @GET("students/study-materials")
-    suspend fun getStudyMaterials(): Response<List<StudyMaterialDto>>
+    suspend fun getStudyMaterials(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<StudyMaterialDto>>
 
     @GET("assignments/active-assignments")
-    suspend fun getAssignments(): Response<List<AssignmentDto>>
+    suspend fun getAssignments(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<AssignmentDto>>
 
     @POST("assignments/submit/{asg_id}")
     suspend fun submitAssignment(
@@ -99,71 +134,92 @@ interface CamsApiService {
         @Body payload: AssignmentSubmitRequest
     ): Response<Unit>
 
-    @GET("students/leaves")
+    @GET("leave/history")
     suspend fun getLeaves(): Response<List<LeaveRequestDto>>
 
-    @POST("students/leaves/apply")
+    @GET("hall-tickets/")
+    suspend fun getHallTickets(): Response<List<HallTicketDto>>
+
+    @POST("leave/apply")
     suspend fun applyLeave(@Body request: LeaveApplicationRequest): Response<LeaveRequestDto>
 
     @GET("students/notices")
-    suspend fun getNotices(): Response<List<NoticeDto>>
+    suspend fun getNotices(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<NoticeDto>>
 
     @GET("students/grievances")
-    suspend fun getStudentGrievances(): Response<List<GrievanceDto>>
+    suspend fun getStudentGrievances(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<GrievanceDto>>
 
     @POST("students/grievances/raise")
     suspend fun raiseGrievance(@Body grievance: GrievanceRaiseRequest): Response<GrievanceDto>
 
-    @GET("students/online-meetings")
+    @GET("online-meetings")
     suspend fun getStudentMeetings(): Response<List<OnlineMeetingDto>>
 
-    @GET("students/legal-events")
-    suspend fun getStudentLegalEvents(): Response<List<LegalEventDto>>
+    @GET("legal-events")
+    suspend fun getStudentLegalEvents(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<LegalEventDto>>
 
-    @GET("students/clubs")
-    suspend fun getStudentClubs(): Response<List<ClubDto>>
+    @GET("clubs")
+    suspend fun getStudentClubs(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<ClubDto>>
 
-    @GET("students/academic-calendar")
+    @GET("academic-calendar/published")
     suspend fun getAcademicCalendar(): Response<List<CalendarEventDto>>
 
-    @GET("students/syllabus")
+    @GET("study-materials/student/approved")
     suspend fun getSyllabus(): Response<List<SyllabusDto>>
 
     @GET("students/notifications")
-    suspend fun getNotifications(): Response<List<NotificationDto>>
+    suspend fun getNotifications(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<NotificationDto>>
+
+    @GET("parents/children")
+    suspend fun getParentChildren(): Response<List<ChildSummaryDto>>
 
     @GET("parents/child/profile")
-    suspend fun getParentChildProfile(): Response<ParentChildProfileDto>
+    suspend fun getParentChildProfile(@Query("child_id") childId: String?): Response<ParentChildProfileDto>
 
     @GET("parents/child/marks")
-    suspend fun getParentChildMarks(): Response<List<ParentChildMarkDto>>
+    suspend fun getParentChildMarks(@Query("child_id") childId: String?): Response<List<ParentChildMarkDto>>
 
     @GET("parents/child/attendance")
-    suspend fun getParentChildAttendance(): Response<List<ParentChildAttendanceDto>>
+    suspend fun getParentChildAttendance(@Query("child_id") childId: String?): Response<List<ParentChildAttendanceDto>>
 
     @GET("parents/child/fees")
-    suspend fun getParentChildFees(): Response<ParentChildFeeDto>
+    suspend fun getParentChildFees(@Query("child_id") childId: String?): Response<ParentChildFeeDto>
 
     @GET("parents/child/timetable")
-    suspend fun getParentChildTimetable(): Response<List<ParentChildTimetableDayDto>>
+    suspend fun getParentChildTimetable(@Query("child_id") childId: String?): Response<List<ParentChildTimetableDayDto>>
 
     // Faculty Portal Endpoints
-    @GET("faculties/dashboard/metrics")
+    @GET("faculty/dashboard/metrics")
     suspend fun getFacultyDashboardMetrics(): Response<FacultyDashboardMetricsDto>
 
-    @GET("faculties/subjects")
+    @GET("faculty/subjects")
     suspend fun getFacultySubjects(): Response<List<FacultySubjectDto>>
 
-    @GET("faculties/profile")
+    @GET("faculty/profile")
     suspend fun getFacultyProfile(): Response<FacultyProfileDto>
 
-    @GET("faculties/research")
+    @GET("faculty/research/list")
     suspend fun getFacultyResearch(): Response<List<ResearchEntryDto>>
 
-    @GET("faculties/activity/summary")
+    @GET("faculty/profile/activity-summary")
     suspend fun getFacultyActivitySummary(): Response<ActivitySummaryDto>
 
-    @GET("faculties/timetable")
+    @GET("faculty/timetable")
     suspend fun getFacultyTimetable(): Response<List<FacultyTimetableDayDto>>
 
     // HOD Portal Endpoints
@@ -172,6 +228,18 @@ interface CamsApiService {
 
     @GET("hods/activities")
     suspend fun getHODActivities(): Response<List<HODActivityDto>>
+
+    @GET("leave/hod/pending")
+    suspend fun getHODPendingLeaves(): Response<List<LeaveRequestDto>>
+
+    @POST("leave/hod/approve/{id}")
+    suspend fun approveHODLeave(@Path("id") id: String, @Body request: ApprovalRequest): Response<LeaveRequestDto>
+
+    @GET("hod/timetable/metadata")
+    suspend fun getHODTimetableMetadata(): Response<HODTimetableMetadataDto>
+
+    @GET("hod/timetable/section/{section_id}")
+    suspend fun getHODTimetableSection(@Path("section_id") sectionId: String): Response<List<TimetableSlotDto>>
 
     // Principal Portal Endpoints
     @GET("principals/dashboard/stats")
@@ -183,11 +251,26 @@ interface CamsApiService {
     @POST("principals/approvals/timetable/{id}")
     suspend fun approveTimetable(@Path("id") id: String, @Body request: ApprovalRequest): Response<Unit>
 
-    @GET("principals/approvals/leave")
-    suspend fun getPendingLeaveApprovals(): Response<List<LeaveApprovalDto>>
+    @GET("users/principal/leaves")
+    suspend fun getPendingLeaveApprovals(): Response<List<LeaveRequestDto>>
 
-    @POST("principals/approvals/leave/{id}")
-    suspend fun approveLeave(@Path("id") id: String, @Body request: ApprovalRequest): Response<Unit>
+    @POST("users/principal/leaves/approve/{id}")
+    suspend fun approveLeave(@Path("id") id: String, @Body request: ApprovalRequest): Response<LeaveRequestDto>
+
+    @GET("users/principal/faculty/pending")
+    suspend fun getPrincipalPendingFaculty(): Response<List<PrincipalPendingFacultyDto>>
+
+    @POST("users/principal/faculty/approve/{user_id}")
+    suspend fun approvePrincipalFaculty(@Path("user_id") userId: String): Response<Unit>
+
+    @POST("users/principal/faculty/reject/{user_id}")
+    suspend fun rejectPrincipalFaculty(@Path("user_id") userId: String): Response<Unit>
+
+    @GET("users/principal/circulars")
+    suspend fun getPrincipalCirculars(): Response<List<NoticeDto>>
+
+    @POST("users/principal/circulars")
+    suspend fun publishPrincipalCircular(@Body request: NoticeCreateRequest): Response<NoticeDto>
 
     @GET("principals/grievances")
     suspend fun getGrievancesForApproval(): Response<List<GrievanceDto>>
@@ -202,10 +285,17 @@ interface CamsApiService {
     @GET("admins/dashboard/metrics")
     suspend fun getAdminDashboardMetrics(): Response<AdminDashboardMetricsDto>
 
-    @GET("admins/setup/degrees")
-    suspend fun getDegrees(): Response<List<DegreeDto>>
+    @GET("users/backups/history")
+    suspend fun getBackups(): Response<List<BackupDto>>
 
-    @GET("admins/setup/batches")
+    // Admin Academic Catalog APIs
+    @GET("degrees/list")
+    suspend fun getDegreesList(): Response<List<DegreeDto>>
+
+    @GET("faculty/courses/list")
+    suspend fun getAllCourses(): Response<List<CourseDto>>
+
+    @GET("admins/batches")
     suspend fun getBatches(): Response<List<BatchDto>>
 
     @GET("admins/fees/tracker")
@@ -217,7 +307,16 @@ interface CamsApiService {
     @GET("admins/attendance/defaulters")
     suspend fun getAttendanceDefaulters(): Response<List<AttendanceDefaulterDto>>
 
-    @POST("students/clubs/{id}/join")
+    @POST("faculty/notifications/read/{notif_id}")
+    suspend fun markFacultyNotificationRead(@Path("notif_id") notifId: String): Response<Unit>
+
+    @GET("faculty/notifications")
+    suspend fun getFacultyNotifications(): Response<List<NotificationDto>>
+
+    @GET("online-meetings")
+    suspend fun getOnlineMeetings(): Response<List<OnlineMeetingDto>>
+
+    @POST("clubs/{id}/join")
     suspend fun joinClub(@Path("id") id: Int): Response<Unit>
 
     @GET("students/council")
@@ -229,11 +328,17 @@ interface CamsApiService {
     @GET("students/lexnova/stats")
     suspend fun getLexNovaStats(): Response<List<LexNovaKpiDto>>
 
-    @GET("students/internship-drives")
+    @GET("lexsphere/alumni")
+    suspend fun getAlumniNetwork(): Response<List<AlumniMentorDto>>
+
+    @GET("internship-drives")
     suspend fun getInternshipDrives(): Response<List<InternshipDriveDto>>
 
-    @GET("students/internships")
-    suspend fun getInternships(): Response<List<InternshipRecordDto>>
+    @GET("internship-drives")
+    suspend fun getInternships(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<List<InternshipRecordDto>>
 
     @GET("students/certifications")
     suspend fun getCertifications(): Response<List<CertificationRecordDto>>
@@ -241,7 +346,7 @@ interface CamsApiService {
     @GET("students/activity-points")
     suspend fun getActivityPoints(): Response<List<ActivityPointDto>>
 
-    @POST("students/activity-points/claim")
+    @POST("activity-points/claim")
     suspend fun claimActivityPoints(@Body request: ActivityPointClaimRequest): Response<Unit>
 
     @GET("students/community-service")
@@ -251,23 +356,70 @@ interface CamsApiService {
     suspend fun getInnovationProjects(): Response<List<InnovationProjectDto>>
 
     @GET("parents/child/performance")
-    suspend fun getParentChildPerformance(): Response<List<PerformanceDataDto>>
+    suspend fun getParentChildPerformance(@Query("child_id") childId: String?): Response<List<PerformanceDataDto>>
 
     @GET("parents/child/subject-attendance")
-    suspend fun getParentChildSubjectAttendance(): Response<List<SubjectAttendanceDto>>
+    suspend fun getParentChildSubjectAttendance(@Query("child_id") childId: String?): Response<List<SubjectAttendanceDto>>
 
-    @GET("faculties/assignments")
+    @GET("assignments/my-assignments")
     suspend fun getFacultyAssignments(): Response<List<FacultyAssignmentDto>>
 
-    @GET("faculties/students")
+    @GET("faculty/students/list")
     suspend fun getFacultyStudents(): Response<List<FacultyStudentDto>>
 
-    @GET("faculties/study-materials")
+    @GET("study-materials/my-materials")
     suspend fun getFacultyMaterials(): Response<List<FacultyMaterialDto>>
 
-    @GET("faculties/recordings")
+    @Multipart
+    @POST("study-materials/upload-file")
+    suspend fun uploadMaterialFile(
+        @Part file: okhttp3.MultipartBody.Part
+    ): Response<FileUploadResponseDto>
+
+    @POST("study-materials/upload")
+    suspend fun uploadStudyMaterial(
+        @Body payload: UploadMaterialRequestDto
+    ): Response<FacultyMaterialDto>
+
+    @GET("faculty/mentor/students")
+    suspend fun getMentorStudents(): Response<List<FacultyMentorshipStudentDto>>
+
+    @GET("faculty/mentor/students/{student_id}/record")
+    suspend fun getMentorStudentRecord(@Path("student_id") studentId: String): Response<FacultyMentorshipRecordDto>
+
+    @POST("faculty/mentor/students/{student_id}/record")
+    suspend fun saveMentorStudentRecord(@Path("student_id") studentId: String, @Body payload: FacultyMentorshipRecordDto): Response<FacultyMentorshipRecordDto>
+
+    @GET("faculty/salary-slips")
+    suspend fun getFacultySalarySlips(): Response<List<FacultySalarySlipDto>>
+
+    @GET("internship-drives")
+    suspend fun getFacultyInternshipDrives(): Response<List<FacultyInternshipDriveDto>>
+
+    @GET("legal-events")
+    suspend fun getLegalEvents(): Response<List<FacultyLegalEventDto>>
+
+    @GET("online-meetings/recordings")
     suspend fun getFacultyRecordings(): Response<List<FacultyRecordingDto>>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
 }
+
+@JsonClass(generateAdapter = true)
+data class ChangePasswordRequest(
+    @Json(name = "current_password") val currentPassword: String,
+    @Json(name = "new_password") val newPassword: String
+)
+
+@JsonClass(generateAdapter = true)
+data class ChildSummaryDto(
+    val id: String, 
+    @Json(name = "full_name") val fullName: String, 
+    @Json(name = "roll_no") val rollNo: String?, 
+    @Json(name = "course_name") val courseName: String?, 
+    @Json(name = "profile_photo_url") val profilePhotoUrl: String?
+)
 
 @JsonClass(generateAdapter = true)
 data class InnovationProjectDto(
@@ -379,6 +531,17 @@ data class LexNovaKpiDto(
     val value: String, 
     val subtitle: String, 
     val type: String
+)
+
+@JsonClass(generateAdapter = true)
+data class AlumniMentorDto(
+    val id: String,
+    val name: String,
+    val designation: String,
+    val company: String,
+    @Json(name = "graduation_year") val graduationYear: String,
+    @Json(name = "image_url") val imageUrl: String?,
+    @Json(name = "linkedin_url") val linkedinUrl: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -532,13 +695,12 @@ data class TimetableApprovalDto(
 )
 
 @JsonClass(generateAdapter = true)
-data class LeaveApprovalDto(
+data class PrincipalPendingFacultyDto(
     val id: String,
-    @Json(name = "applicant_name") val applicantName: String,
-    @Json(name = "leave_type") val leaveType: String,
-    @Json(name = "start_date") val startDate: String,
-    @Json(name = "end_date") val endDate: String,
-    val reason: String
+    val email: String,
+    @Json(name = "full_name") val fullName: String,
+    @Json(name = "department_name") val departmentName: String,
+    val designation: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -567,7 +729,22 @@ data class AdminDashboardMetricsDto(
 )
 
 @JsonClass(generateAdapter = true)
-data class DegreeDto(val id: String, val name: String, val code: String)
+data class BackupDto(
+    val id: String,
+    val filename: String,
+    @Json(name = "size_bytes") val sizeBytes: Long,
+    val status: String,
+    @Json(name = "created_at") val createdAt: String
+)
+
+@JsonClass(generateAdapter = true)
+data class DegreeDto(
+    val id: String, 
+    val name: String, 
+    val code: String,
+    @Json(name = "duration_years") val durationYears: Int? = null,
+    @Json(name = "program_level") val programLevel: String? = null
+)
 
 @JsonClass(generateAdapter = true)
 data class BatchDto(val id: String, val year: String, val status: String)
@@ -605,6 +782,38 @@ data class HODDashboardMetricsDto(
     @Json(name = "total_students") val totalStudents: String,
     @Json(name = "pending_approvals") val pendingApprovals: String,
     @Json(name = "active_subjects") val activeSubjects: String
+)
+
+@JsonClass(generateAdapter = true)
+data class HODTimetableMetadataDto(
+    val courses: List<CourseDto>,
+    val sections: List<SectionDto>,
+    val faculty: List<FacultyDto>
+)
+
+@JsonClass(generateAdapter = true)
+data class CourseDto(
+    val id: String,
+    val code: String,
+    val name: String,
+    val semester: Int,
+    @Json(name = "degree_id") val degreeId: String,
+    val credits: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class SectionDto(
+    val id: String,
+    @Json(name = "section_name") val sectionName: String,
+    val semester: Int,
+    @Json(name = "degree_id") val degreeId: String,
+    val label: String
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultyDto(
+    val id: String,
+    @Json(name = "full_name") val fullName: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -672,7 +881,10 @@ data class ResearchEntryDto(
     val title: String,
     val publication: String?,
     @Json(name = "research_type") val researchType: String,
-    @Json(name = "publication_date") val publicationDate: String?
+    @Json(name = "publication_date") val publicationDate: String?,
+    @Json(name = "grant_amount") val grantAmount: Double?,
+    val publisher: String?,
+    val status: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -925,7 +1137,10 @@ data class LeaveRequestDto(
     @Json(name = "to_date") val endDate: String,
     val reason: String,
     val status: String,
-    val remarks: String?
+    val remarks: String?,
+    @Json(name = "user_name") val userName: String? = null,
+    @Json(name = "department_name") val departmentName: String? = null,
+    @Json(name = "user_roll_no") val userRollNo: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -942,8 +1157,15 @@ data class NoticeDto(
     val id: String,
     val title: String,
     val body: String,
-    @Json(name = "publish_date") val date: String,
-    @Json(name = "audience_type") val category: String
+    @Json(name = "publish_date") val date: String?,
+    @Json(name = "audience_type") val category: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class NoticeCreateRequest(
+    val title: String,
+    val body: String,
+    @Json(name = "audience_type") val audienceType: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -972,3 +1194,82 @@ data class NotificationDto(
     @Json(name = "is_read") val isRead: Boolean
 )
 // End of CamsApiService.kt
+data class MentorshipRecordDto(val meetingLog: String?, val academicReview: String?, val improvementPlan: String?, val remarks: String?, val followUp: String?)
+
+@JsonClass(generateAdapter = true)
+data class FacultyMentorshipStudentDto(
+    val id: String,
+    @Json(name = "roll_no") val rollNo: String,
+    val name: String,
+    val email: String,
+    val batch: String?,
+    val semester: Int?
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultyMentorshipRecordDto(
+    @Json(name = "student_id") val studentId: String,
+    @Json(name = "mentor_id") val mentorId: String?,
+    @Json(name = "meeting_log") val meetingLog: String?,
+    @Json(name = "academic_review") val academicReview: String?,
+    @Json(name = "improvement_plan") val improvementPlan: String?,
+    val remarks: String?,
+    @Json(name = "follow_up_date") val followUpDate: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultySalarySlipDto(
+    val id: String,
+    @Json(name = "user_id") val userId: String,
+    val month: Int,
+    val year: Int,
+    @Json(name = "base_salary") val baseSalary: Double,
+    val deductions: Double,
+    @Json(name = "net_salary") val netSalary: Double,
+    @Json(name = "slip_url") val slipUrl: String?,
+    val status: String
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultyInternshipDriveDto(
+    val id: String,
+    val company: String,
+    val role: String,
+    val location: String?,
+    val deadline: String?,
+    @Json(name = "is_active") val isActive: Boolean,
+    @Json(name = "description") val description: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultyLegalEventDto(
+    val id: String,
+    val title: String,
+    val description: String?,
+    val date: String?,
+    val location: String?,
+    @Json(name = "is_virtual") val isVirtual: Boolean,
+    @Json(name = "registration_link") val registrationLink: String?,
+    val status: String?
+)
+
+
+@JsonClass(generateAdapter = true)
+data class FileUploadResponseDto(
+    @Json(name="file_url") val fileUrl: String,
+    val filename: String
+)
+
+@JsonClass(generateAdapter = true)
+data class UploadMaterialRequestDto(
+    val title: String,
+    val description: String,
+    val subject: String,
+    val unit: String,
+    val topic: String,
+    val category: String,
+    val keywords: List<String>,
+    @Json(name="file_url") val fileUrl: String,
+    @Json(name="file_format") val fileFormat: String,
+    val status: String
+)

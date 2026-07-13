@@ -127,7 +127,7 @@ private fun TimetableCard(slot: TimetableSlot) {
                 Text(slot.endTime, fontSize = 13.sp, color = Color(0xFF64748B))
             }
             
-            Divider(modifier = Modifier.height(50.dp).width(1.dp), color = Color(0xFFF3F4F6))
+            HorizontalDivider(modifier = Modifier.height(50.dp).width(1.dp), color = Color(0xFFF3F4F6))
             
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(slot.subject, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (slot.subject == "LUNCH BREAK") Color(0xFF64748B) else CamsTextPrimary)

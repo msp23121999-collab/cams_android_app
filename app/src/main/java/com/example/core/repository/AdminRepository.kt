@@ -8,6 +8,8 @@ interface AdminRepository {
     suspend fun getDashboardMetrics(): AdminDashboardMetrics
     suspend fun getDegrees(): List<AdminDegree>
     suspend fun getBatches(): List<AdminBatch>
+    suspend fun getCourses(): List<AdminCourse>
+    suspend fun getBackupsHistory(): List<AdminBackup>
 }
 
 class AdminRepositoryImpl(private val apiService: CamsApiService) : AdminRepository {
@@ -26,10 +28,16 @@ class AdminRepositoryImpl(private val apiService: CamsApiService) : AdminReposit
     }
 
     override suspend fun getDegrees(): List<AdminDegree> {
-        val response = apiService.getDegrees()
+        val response = apiService.getDegreesList()
         if (response.isSuccessful) {
             return response.body()!!.map { dto ->
-                AdminDegree(dto.id, dto.name, dto.code)
+                AdminDegree(
+                    id = dto.id,
+                    name = dto.name,
+                    code = dto.code,
+                    durationYears = dto.durationYears,
+                    programLevel = dto.programLevel
+                )
             }
         }
         return emptyList()
@@ -40,6 +48,38 @@ class AdminRepositoryImpl(private val apiService: CamsApiService) : AdminReposit
         if (response.isSuccessful) {
             return response.body()!!.map { dto ->
                 AdminBatch(dto.id, dto.year, dto.status)
+            }
+        }
+        return emptyList()
+    }
+
+    override suspend fun getCourses(): List<AdminCourse> {
+        val response = apiService.getAllCourses()
+        if (response.isSuccessful) {
+            return response.body()!!.map { dto ->
+                AdminCourse(
+                    id = dto.id,
+                    code = dto.code,
+                    name = dto.name,
+                    semester = dto.semester,
+                    credits = dto.credits
+                )
+            }
+        }
+        return emptyList()
+    }
+
+    override suspend fun getBackupsHistory(): List<AdminBackup> {
+        val response = apiService.getBackups()
+        if (response.isSuccessful) {
+            return response.body()!!.map { dto ->
+                AdminBackup(
+                    id = dto.id,
+                    filename = dto.filename,
+                    sizeBytes = dto.sizeBytes,
+                    status = dto.status,
+                    createdAt = dto.createdAt
+                )
             }
         }
         return emptyList()

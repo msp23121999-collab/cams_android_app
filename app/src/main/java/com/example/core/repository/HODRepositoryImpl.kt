@@ -44,4 +44,30 @@ class HODRepositoryImpl(private val apiService: CamsApiService) : HODRepository 
         if (response.isSuccessful) return response.body()!!
         throw IOException("Failed to fetch student management data")
     }
+
+    override suspend fun getPendingLeaveApprovals(): List<com.example.core.network.LeaveRequestDto> {
+        val response = apiService.getHODPendingLeaves()
+        if (response.isSuccessful) return response.body() ?: emptyList()
+        throw IOException("Failed to fetch pending leave approvals")
+    }
+
+    override suspend fun approveLeave(id: String, status: String, remarks: String?) {
+        val request = com.example.core.network.ApprovalRequest(status = status, remarks = remarks ?: "")
+        val response = apiService.approveHODLeave(id, request)
+        if (!response.isSuccessful) {
+            throw IOException("Failed to approve leave: ${response.message()}")
+        }
+    }
+
+    override suspend fun getTimetableMetadata(): com.example.core.network.HODTimetableMetadataDto {
+        val response = apiService.getHODTimetableMetadata()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch timetable metadata")
+    }
+
+    override suspend fun getTimetableSection(sectionId: String): List<com.example.core.network.TimetableSlotDto> {
+        val response = apiService.getHODTimetableSection(sectionId)
+        if (response.isSuccessful) return response.body() ?: emptyList()
+        throw IOException("Failed to fetch timetable slots")
+    }
 }

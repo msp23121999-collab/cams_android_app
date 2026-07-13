@@ -125,6 +125,14 @@ fun ParentDrawer(
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             colors = drawerItemColors
         )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+            label = { Text("Settings") },
+            selected = currentRoute == AppRoutes.PARENT_SETTINGS,
+            onClick = { onNavigate(AppRoutes.PARENT_SETTINGS) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            colors = drawerItemColors
+        )
 
         Spacer(Modifier.weight(1f))
 

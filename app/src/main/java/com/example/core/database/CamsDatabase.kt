@@ -61,9 +61,10 @@ import com.example.core.database.dao.*
         InternshipApplicationsEntity::class,
         InternshipDrivesEntity::class,
         LectureRecordingsEntity::class,
-        LegalEventsEntity::class
+        LegalEventsEntity::class,
+        ApiCacheEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class CamsDatabase : RoomDatabase() {
@@ -122,4 +123,5 @@ abstract class CamsDatabase : RoomDatabase() {
     abstract fun internshipDrivesDao(): InternshipDrivesDao
     abstract fun lectureRecordingsDao(): LectureRecordingsDao
     abstract fun legalEventsDao(): LegalEventsDao
+    abstract fun apiCacheDao(): ApiCacheDao
 }

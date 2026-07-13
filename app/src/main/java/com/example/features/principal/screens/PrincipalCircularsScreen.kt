@@ -18,8 +18,23 @@ import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.principal.widgets.PrincipalBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.principal.providers.PrincipalCircularsViewModel
+import com.example.core.repository.PrincipalRepositoryImpl
+import com.example.core.network.ApiClient
+
 @Composable
-fun PrincipalCircularsScreen(onNavigate: (String) -> Unit) {
+fun PrincipalCircularsScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: PrincipalCircularsViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return PrincipalCircularsViewModel(PrincipalRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var targetAudience by remember { mutableStateOf("All") }
@@ -29,7 +44,11 @@ fun PrincipalCircularsScreen(onNavigate: (String) -> Unit) {
         currentRoute = AppRoutes.PRINCIPAL_CIRCULARS,
         onNavigate = onNavigate,
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* Publish */ }, containerColor = CamsNavy, contentColor = Color.White) {
+            FloatingActionButton(onClick = { 
+                viewModel.publishCircular(title, content, targetAudience)
+                title = ""
+                content = ""
+            }, containerColor = CamsNavy, contentColor = Color.White) {
                 Icon(Icons.Filled.Send, "Publish")
             }
         }
@@ -67,27 +86,25 @@ fun PrincipalCircularsScreen(onNavigate: (String) -> Unit) {
         Text("Recent Circulars", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
         Spacer(modifier = Modifier.height(8.dp))
         
-        val circulars = listOf(
-            Circular("Holiday Notice - Diwali", "All", "Oct 20, 2024"),
-            Circular("Faculty Meeting regarding NAAC", "Faculty", "Oct 18, 2024")
-        )
-        
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(circulars) { circular ->
-                CamsCard {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Surface(color = CamsNavy.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
-                                    Text(circular.audience, fontSize = 12.sp, color = CamsNavy, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(uiState.circulars) { circular ->
+                    CamsCard {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column {
+                                Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(color = CamsNavy.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
+                                        Text(circular.category ?: "All", fontSize = 12.sp, color = CamsNavy, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                    Text(circular.date ?: "N/A", fontSize = 12.sp, color = Color(0xFF64748B))
                                 }
-                                Text(circular.date, fontSize = 12.sp, color = Color(0xFF64748B))
                             }
-                        }
-                        IconButton(onClick = { /* Edit/Delete */ }) {
-                            Icon(Icons.Filled.MoreVert, null, tint = Color(0xFF64748B))
                         }
                     }
                 }
@@ -95,5 +112,3 @@ fun PrincipalCircularsScreen(onNavigate: (String) -> Unit) {
         }
     }
 }
-
-data class Circular(val title: String, val audience: String, val date: String)

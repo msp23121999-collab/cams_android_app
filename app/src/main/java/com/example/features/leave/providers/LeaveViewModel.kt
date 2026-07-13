@@ -96,7 +96,26 @@ class LeaveViewModel(
     }
 
     fun submitApplication() {
-        // Implement submission
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val state = _uiState.value
+                val type = if (state.appType == "Leave") state.leaveType else state.odType
+                val success = studentRepository.applyLeave(
+                    type = type,
+                    fromDate = state.fromDate,
+                    toDate = state.toDate,
+                    reason = state.reason
+                )
+                if (success) {
+                    refresh() // Refresh history after successful submission
+                } else {
+                    _uiState.update { it.copy(isLoading = false, error = "Failed to submit leave application") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
     }
 }
 

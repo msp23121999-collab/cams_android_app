@@ -75,7 +75,8 @@ data class ResearchEntry(
     val publisher: String? = null,
     val publicationDate: String? = null,
     val isbnIssn: String? = null,
-    val researchType: String = "Journal Article"
+    val researchType: String = "Journal Article",
+    val status: String? = null
 )
 
 data class ActivitySummary(

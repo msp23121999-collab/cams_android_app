@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.example.features.faculty.providers.FacultyMaterialsViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ fun FacultyStudyMaterialsScreen(
     val state by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
+    var showUploadDialog by remember { mutableStateOf(false) }
     
     val categories = listOf("All", "Notes", "QP", "Reference", "Lab")
 
@@ -106,40 +109,180 @@ fun FacultyStudyMaterialsScreen(
             // 3. Material List
             Text("Recent Uploads", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
             Spacer(modifier = Modifier.height(12.dp))
-            
-            val filteredMaterials = state.materials.filter {
-                (selectedCategory == "All" || it.type.equals(selectedCategory, true)) &&
-                (searchQuery.isEmpty() || it.title.contains(searchQuery, true) || it.subject.contains(searchQuery, true))
-            }
-
-            if (filteredMaterials.isEmpty()) {
-                Text("No materials match your filters.", modifier = Modifier.padding(20.dp), color = CamsTextSecondary)
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filteredMaterials) { item ->
-                        MaterialRow(item)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp),
+                        placeholder = { Text("Search materials...", color = CamsTextSecondary) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = CamsTextSecondary) },
+                        shape = RoundedCornerShape(25.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CamsNavy,
+                            unfocusedBorderColor = Color.LightGray
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = CamsBackground,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
+                        modifier = Modifier.size(50.dp),
+                        onClick = { /* Open Filter Sheet */ }
+                    ) {
+                        Icon(Icons.Filled.FilterList, contentDescription = "Filter", tint = CamsTextPrimary, modifier = Modifier.padding(12.dp))
                     }
+                }
+
+                // Category Chips
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { cat ->
+                        FilterChip(
+                            selected = selectedCategory == cat,
+                            onClick = { selectedCategory = cat },
+                            label = { Text(cat) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = CamsNavy,
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Materials List
+                val filtered = state.materials.filter {
+                    (selectedCategory == "All" || it.type == selectedCategory) &&
+                    it.title.contains(searchQuery, ignoreCase = true)
+                }
+
+                if (filtered.isEmpty()) {
+                    Text("No materials match your filters.", modifier = Modifier.padding(20.dp), color = CamsTextSecondary)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 80.dp), // padding for FAB
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filtered) { m ->
+                            MaterialRow(m)
+                        }
+                    }
+                }
+
+            // FAB for uploading new material
+            Box(modifier = Modifier.fillMaxSize()) {
+                FloatingActionButton(
+                    onClick = { showUploadDialog = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(24.dp),
+                    containerColor = CamsNavy,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Filled.FileUpload, contentDescription = "Upload Material")
                 }
             }
         }
         
-        Spacer(modifier = Modifier.height(80.dp))
-    }
-    
-    // FAB for uploading new material
-    Box(modifier = Modifier.fillMaxSize()) {
-        FloatingActionButton(
-            onClick = { /* Upload material */ },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            containerColor = CamsNavy,
-            contentColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(Icons.Filled.FileUpload, contentDescription = "Upload Material")
+        if (showUploadDialog) {
+            UploadMaterialDialog(
+                onDismiss = { showUploadDialog = false },
+                onSubmit = { payload ->
+                    viewModel.uploadMaterial(payload) {
+                        showUploadDialog = false
+                    }
+                }
+            )
         }
     }
+}
+
+@Composable
+fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.network.UploadMaterialRequestDto) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var subject by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("") }
+    var topic by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Notes") }
+    var status by remember { mutableStateOf("Draft") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Upload Study Material", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("Subject") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = unit, onValueChange = { unit = it }, label = { Text("Unit") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = topic, onValueChange = { topic = it }, label = { Text("Topic") }, modifier = Modifier.fillMaxWidth())
+                
+                // Categories
+                Text("Category:", fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Notes", "QP", "Reference", "Lab").forEach { cat ->
+                        FilterChip(
+                            selected = category == cat,
+                            onClick = { category = cat },
+                            label = { Text(cat) }
+                        )
+                    }
+                }
+                
+                // Status
+                Text("Status:", fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Draft", "Pending Approval").forEach { stat ->
+                        FilterChip(
+                            selected = status == stat,
+                            onClick = { status = stat },
+                            label = { Text(stat) }
+                        )
+                    }
+                }
+                
+                // Placeholder for file selection
+                Text("File will be attached automatically in this demo.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val payload = com.example.core.network.UploadMaterialRequestDto(
+                    title = title,
+                    description = description,
+                    subject = subject,
+                    unit = unit,
+                    topic = topic,
+                    category = category,
+                    keywords = listOf(),
+                    fileUrl = "/mock-uploads/sample.pdf",
+                    fileFormat = "pdf",
+                    status = status
+                )
+                onSubmit(payload)
+            }, colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)) {
+                Text("Upload")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = CamsTextSecondary)
+            }
+        }
+    )
 }
 
 @Composable

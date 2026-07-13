@@ -73,7 +73,10 @@ class FacultyRepositoryImpl(private val apiService: CamsApiService) : FacultyRep
                     title = dto.title,
                     publication = dto.publication,
                     researchType = dto.researchType,
-                    publicationDate = dto.publicationDate
+                    publicationDate = dto.publicationDate,
+                    grantAmount = dto.grantAmount,
+                    publisher = dto.publisher,
+                    status = dto.status
                 )
             }
         }
@@ -125,8 +128,8 @@ class FacultyRepositoryImpl(private val apiService: CamsApiService) : FacultyRep
                     id = dto.id,
                     title = dto.title,
                     body = dto.body,
-                    publishDate = dto.date,
-                    category = dto.category,
+                    publishDate = dto.date ?: "N/A",
+                    category = dto.category ?: "General",
                     priority = "Medium",
                     publisherName = "Admin",
                     audienceType = "Faculty",
@@ -156,9 +159,69 @@ class FacultyRepositoryImpl(private val apiService: CamsApiService) : FacultyRep
         throw IOException("Failed to fetch study materials")
     }
 
+    override suspend fun uploadMaterialFile(file: okhttp3.MultipartBody.Part): FileUploadResponseDto {
+        val response = apiService.uploadMaterialFile(file)
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to upload material file")
+    }
+
+    override suspend fun uploadStudyMaterial(payload: UploadMaterialRequestDto): FacultyMaterialDto {
+        val response = apiService.uploadStudyMaterial(payload)
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to upload study material")
+    }
+
     override suspend fun getLectureRecordings(): List<FacultyRecordingDto> {
         val response = apiService.getFacultyRecordings()
         if (response.isSuccessful) return response.body()!!
         throw IOException("Failed to fetch lecture recordings")
+    }
+
+    override suspend fun getMentorStudents(): List<FacultyMentorshipStudentDto> {
+        val response = apiService.getMentorStudents()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch mentorship students")
+    }
+
+    override suspend fun getMentorStudentRecord(studentId: String): FacultyMentorshipRecordDto? {
+        val response = apiService.getMentorStudentRecord(studentId)
+        if (response.isSuccessful) return response.body()
+        throw IOException("Failed to fetch mentor student record")
+    }
+
+    override suspend fun saveMentorStudentRecord(studentId: String, payload: FacultyMentorshipRecordDto): FacultyMentorshipRecordDto? {
+        val response = apiService.saveMentorStudentRecord(studentId, payload)
+        if (response.isSuccessful) return response.body()
+        throw IOException("Failed to save mentor student record")
+    }
+
+    override suspend fun getOnlineMeetings(): List<OnlineMeetingDto> {
+        val response = apiService.getOnlineMeetings()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch online meetings")
+    }
+
+    override suspend fun getFacultySalarySlips(): List<FacultySalarySlipDto> {
+        val response = apiService.getFacultySalarySlips()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch salary slips")
+    }
+
+    override suspend fun getInternshipDrives(): List<FacultyInternshipDriveDto> {
+        val response = apiService.getFacultyInternshipDrives()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch internship drives")
+    }
+
+    override suspend fun getLegalEvents(): List<FacultyLegalEventDto> {
+        val response = apiService.getLegalEvents()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch legal events")
+    }
+
+    override suspend fun getFacultyNotifications(): List<NotificationDto> {
+        val response = apiService.getFacultyNotifications()
+        if (response.isSuccessful) return response.body()!!
+        throw IOException("Failed to fetch notifications")
     }
 }

@@ -56,6 +56,10 @@ fun ParentDashboardScreen(
                 message = uiState.error ?: "Unknown error",
                 onRetry = { viewModel.loadData() }
             )
+        } else if (uiState.childProfileExtended == null) {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Text("No dashboard data available.", color = CamsTextSecondary)
+            }
         } else {
             val profile = uiState.childProfileExtended
 
@@ -78,15 +82,19 @@ fun ParentDashboardScreen(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            profile?.fullName ?: "Aditya Kumar",
+                            profile?.fullName ?: "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
-                            color = CamsTextPrimary
+                            color = CamsTextPrimary,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Text(
-                            "Roll No: ${profile?.rollNo ?: "2021LLB045"} • ${profile?.semester ?: "Semester VI"}",
+                            "Roll No: ${profile?.rollNo ?: ""} • ${profile?.semester ?: ""}",
                             fontSize = 13.sp,
-                            color = CamsTextSecondary
+                            color = CamsTextSecondary,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                     Icon(
@@ -100,46 +108,90 @@ fun ParentDashboardScreen(
             // Grid of 4 Metric Cards
             Text("Academic Metrics", fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 16.sp)
             
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DashboardMetricCard(
-                        label = "Overall Attendance",
-                        value = "${if (uiState.subjectAttendance.isEmpty()) 0 else uiState.subjectAttendance.map { it.percentage.toDouble() }.average().toInt()}%",
-                        subtext = "Attendance Status",
-                        icon = Icons.Filled.CheckCircle,
-                        color = Color(0xFF10B981), // Emerald
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate(AppRoutes.PARENT_ATTENDANCE) }
-                    )
-                    DashboardMetricCard(
-                        label = "Outstanding Fees",
-                        value = "₹${uiState.feeLedger?.pendingBalance?.toInt() ?: 0}",
-                        subtext = "Fee Status",
-                        icon = Icons.Filled.Payments,
-                        color = Color(0xFFEF4444), // Red
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate(AppRoutes.PARENT_FEES) }
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DashboardMetricCard(
-                        label = "Weekly Schedule",
-                        value = "Timetable",
-                        subtext = "${uiState.timetable.size} Days active",
-                        icon = Icons.Filled.CalendarMonth,
-                        color = Color(0xFF6366F1), // Indigo
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate(AppRoutes.PARENT_TIMETABLE) }
-                    )
-                    DashboardMetricCard(
-                        label = "Cumulative CGPA",
-                        value = "${profile?.cgpa ?: 8.6} / 10",
-                        subtext = "Academic Rating",
-                        icon = Icons.Filled.School,
-                        color = LexNovaPurple, // Purple
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate(AppRoutes.PARENT_MARKS) }
-                    )
+            BoxWithConstraints {
+                val isTablet = maxWidth > 600.dp
+                if (isTablet) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        DashboardMetricCard(
+                            label = "Overall Attendance",
+                            value = "${if (uiState.subjectAttendance.isEmpty()) 0 else uiState.subjectAttendance.map { it.percentage.toDouble() }.average().toInt()}%",
+                            subtext = "Attendance Status",
+                            icon = Icons.Filled.CheckCircle,
+                            color = Color(0xFF10B981), // Emerald
+                            modifier = Modifier.weight(1f),
+                            onClick = { onNavigate(AppRoutes.PARENT_ATTENDANCE) }
+                        )
+                        DashboardMetricCard(
+                            label = "Outstanding Fees",
+                            value = "₹${uiState.feeLedger?.pendingBalance?.toInt() ?: 0}",
+                            subtext = "Fee Status",
+                            icon = Icons.Filled.Payments,
+                            color = Color(0xFFEF4444), // Red
+                            modifier = Modifier.weight(1f),
+                            onClick = { onNavigate(AppRoutes.PARENT_FEES) }
+                        )
+                        DashboardMetricCard(
+                            label = "Weekly Schedule",
+                            value = "Timetable",
+                            subtext = "${uiState.timetable.size} Days active",
+                            icon = Icons.Filled.CalendarMonth,
+                            color = Color(0xFF6366F1), // Indigo
+                            modifier = Modifier.weight(1f),
+                            onClick = { onNavigate(AppRoutes.PARENT_TIMETABLE) }
+                        )
+                        DashboardMetricCard(
+                            label = "Cumulative CGPA",
+                            value = "${profile?.cgpa ?: 8.6} / 10",
+                            subtext = "Academic Rating",
+                            icon = Icons.Filled.School,
+                            color = LexNovaPurple, // Purple
+                            modifier = Modifier.weight(1f),
+                            onClick = { onNavigate(AppRoutes.PARENT_MARKS) }
+                        )
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            DashboardMetricCard(
+                                label = "Overall Attendance",
+                                value = "${if (uiState.subjectAttendance.isEmpty()) 0 else uiState.subjectAttendance.map { it.percentage.toDouble() }.average().toInt()}%",
+                                subtext = "Attendance Status",
+                                icon = Icons.Filled.CheckCircle,
+                                color = Color(0xFF10B981), // Emerald
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigate(AppRoutes.PARENT_ATTENDANCE) }
+                            )
+                            DashboardMetricCard(
+                                label = "Outstanding Fees",
+                                value = "₹${uiState.feeLedger?.pendingBalance?.toInt() ?: 0}",
+                                subtext = "Fee Status",
+                                icon = Icons.Filled.Payments,
+                                color = Color(0xFFEF4444), // Red
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigate(AppRoutes.PARENT_FEES) }
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            DashboardMetricCard(
+                                label = "Weekly Schedule",
+                                value = "Timetable",
+                                subtext = "${uiState.timetable.size} Days active",
+                                icon = Icons.Filled.CalendarMonth,
+                                color = Color(0xFF6366F1), // Indigo
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigate(AppRoutes.PARENT_TIMETABLE) }
+                            )
+                            DashboardMetricCard(
+                                label = "Cumulative CGPA",
+                                value = "${profile?.cgpa ?: 8.6} / 10",
+                                subtext = "Academic Rating",
+                                icon = Icons.Filled.School,
+                                color = LexNovaPurple, // Purple
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigate(AppRoutes.PARENT_MARKS) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -184,7 +236,9 @@ fun ParentDashboardScreen(
                                 notice.title,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = CamsTextPrimary
+                                color = CamsTextPrimary,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
@@ -200,7 +254,7 @@ fun ParentDashboardScreen(
                                 color = CamsTextSecondary.copy(alpha = 0.7f)
                             )
                         }
-                        Divider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
                     }
                     
                     Row(
@@ -265,7 +319,7 @@ fun ParentDashboardScreen(
                             try {
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:admin@cams.local")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Query regarding student: ${profile?.fullName ?: "Alex Johnson"}")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Query regarding student: ${profile?.fullName ?: ""}")
                                 }
                                 context.startActivity(intent)
                             } catch (e: Exception) {
@@ -330,19 +384,25 @@ private fun DashboardMetricCard(
                 value,
                 fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
-                color = CamsTextPrimary
+                color = CamsTextPrimary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
                 label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = CamsTextSecondary
+                color = CamsTextSecondary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 subtext,
                 fontSize = 13.sp,
-                color = CamsTextSecondary.copy(alpha = 0.6f)
+                color = CamsTextSecondary.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }

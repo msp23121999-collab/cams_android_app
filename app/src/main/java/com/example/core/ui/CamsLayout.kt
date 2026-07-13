@@ -39,13 +39,14 @@ fun CamsScreen(
     val networkError by GlobalNetworkHandler.networkError.collectAsState()
 
     Scaffold(
+        modifier = Modifier.systemBarsPadding().imePadding(),
         containerColor = CamsBackground,
         floatingActionButton = floatingActionButton ?: {},
         topBar = {
             // We use a custom header instead of a standard TopAppBar for the curved effect
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (networkError != null) {
                 NetworkErrorView(
                     message = networkError!!,
@@ -132,7 +133,7 @@ fun CamsScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                            .padding(horizontal = 24.dp, vertical = 10.dp),
+                            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 40.dp),
                         verticalArrangement = verticalArrangement
                     ) {
                         content()

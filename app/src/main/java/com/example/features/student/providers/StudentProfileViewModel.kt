@@ -83,15 +83,10 @@ class StudentProfileViewModel(
     fun fetchMentorshipRecord() {
         viewModelScope.launch {
             try {
-                delay(500)
-                val mockMentorship = MentorshipRecord(
-                    meetingLog = "Alex has shown remarkable improvement in drafting skills this semester.",
-                    academicReview = "Excellent academic performance, particularly in Criminal Procedure.",
-                    improvementPlan = "Needs to balance academic workload with extracurricular legal aid activities.",
-                    remarks = "Good progress overall.",
-                    followUp = "Plan to review next month."
-                )
-                _uiState.update { it.copy(mentorshipRecord = mockMentorship) }
+                val record = studentRepository.getMentorshipRecord()
+                if (record != null) {
+                    _uiState.update { it.copy(mentorshipRecord = record) }
+                }
             } catch (e: Exception) {
                 // Ignore for now
             }
@@ -102,9 +97,12 @@ class StudentProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                // Simulate API call
-                delay(1500)
-                _uiState.update { it.copy(profile = updatedProfile, isSaving = false) }
+                val newProfile = studentRepository.updateProfile(updatedProfile)
+                if (newProfile != null) {
+                    _uiState.update { it.copy(profile = newProfile, isSaving = false) }
+                } else {
+                    _uiState.update { it.copy(isSaving = false, error = "Failed to update profile") }
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = e.message ?: "Failed to save profile") }
             }
@@ -115,16 +113,27 @@ class StudentProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                delay(1000)
-                val current = _uiState.value.profile
-                if (current != null) {
+                val newProfile = studentRepository.submitForVerification()
+                if (newProfile != null) {
                     _uiState.update { it.copy(
-                        profile = current.copy(verificationStatus = "SUBMITTED"),
+                        profile = newProfile,
                         isSaving = false
                     ) }
+                } else {
+                    _uiState.update { it.copy(isSaving = false, error = "Failed to submit for verification") }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false) }
+            }
+        }
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            try {
+                studentRepository.changePassword(currentPassword, newPassword)
+            } catch (e: Exception) {
+                throw e
             }
         }
     }

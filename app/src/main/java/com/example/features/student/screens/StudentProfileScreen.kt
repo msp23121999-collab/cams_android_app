@@ -34,6 +34,7 @@ import com.example.core.navigation.AppRoutes
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.core.ui.CamsScreen
+import com.example.core.ui.shimmerEffect
 import com.example.features.student.models.Internship
 import com.example.features.student.models.MootCourt
 import com.example.features.student.models.StudentProfileResponse
@@ -82,11 +83,16 @@ fun StudentProfileScreen(
             },
             scrollable = false
         ) {
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = CamsNavy)
+            if (uiState.isLoading && uiState.profile == null) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().height(150.dp).shimmerEffect())
+                    Box(modifier = Modifier.fillMaxWidth().height(80.dp).shimmerEffect())
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp).shimmerEffect())
                 }
-            } else if (uiState.error != null) {
+            } else if (uiState.error != null && uiState.profile == null) {
                 com.example.core.ui.NetworkErrorView(
                     message = uiState.error!!,
                     onRetry = { viewModel.fetchProfileData() },
@@ -177,7 +183,7 @@ fun VerificationBanner(status: String, onVerifyClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -223,7 +229,7 @@ fun KPICard(label: String, value: String, icon: ImageVector, modifier: Modifier 
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(4.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -235,8 +241,8 @@ fun KPICard(label: String, value: String, icon: ImageVector, modifier: Modifier 
                 Icon(icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(16.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = CamsTextPrimary)
+            Text(label.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = CamsTextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -507,44 +513,11 @@ fun AcademicTab(profile: StudentProfileResponse?) {
         CamsCard(
             modifier = Modifier.fillMaxWidth().height(240.dp),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column {
                 Text("Performance Analytics", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                 Spacer(modifier = Modifier.height(16.dp))
-                // Simulated Chart
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val points = listOf(8.2f, 8.5f, 8.1f, 8.8f, 8.6f)
-                        val maxVal = 10f
-                        val width = size.width
-                        val height = size.height
-                        val stepX = width / (points.size - 1)
-                        
-                        // Draw Area
-                        val path = androidx.compose.ui.graphics.Path()
-                        path.moveTo(0f, height - (points[0] / maxVal * height))
-                        points.forEachIndexed { index, point ->
-                            if (index > 0) {
-                                path.lineTo(index * stepX, height - (point / maxVal * height))
-                            }
-                        }
-                        path.lineTo(width, height)
-                        path.lineTo(0f, height)
-                        path.close()
-                        drawPath(path, Brush.verticalGradient(listOf(CamsNavy.copy(alpha = 0.2f), Color.Transparent)))
-                        
-                        // Draw Line
-                        points.forEachIndexed { index, point ->
-                            if (index > 0) {
-                                drawLine(
-                                    color = CamsNavy,
-                                    start = androidx.compose.ui.geometry.Offset((index-1) * stepX, height - (points[index-1] / maxVal * height)),
-                                    end = androidx.compose.ui.geometry.Offset(index * stepX, height - (point / maxVal * height)),
-                                    strokeWidth = 3.dp.toPx()
-                                )
-                            }
-                            drawCircle(CamsNavy, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(index * stepX, height - (point / maxVal * height)))
-                        }
-                    }
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Analytics not available.", color = CamsTextSecondary, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -581,7 +554,7 @@ fun SkillsTab(profile: StudentProfileResponse?) {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Overall AIBE Readiness", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
                     Text("${profile?.aibeReadiness ?: 0}%", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = CamsNavy)
@@ -600,7 +573,7 @@ fun SkillsTab(profile: StudentProfileResponse?) {
         CamsCard(
             modifier = Modifier.fillMaxWidth().height(240.dp),
         ) {
-            Box(modifier = Modifier.padding(8.dp).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 // Simplified Radar-like visualization or Bars
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     profile?.skillAssessment?.forEach { skill ->
@@ -624,7 +597,7 @@ fun SkillsTab(profile: StudentProfileResponse?) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(8.dp)) {
+                Column {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Text(pub.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.weight(1f), color = CamsTextPrimary)
                         Surface(color = CamsNavy.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
@@ -680,7 +653,7 @@ fun AiHubTab() {
                 CamsCard(
                     modifier = Modifier.clickable { },
                 ) {
-                    Text(prompt, modifier = Modifier.padding(8.dp), fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Medium)
+                    Text(prompt, fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -689,7 +662,7 @@ fun AiHubTab() {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Box(modifier = Modifier.size(48.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
                     Text("92%", fontWeight = FontWeight.Bold, color = CamsNavy)
                 }
@@ -731,7 +704,7 @@ fun DocumentCard(label: String, url: String?, modifier: Modifier = Modifier) {
     CamsCard(
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Icon(Icons.Filled.Description, contentDescription = null, tint = if (url != null) CamsNavy else CamsTextSecondary)
                 Surface(
@@ -781,7 +754,7 @@ fun MootCard(moot: MootCourt) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(moot.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
                 Text("Role: ${moot.role} • ${moot.date}", fontSize = 13.sp, color = CamsTextSecondary)
@@ -801,7 +774,7 @@ fun InternshipCard(internship: Internship) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(internship.organization ?: internship.company ?: "N/A", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
                 Text(internship.status ?: "", color = CamsNavy, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -818,7 +791,7 @@ fun RemarkCard(title: String, content: String) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsNavy)
             Spacer(modifier = Modifier.height(4.dp))
             Text(content, fontSize = 13.sp, color = CamsTextSecondary, lineHeight = 18.sp)
@@ -854,7 +827,7 @@ fun InfoGrid(items: List<Pair<String, String>>) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items.forEach { (label, value) ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(label, fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Medium)

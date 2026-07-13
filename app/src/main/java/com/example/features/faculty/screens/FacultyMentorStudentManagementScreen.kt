@@ -21,8 +21,18 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyResearchViewModel
+import com.example.features.faculty.providers.FacultyResearchViewModelFactory
+import com.example.core.network.ApiClient
+
 @Composable
 fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyResearchViewModelFactory(repository) }
+    val viewModel: FacultyResearchViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     FacultyBaseScreen(scrollable = false, 
         title = "Mentor Student Management",
         currentRoute = "/faculty/mentor-student-management",
@@ -46,7 +56,7 @@ fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
                 ) {
                     Column {
                         Text("Total Mentees", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                        Text("24 Students", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                        Text("${uiState.mentorStudents.size} Students", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
                     }
                     Box(
                         modifier = Modifier
@@ -64,15 +74,8 @@ fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
             Text("My Mentees", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
             Spacer(modifier = Modifier.height(12.dp))
 
-            val mentees = listOf(
-                Mentee("Rahul Sharma", "S101", "Excellent", "Last meeting: 05 Oct"),
-                Mentee("Priya Verma", "S102", "Needs Attention", "Last meeting: 28 Sep"),
-                Mentee("Amit Singh", "S103", "Good", "Last meeting: 10 Oct"),
-                Mentee("Siddharth Malhotra", "S104", "Average", "Last meeting: 02 Oct")
-            )
-
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(mentees) { mentee ->
+                items(uiState.mentorStudents) { mentee ->
                     MenteeItem(mentee)
                 }
             }
@@ -81,7 +84,7 @@ fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun MenteeItem(mentee: Mentee) {
+private fun MenteeItem(mentee: com.example.core.network.FacultyMentorshipStudentDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -103,18 +106,15 @@ private fun MenteeItem(mentee: Mentee) {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(mentee.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 16.sp)
-                Text("ID: ${mentee.id}", fontSize = 12.sp, color = CamsTextSecondary)
+                Text("ID: ${mentee.rollNo}", fontSize = 12.sp, color = CamsTextSecondary)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(
-                                if (mentee.progress == "Needs Attention") Color.Red else Color(0xFF10B981),
-                                CircleShape
-                            )
+                            .background(Color(0xFF10B981), CircleShape)
                     )
-                    Text(mentee.progress, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Semester ${mentee.semester ?: "N/A"}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                 }
             }
             IconButton(onClick = { /* Open Mentorship Diary */ }) {
@@ -124,4 +124,4 @@ private fun MenteeItem(mentee: Mentee) {
     }
 }
 
-data class Mentee(val name: String, val id: String, val progress: String, val lastUpdate: String)
+

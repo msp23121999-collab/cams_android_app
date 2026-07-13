@@ -44,6 +44,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +105,7 @@ fun StudentAssignmentsScreen(
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 when (activeTab) {
-                    "Available" -> AvailableAssignmentsTab(uiState.assignments, viewModel)
+                    "Available" -> AvailableAssignmentsTab(viewModel)
                     "Submissions" -> MySubmissionsTab(uiState.assignments)
                     "Marks" -> MarksFeedbackTab(uiState.assignments)
                     "Calendar" -> AssignmentCalendarTab(uiState.assignments)
@@ -114,12 +116,9 @@ fun StudentAssignmentsScreen(
 }
 
 @Composable
-private fun AvailableAssignmentsTab(assignments: List<Assignment>, viewModel: AssignmentsViewModel) {
+private fun AvailableAssignmentsTab(viewModel: AssignmentsViewModel) {
     var searchQuery by remember { mutableStateOf("") }
-    val filtered = assignments.filter { 
-        it.title.contains(searchQuery, ignoreCase = true) || 
-        it.subject.contains(searchQuery, ignoreCase = true)
-    }
+    val pagingItems = viewModel.assignmentsPagingFlow.collectAsLazyPagingItems()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -143,18 +142,25 @@ private fun AvailableAssignmentsTab(assignments: List<Assignment>, viewModel: As
             )
         }
 
-        if (filtered.isEmpty()) {
+        if (pagingItems.loadState.refresh is LoadState.Loading) {
+            item {
+                AssignmentsSkeleton()
+            }
+        } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
             item {
                 EmptyState(
                     icon = Icons.Filled.Inbox,
                     title = "No assignments found",
                     message = "Try adjusting your search or filters",
-                    onRetry = { viewModel.fetchAssignments() }
+                    onRetry = { pagingItems.refresh() }
                 )
             }
         } else {
-            items(filtered) { assignment ->
-                AssignmentCard(assignment, viewModel)
+            items(pagingItems.itemCount) { index ->
+                val assignment = pagingItems[index]
+                if (assignment != null && (searchQuery.isEmpty() || assignment.title.contains(searchQuery, true) || assignment.subject.contains(searchQuery, true))) {
+                    AssignmentCard(assignment, viewModel)
+                }
             }
         }
     }
@@ -192,13 +198,13 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                     )
             )
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -209,7 +215,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                         ) {
                             Icon(typeConfig.icon, contentDescription = null, tint = typeConfig.bgColor, modifier = Modifier.size(24.dp))
                         }
-                        Column(modifier = Modifier.widthIn(max = 180.dp)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 assignment.title,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
@@ -227,6 +233,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                         }
                     }
 
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
@@ -261,11 +268,13 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Faculty: Admin",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = CamsTextPrimary
+                            color = CamsTextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             "Due: ${formatDeadline(assignment.deadline)}",
@@ -335,7 +344,7 @@ private fun SubmissionCard(assignment: Assignment) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -403,7 +412,7 @@ private fun PerformanceSummaryCard(evaluated: List<Assignment>) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -449,7 +458,7 @@ private fun EvaluatedAssignmentCard(assignment: Assignment) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
@@ -556,7 +565,7 @@ private fun StatsMiniCard(modifier: Modifier, label: String, value: String, colo
     CamsCard(
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = color)
             Text(label, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
         }
@@ -574,7 +583,7 @@ private fun TimelineItem(assignment: Assignment) {
         CamsCard(
             modifier = Modifier.weight(1f),
         ) {
-            Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(assignment.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
                     Text(assignment.subject, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)

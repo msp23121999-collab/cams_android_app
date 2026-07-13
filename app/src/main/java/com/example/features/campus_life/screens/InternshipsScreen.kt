@@ -35,6 +35,8 @@ import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +48,7 @@ fun InternshipsScreen(
     var showAddModal by remember { mutableStateOf(false) }
     var selectedInternship by remember { mutableStateOf<InternshipRecord?>(null) }
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Internships",
         subtitle = "Professional Development Tracker",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -120,21 +122,27 @@ fun InternshipsScreen(
             }
 
             // List
-            val filteredList = uiState.internships.filter {
-                it.organization.contains(uiState.searchQuery, ignoreCase = true) ||
-                it.role.contains(uiState.searchQuery, ignoreCase = true)
-            }
+            val pagingItems = viewModel.internshipsPagingFlow.collectAsLazyPagingItems()
 
-            if (filteredList.isEmpty()) {
+            if (pagingItems.loadState.refresh is LoadState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally), color = CamsNavy)
+            } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                 EmptyInternshipsView()
             } else {
-                filteredList.forEach { intern ->
-                    InternshipListItem(
-                        intern = intern,
-                        isSelected = selectedInternship?.id == intern.id,
-                        onClick = { selectedInternship = intern },
-                        onDelete = { viewModel.deleteInternship(it) }
-                    )
+                for (index in 0 until pagingItems.itemCount) {
+                    val intern = pagingItems[index]
+                    if (intern != null) {
+                        val matchesSearch = intern.organization.contains(uiState.searchQuery, ignoreCase = true) ||
+                                            intern.role.contains(uiState.searchQuery, ignoreCase = true)
+                        if (matchesSearch) {
+                            InternshipListItem(
+                                intern = intern,
+                                isSelected = selectedInternship?.id == intern.id,
+                                onClick = { selectedInternship = intern },
+                                onDelete = { viewModel.deleteInternship(it) }
+                            )
+                        }
+                    }
                 }
             }
             
@@ -276,7 +284,7 @@ fun AddInternshipDialog(onDismiss: () -> Unit, onAdd: (InternshipRecord) -> Unit
             shape = RoundedCornerShape(32.dp),
             color = Color.White
         ) {
-            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Filled.BusinessCenter, contentDescription = null, tint = CamsNavy)
                     Text("Add Internship", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))

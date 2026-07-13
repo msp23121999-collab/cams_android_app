@@ -9,6 +9,14 @@ data class ChildProfile(
 )
 
 @JsonClass(generateAdapter = true)
+data class ChildSummary(
+    val id: String,
+    val fullName: String,
+    val rollNo: String?,
+    val profilePhotoUrl: String?
+)
+
+@JsonClass(generateAdapter = true)
 data class ChildInternalMark(
     val subjectName: String,
     val academicYear: String,

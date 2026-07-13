@@ -96,7 +96,7 @@ private fun SubjectExpertiseSection(subjects: List<FacultySubject>) {
                     }
                 }
                 if (subjects.indexOf(subject) < subjects.size - 1) {
-                    Divider(color = Color(0xFFF3F4F6))
+                    HorizontalDivider(color = Color(0xFFF3F4F6))
                 }
             }
         }
@@ -219,7 +219,7 @@ private fun ProfessionalSection(profile: FacultyProfile) {
                 Text(qual.degree, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
                 Text("${qual.specialization} | ${qual.university}", fontSize = 13.sp, color = Color(0xFF64748B))
                 if (index < profile.educationalQualifications.size - 1) {
-                    Divider(Modifier.padding(vertical = 8.dp), color = Color(0xFFF3F4F6))
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color(0xFFF3F4F6))
                 }
             }
         }
@@ -257,7 +257,7 @@ private fun ExperienceDetailsSection(profile: FacultyProfile) {
                 Text("${exp.fromDate} - ${exp.toDate} (${exp.totalYears} Years)", fontSize = 13.sp, color = Color(0xFF64748B))
                 
                 if (index < profile.experienceDetails.size - 1) {
-                    Divider(Modifier.padding(vertical = 8.dp), color = Color(0xFFF3F4F6))
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color(0xFFF3F4F6))
                 }
             }
         }

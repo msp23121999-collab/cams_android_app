@@ -21,8 +21,23 @@ import com.example.core.ui.CamsCard
 import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminBackupsViewModel
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.core.network.ApiClient
+
 @Composable
-fun AdminBackupsScreen(onNavigate: (String) -> Unit) {
+fun AdminBackupsScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminBackupsViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return AdminBackupsViewModel(AdminRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var deepAuditEnabled by remember { mutableStateOf(true) }
 
     AdminBaseScreen(
@@ -76,31 +91,33 @@ fun AdminBackupsScreen(onNavigate: (String) -> Unit) {
 
             Text("Backup History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
             
-            val backups = listOf(
-                BackupRecord("Full Database Backup", "1.2 GB", "10 Oct 2023, 02:00 AM", "Success"),
-                BackupRecord("Incremental Backup", "150 MB", "09 Oct 2023, 02:00 AM", "Success"),
-                BackupRecord("Filesystem Archive", "4.5 GB", "08 Oct 2023, 02:00 AM", "Success")
-            )
-            
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(backups) { backup ->
-                    CamsCard {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(backup.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                Spacer(Modifier.height(4.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Size: ${backup.size}", fontSize = 12.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
-                                    Text("•", color = Color.LightGray)
-                                    Text(backup.time, fontSize = 12.sp, color = CamsTextSecondary)
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.backups) { backup ->
+                        CamsCard {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(backup.filename, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                                    Spacer(Modifier.height(4.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Size: ${backup.sizeBytes / 1024 / 1024} MB", fontSize = 12.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
+                                        Text("•", color = Color.LightGray)
+                                        Text(backup.createdAt.take(10), fontSize = 12.sp, color = CamsTextSecondary)
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(backup.status, fontSize = 12.sp, color = if (backup.status.equals("COMPLETED", true)) Color(0xFF10B981) else Color.Red)
                                 }
-                            }
-                            IconButton(onClick = {}) {
-                                Icon(Icons.Filled.Restore, "Restore Backup", tint = CamsNavy)
+                                IconButton(onClick = {}) {
+                                    Icon(Icons.Filled.Restore, "Restore Backup", tint = CamsNavy)
+                                }
                             }
                         }
                     }
@@ -109,5 +126,3 @@ fun AdminBackupsScreen(onNavigate: (String) -> Unit) {
         }
     }
 }
-
-data class BackupRecord(val name: String, val size: String, val time: String, val status: String)

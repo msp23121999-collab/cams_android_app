@@ -64,7 +64,7 @@ fun AdminSystemConfigScreen(onNavigate: (String) -> Unit) {
                             Text("Email Notifications", fontWeight = FontWeight.Medium, color = CamsTextPrimary)
                             Switch(checked = emailNotifications, onCheckedChange = { emailNotifications = it })
                         }
-                        Divider(color = Color(0xFFF3F4F6))
+                        HorizontalDivider(color = Color(0xFFF3F4F6))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("SMS Notifications", fontWeight = FontWeight.Medium, color = CamsTextPrimary)
                             Switch(checked = smsNotifications, onCheckedChange = { smsNotifications = it })

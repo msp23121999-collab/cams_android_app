@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.navigation.AppRoutes
 import com.example.features.student.widgets.StudentDrawer
+import com.example.core.ui.CamsCard
+import com.example.core.ui.CamsScreen
+import com.example.core.ui.shimmerEffect
 import com.example.features.student.providers.DashboardViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.student.models.*
@@ -64,105 +67,42 @@ fun StudentDashboardScreen(
             )
         }
     ) {
-        Scaffold(
-            topBar = {
-                Column {             if (uiState.isOfflineMode) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE65100))
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Offline Mode. Changes will be synced later.",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = ColorPrimary,
-                            shape = RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)
-                        )
-                        .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Campus Life",
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Student Portal Hub",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        }
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
-                        }
-                        IconButton(onClick = { onNavigate("LOGOUT") }) {
-                            Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
-                        }
-                    }
-                }
+        com.example.core.ui.CamsScreen(
+            title = "Student Dashboard",
+            subtitle = "Welcome back, ${uiState.profile?.fullName?.split(" ")?.firstOrNull() ?: "Student"}",
+            navigationIcon = {
+                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                    Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
                 }
             },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { paddingValues ->
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (uiState.error != null && uiState.profile == null) {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Failed to Load Dashboard Data",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Text(
-                            text = uiState.error ?: "Cannot connect to server. Check your internet connection.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Button(
-                            onClick = { viewModel.fetchDashboardData() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ColorPrimary
-                            )
-                        ) {
-                            Text("Retry Connection")
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+            actions = {
+                IconButton(onClick = { onNavigate("LOGOUT") }) {
+                    Icon(Icons.Filled.ExitToApp, contentDescription = "Logout", tint = Color.White)
+                }
+            },
+            isOfflineMode = uiState.isOfflineMode,
+            scrollable = false,
+            onRetry = { viewModel.fetchDashboardData() }
+        ) {
+            if (uiState.isLoading && uiState.profile == null) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().height(120.dp).shimmerEffect())
+                    Box(modifier = Modifier.fillMaxWidth().height(100.dp).shimmerEffect())
+                    Box(modifier = Modifier.fillMaxWidth().height(150.dp).shimmerEffect())
+                }
+            } else if (uiState.error != null && uiState.profile == null) {
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load dashboard",
+                    onRetry = { viewModel.fetchDashboardData() }
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                         item { uiState.profile?.let { ProfileCard(it, onNavigate) } }
                         item { QuickActions(onNavigate) }
                         item { LawSubjectsDashboard(uiState.courses) }
@@ -174,17 +114,11 @@ fun StudentDashboardScreen(
             }
         }
     }
-}
+
 
 @Composable
 private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = ColorSurface,
-        shadowElevation = 2.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    CamsCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -208,7 +142,10 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                             text = profile.fullName,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
@@ -216,7 +153,7 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                                 .background(Purple650.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text("VERIFIED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650)
+                            Text("VERIFIED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     Text(
@@ -224,7 +161,9 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PillBadge(icon = Icons.Filled.CheckCircle, text = "88% Attendance", color = Emerald500) { onNavigate(AppRoutes.ATTENDANCE) }
@@ -241,8 +180,9 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
             ) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("PROFILE COMPLETION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("85%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Indigo600)
+                        Text("PROFILE COMPLETION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("85%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Indigo600, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     LinearProgressIndicator(
@@ -258,8 +198,6 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
             }
         }
     }
-}
-
 @Composable
 private fun PillBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: Color, onClick: () -> Unit) {
     Row(
@@ -272,19 +210,13 @@ private fun PillBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, tex
     ) {
         Icon(icon, null, tint = color, modifier = Modifier.size(12.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
     }
 }
 
 @Composable
 private fun QuickActions(onNavigate: (String) -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = ColorSurface,
-        shadowElevation = 2.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    CamsCard {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
                 Icon(Icons.Filled.FlashOn, null, tint = Purple650, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -297,7 +229,6 @@ private fun QuickActions(onNavigate: (String) -> Unit) {
                 QuickActionItem(Icons.Filled.Payment, "Pay Fees") { onNavigate(AppRoutes.STUDENT_FEES) }
             }
         }
-    }
 }
 
 @Composable
@@ -318,19 +249,13 @@ private fun QuickActionItem(icon: androidx.compose.ui.graphics.vector.ImageVecto
             Icon(icon, null, tint = Purple650, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 private fun LawSubjectsDashboard(courses: List<Course>) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = ColorSurface,
-        shadowElevation = 2.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    CamsCard {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
                 Icon(Icons.Filled.Book, null, tint = Indigo600, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -342,7 +267,6 @@ private fun LawSubjectsDashboard(courses: List<Course>) {
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -380,13 +304,7 @@ private fun SubjectCard(code: String, name: String, credits: String, coverage: F
 @Composable
 private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(16.dp),
-            color = ColorSurface,
-            shadowElevation = 2.dp
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+        CamsCard(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
                     Icon(Icons.Filled.Gavel, null, tint = Purple650, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -424,16 +342,9 @@ private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
                         }
                     }
                 }
-            }
         }
 
-        Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(16.dp),
-            color = ColorSurface,
-            shadowElevation = 2.dp
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+        CamsCard(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
                     Icon(Icons.Filled.AccountTree, null, tint = Indigo600, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -442,11 +353,10 @@ private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
                 Text("Saved Citations", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CitationItem("Kesavananda Bharati v. State")
-                    CitationItem("Maneka Gandhi v. UOI")
-                    CitationItem("Navtej Singh Johar v. UOI")
+                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                        Text("No saved citations yet.", style = MaterialTheme.typography.bodySmall, color = ColorTextSecondary)
+                    }
                 }
-            }
         }
     }
 }
@@ -498,32 +408,22 @@ private fun QuickWidgets(
 
 @Composable
 private fun WidgetCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, content: String, modifier: Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = ColorSurface,
-        shadowElevation = 2.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    CamsCard(modifier = modifier) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                 Icon(icon, null, tint = iconColor, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
-            Text(content, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 16.sp)
-        }
+            Text(content, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 private fun RecentNotices(notices: List<Notice>, onNavigate: (String) -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().clickable { onNavigate(AppRoutes.CIRCULARS) },
-        shape = RoundedCornerShape(16.dp),
-        color = ColorSurface,
-        shadowElevation = 2.dp
+    CamsCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { onNavigate(AppRoutes.CIRCULARS) }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Campaign, null, tint = Purple650, modifier = Modifier.size(16.dp))
@@ -531,15 +431,22 @@ private fun RecentNotices(notices: List<Notice>, onNavigate: (String) -> Unit) {
                     Text("Recent Notices", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Box(modifier = Modifier.background(Purple650.copy(alpha = 0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                    Text("${notices.size} Total", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650)
+                    Text("${notices.size} Total", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                notices.take(3).forEach { notice ->
-                    NoticeItem(notice.title, notice.category, notice.priority)
+                if (notices.isEmpty()) {
+                    com.example.core.ui.EmptyStateView(
+                        icon = Icons.Filled.Campaign,
+                        title = "No Recent Notices",
+                        message = "You're all caught up!"
+                    )
+                } else {
+                    notices.take(3).forEach { notice ->
+                        NoticeItem(notice.title, notice.category, notice.priority)
+                    }
                 }
             }
-        }
     }
 }
 
@@ -564,8 +471,8 @@ private fun NoticeItem(title: String, category: String, priority: String) {
             Box(modifier = Modifier.size(8.dp).background(Purple650, CircleShape).padding(top = 4.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Column {
-                Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text(category, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+                Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(category, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Box(

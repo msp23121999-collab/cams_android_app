@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
+import com.example.core.network.GenericPagingSource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 data class StudyMaterialsState(
     val materials: List<StudyMaterial> = emptyList(),
@@ -22,6 +30,25 @@ class StudyMaterialsViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StudyMaterialsState())
     val uiState: StateFlow<StudyMaterialsState> = _uiState.asStateFlow()
+
+    val materialsPagingFlow: Flow<PagingData<StudyMaterial>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> studentRepository.getStudyMaterialsPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                StudyMaterial(
+                    id = dto.id,
+                    title = dto.title,
+                    subject = dto.subjectName,
+                    category = "Lecture Notes",
+                    uploadDate = dto.uploadDate,
+                    fileUrl = dto.fileUrl,
+                    facultyName = "Faculty"
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         fetchMaterials()

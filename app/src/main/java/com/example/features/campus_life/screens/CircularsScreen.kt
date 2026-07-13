@@ -40,6 +40,8 @@ import com.example.features.campus_life.providers.CircularsViewModel
 import com.example.features.student.widgets.StudentDrawer
 import com.example.core.theme.*
 import kotlinx.coroutines.launch
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,13 +108,18 @@ fun CircularsScreen(
                 }
             }
 
-            if (uiState.isLoading) {
+            val pagingItems = viewModel.noticesPagingFlow.collectAsLazyPagingItems()
+
+            if (pagingItems.loadState.refresh is LoadState.Loading) {
                 CircularsGridSkeleton()
-            } else if (uiState.filteredNotices.isEmpty()) {
-                EmptyState(onRetry = { viewModel.fetchCirculars() })
+            } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
+                EmptyState(onRetry = { pagingItems.refresh() })
             } else {
-                uiState.filteredNotices.forEach { notice ->
-                    NoticeCard(notice = notice, onClick = { selectedNotice = notice })
+                for (i in 0 until pagingItems.itemCount) {
+                    val notice = pagingItems[i]
+                    if (notice != null) {
+                        NoticeCard(notice = notice, onClick = { selectedNotice = notice })
+                    }
                 }
             }
             

@@ -37,6 +37,8 @@ import com.example.features.campus_life.providers.GrievancesViewModel
 import com.example.features.student.widgets.StudentDrawer
 import com.example.core.theme.*
 import kotlinx.coroutines.launch
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +50,7 @@ fun GrievancesScreen(
     var showForm by remember { mutableStateOf(false) }
     var selectedGrievance by remember { mutableStateOf<Grievance?>(null) }
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Grievance Panel",
         subtitle = "Support & Compliance Portal",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) },
@@ -87,11 +89,28 @@ fun GrievancesScreen(
 
                 // List
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (uiState.grievances.isEmpty()) {
+                    val pagingItems = viewModel.grievancesPagingFlow.collectAsLazyPagingItems()
+                    
+                    if (pagingItems.loadState.refresh is LoadState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally), color = CamsNavy)
+                    } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                         EmptyGrievances()
                     } else {
-                        uiState.grievances.forEach { grievance ->
-                            GrievanceItem(grievance) { selectedGrievance = grievance }
+                        for (index in 0 until pagingItems.itemCount) {
+                            val grievance = pagingItems[index]
+                            if (grievance != null) {
+                                val matchesSearch = uiState.searchQuery.isEmpty() || 
+                                                     grievance.id.contains(uiState.searchQuery, true) || 
+                                                     grievance.subject.contains(uiState.searchQuery, true)
+                                
+                                val matchesCat = uiState.categoryFilter == "All" || grievance.category == uiState.categoryFilter
+                                val matchesPri = uiState.priorityFilter == "All" || grievance.priority == uiState.priorityFilter
+                                val matchesStat = uiState.statusFilter == "All" || grievance.status == uiState.statusFilter
+                                
+                                if (matchesSearch && matchesCat && matchesPri && matchesStat) {
+                                    GrievanceItem(grievance) { selectedGrievance = grievance }
+                                }
+                            }
                         }
                     }
                 }
@@ -144,7 +163,13 @@ private fun NewGrievanceDialog(onDismiss: () -> Unit, onSubmit: (String, String)
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text("Raise Grievance", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
                 
                 OutlinedTextField(

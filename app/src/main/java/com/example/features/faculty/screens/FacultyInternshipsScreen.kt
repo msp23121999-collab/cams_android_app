@@ -21,8 +21,18 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyInternshipsViewModel
+import com.example.features.faculty.providers.FacultyInternshipsViewModelFactory
+import com.example.core.network.ApiClient
+
 @Composable
 fun FacultyInternshipsScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyInternshipsViewModelFactory(repository) }
+    val viewModel: FacultyInternshipsViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Applications", "Opportunities", "Partners")
 
@@ -92,9 +102,9 @@ fun FacultyInternshipsScreen(onNavigate: (String) -> Unit) {
 
             // Content based on tab
             when (selectedTab) {
-                0 -> StudentApplicationsList()
-                1 -> InternshipOpportunitiesList()
-                2 -> PartnerCompaniesList()
+                0 -> StudentApplicationsList() // Keeping mock as there is no endpoint
+                1 -> InternshipOpportunitiesList(uiState.drives)
+                2 -> PartnerCompaniesList() // Keeping mock as there is no endpoint
             }
         }
     }
@@ -182,12 +192,7 @@ private fun StudentApplicationsList() {
 }
 
 @Composable
-private fun InternshipOpportunitiesList() {
-    val opportunities = listOf(
-        Opportunity("Senior Data Analyst", "DataCorp", "Remote", "3 Days ago"),
-        Opportunity("Legal Intern", "Lexington Associates", "Mumbai", "5 Days ago")
-    )
-
+private fun InternshipOpportunitiesList(opportunities: List<com.example.core.network.FacultyInternshipDriveDto>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(opportunities) { opp ->
             Card(
@@ -202,16 +207,16 @@ private fun InternshipOpportunitiesList() {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(opp.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                            Text(opp.role, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
                             Text(opp.company, fontSize = 13.sp, color = CamsNavy)
                         }
-                        Text(opp.postedDate, fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(opp.deadline ?: "No deadline", fontSize = 12.sp, color = CamsTextSecondary)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.LocationOn, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(opp.location, fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(opp.location ?: "Remote", fontSize = 13.sp, color = CamsTextSecondary)
                     }
                 }
             }
@@ -272,5 +277,4 @@ private fun PartnerCompaniesList() {
 }
 
 data class Application(val studentName: String, val company: String, val role: String, val status: String)
-data class Opportunity(val title: String, val company: String, val location: String, val postedDate: String)
 data class Partner(val name: String, val industry: String, val status: String)

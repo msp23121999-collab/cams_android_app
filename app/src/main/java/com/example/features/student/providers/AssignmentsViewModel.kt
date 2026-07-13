@@ -12,6 +12,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
+import com.example.core.network.GenericPagingSource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 data class AssignmentsState(
     val assignments: List<Assignment> = emptyList(),
@@ -25,6 +33,54 @@ class AssignmentsViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AssignmentsState())
     val uiState: StateFlow<AssignmentsState> = _uiState.asStateFlow()
+
+    init {
+        fetchAssignments()
+    }
+
+    val assignmentsPagingFlow: Flow<PagingData<Assignment>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { GenericPagingSource({ skip, limit -> studentRepository.getAssignmentsPaged(skip, limit) }) }
+    ).flow
+        .map { pagingData ->
+            pagingData.map { dto ->
+                Assignment(
+                    id = dto.id,
+                    title = dto.title,
+                    type = dto.type,
+                    subject = dto.subject,
+                    description = dto.description ?: "",
+                    issueDate = "",
+                    deadline = dto.deadline,
+                    status = dto.status,
+                    facultyName = "Faculty",
+                    mySubmission = dto.mySubmission?.let { sub ->
+                        Submission(
+                            id = sub.id,
+                            assignmentId = dto.id,
+                            submissionDate = sub.submissionDate,
+                            status = sub.status,
+                            submittedFileName = sub.submittedFile ?: "",
+                            submittedFileUrl = sub.submittedFile ?: "",
+                            submittedFileSize = "",
+                            evaluation = sub.evaluation?.let { ev ->
+                                Evaluation(
+                                    marksObtained = ev.marksObtained ?: 0.0,
+                                    totalMarks = ev.totalMarks?.toInt() ?: 0,
+                                    grade = ev.grade ?: "",
+                                    feedback = ev.feedback ?: "",
+                                    remarks = "",
+                                    status = "Evaluated",
+                                    gradedDate = "",
+                                    gradedBy = ""
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         fetchAssignments()

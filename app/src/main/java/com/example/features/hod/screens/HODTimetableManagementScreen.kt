@@ -25,8 +25,16 @@ import com.example.core.theme.CamsTextPrimary
 import com.example.core.theme.CamsTextSecondary
 import com.example.features.hod.widgets.HODBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.hod.providers.HODTimetableViewModel
+
 @Composable
-fun HODTimetableManagementScreen(onNavigate: (String) -> Unit) {
+fun HODTimetableManagementScreen(
+    viewModel: HODTimetableViewModel,
+    onNavigate: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     HODBaseScreen(
         title = "Timetable Management",
         subtitle = "Manage department timetable, allocate slots, and monitor schedules",
@@ -110,29 +118,68 @@ fun HODTimetableManagementScreen(onNavigate: (String) -> Unit) {
                     }
 
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                            Text("Semester 3", fontSize = 12.sp, color = CamsTextPrimary)
-                            Icon(Icons.Filled.ArrowDropDown, null, tint = CamsTextSecondary)
-                        }
-                        OutlinedButton(onClick = { }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                            Text("Section A", fontSize = 12.sp, color = CamsTextPrimary)
-                            Icon(Icons.Filled.ArrowDropDown, null, tint = CamsTextSecondary)
+                        var expanded by remember { mutableStateOf(false) }
+                        val sections = uiState.metadata?.sections ?: emptyList()
+                        val selectedSection = sections.find { it.id == uiState.selectedSectionId }
+                        
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedButton(
+                                onClick = { expanded = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Text(selectedSection?.label ?: "Select Section", fontSize = 12.sp, color = CamsTextPrimary, maxLines = 1)
+                                Spacer(Modifier.weight(1f))
+                                Icon(Icons.Filled.ArrowDropDown, null, tint = CamsTextSecondary)
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                sections.forEach { section ->
+                                    DropdownMenuItem(
+                                        text = { Text(section.label, fontSize = 12.sp) },
+                                        onClick = {
+                                            viewModel.selectSection(section.id)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(5) { dayIndex ->
-                            val day = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")[dayIndex]
-                            Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(16.dp)) {
-                                Text(day, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, modifier = Modifier.padding(bottom = 12.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    for (i in 0..2) {
-                                        Column(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).padding(12.dp)) {
-                                            Text("CS${301+i}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextPrimary)
-                                            Spacer(Modifier.height(4.dp))
-                                            Text("0${9+i}:00 - ${10+i}:00", fontSize = 12.sp, color = CamsTextSecondary)
-                                            Spacer(Modifier.height(8.dp))
-                                            Text("Dr. Smith", fontSize = 13.sp, color = Color(0xFF4F46E5), fontWeight = FontWeight.Medium)
+                    if (uiState.isLoading) {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF4F46E5))
+                        }
+                    } else if (uiState.timetableSlots.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Text("No slots allocated for this section", color = CamsTextSecondary)
+                        }
+                    } else {
+                        LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            val slotsByDay = uiState.timetableSlots.groupBy { it.dayOfWeek }
+                            val days = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")
+                            
+                            items(days.size) { dayIndex ->
+                                val day = days[dayIndex]
+                                val daySlots = slotsByDay[day] ?: emptyList()
+                                if (daySlots.isNotEmpty()) {
+                                    Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(16.dp)) {
+                                        Text(day.capitalize(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, modifier = Modifier.padding(bottom = 12.dp))
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            daySlots.sortedBy { it.startTime }.forEach { slot ->
+                                                Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text("${slot.subjectCode} - ${slot.subjectName}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextPrimary)
+                                                        Spacer(Modifier.height(4.dp))
+                                                        Text("${slot.startTime} - ${slot.endTime}", fontSize = 12.sp, color = CamsTextSecondary)
+                                                    }
+                                                    Column(horizontalAlignment = Alignment.End) {
+                                                        Text(slot.facultyName, fontSize = 13.sp, color = Color(0xFF4F46E5), fontWeight = FontWeight.Medium)
+                                                        Text("Room: ${slot.roomNo}", fontSize = 11.sp, color = CamsTextSecondary)
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }

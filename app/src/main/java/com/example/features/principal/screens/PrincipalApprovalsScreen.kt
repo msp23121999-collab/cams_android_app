@@ -19,8 +19,23 @@ import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.principal.widgets.PrincipalBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.principal.providers.PrincipalApprovalsViewModel
+import com.example.core.repository.PrincipalRepositoryImpl
+import com.example.core.network.ApiClient
+
 @Composable
-fun PrincipalApprovalsScreen(onNavigate: (String) -> Unit) {
+fun PrincipalApprovalsScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: PrincipalApprovalsViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return PrincipalApprovalsViewModel(PrincipalRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Leave Requests", "Faculty Onboarding")
 
@@ -53,31 +68,44 @@ fun PrincipalApprovalsScreen(onNavigate: (String) -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        when (selectedTabIndex) {
-            0 -> PrincipalLeavesTab()
-            1 -> PrincipalFacultyOnboardingTab()
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            when (selectedTabIndex) {
+                0 -> PrincipalLeavesTab(
+                    leaves = uiState.pendingLeaves,
+                    onApprove = { viewModel.approveLeave(it) },
+                    onReject = { viewModel.rejectLeave(it) }
+                )
+                1 -> PrincipalFacultyOnboardingTab(
+                    faculties = uiState.pendingFaculty,
+                    onApprove = { viewModel.approveFaculty(it) }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun PrincipalLeavesTab() {
-    val leaves = listOf(
-        LeaveRequest("Dr. Ananya Sharma", "Computer Science", "Sick Leave", "Oct 25 - Oct 27, 2024", "Pending"),
-        LeaveRequest("Prof. Rajesh Kumar", "Mechanical Eng.", "Casual Leave", "Oct 28, 2024", "Pending")
-    )
+fun PrincipalLeavesTab(
+    leaves: List<com.example.features.principal.models.LeaveApproval>,
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit
+) {
     
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(leaves) { leave ->
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text(leave.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text(leave.dept, fontSize = 14.sp, color = CamsTextSecondary)
+                        Text(leave.applicantName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                        Text(leave.departmentName ?: "Unknown Department", fontSize = 14.sp, color = CamsTextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Filled.Event, null, modifier = Modifier.size(16.dp), tint = CamsTextSecondary)
-                            Text(leave.date, fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("${leave.startDate} to ${leave.endDate}", fontSize = 12.sp, color = CamsTextSecondary)
                         }
                     }
                     Surface(
@@ -85,7 +113,7 @@ fun PrincipalLeavesTab() {
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text(
-                            leave.status,
+                            "Pending",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -96,14 +124,14 @@ fun PrincipalLeavesTab() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
-                        onClick = { /* Approve */ },
+                        onClick = { onApprove(leave.id) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                     ) {
                         Text("Approve")
                     }
                     OutlinedButton(
-                        onClick = { /* Reject */ },
+                        onClick = { onReject(leave.id) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
                     ) {
@@ -116,18 +144,17 @@ fun PrincipalLeavesTab() {
 }
 
 @Composable
-fun PrincipalFacultyOnboardingTab() {
-    val faculties = listOf(
-        FacultyOnboarding("Dr. Vikram Singh", "Artificial Intelligence", "vk.singh@cams.edu", "Pending Review")
-    )
-    
+fun PrincipalFacultyOnboardingTab(
+    faculties: List<com.example.features.principal.models.PrincipalPendingFaculty>,
+    onApprove: (String) -> Unit
+) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(faculties) { faculty ->
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text(faculty.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text(faculty.dept, fontSize = 14.sp, color = CamsTextSecondary)
+                        Text(faculty.fullName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                        Text(faculty.departmentName, fontSize = 14.sp, color = CamsTextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Filled.Email, null, modifier = Modifier.size(16.dp), tint = CamsTextSecondary)
@@ -138,7 +165,7 @@ fun PrincipalFacultyOnboardingTab() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
-                        onClick = { /* Approve */ },
+                        onClick = { onApprove(faculty.id) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                     ) {
@@ -149,6 +176,3 @@ fun PrincipalFacultyOnboardingTab() {
         }
     }
 }
-
-data class LeaveRequest(val name: String, val dept: String, val type: String, val date: String, val status: String)
-data class FacultyOnboarding(val name: String, val dept: String, val email: String, val status: String)

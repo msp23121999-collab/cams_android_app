@@ -235,9 +235,15 @@ fun CourseCatalogView(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Course Catalog", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Slate900))
 
-        courses.forEach { course ->
-            val isEnrolled = registered.containsKey(course.id)
-            CourseItemCard(course, isEnrolled, onRegister)
+        if (courses.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("No courses available in the catalog.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+            }
+        } else {
+            courses.forEach { course ->
+                val isEnrolled = registered.containsKey(course.id)
+                CourseItemCard(course, isEnrolled, onRegister)
+            }
         }
     }
 }
@@ -423,11 +429,23 @@ fun WorkshopsMootsView(workshops: List<Workshop>, moots: List<MootActivity>) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Workshops", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-            workshops.forEach { WorkshopCard(it) }
+            if (workshops.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("No upcoming workshops.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+                }
+            } else {
+                workshops.forEach { WorkshopCard(it) }
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Moot Activities", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-            moots.forEach { MootCard(it) }
+            if (moots.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("No moot activities scheduled.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+                }
+            } else {
+                moots.forEach { MootCard(it) }
+            }
         }
     }
 }
@@ -489,34 +507,40 @@ fun ResourceCenterView(caseStudies: List<CaseStudy>) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Case Repository", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, Slate200)
-            ) {
-                Column {
-                    caseStudies.forEachIndexed { index, case ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {}.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Surface(color = Purple50, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(40.dp)) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Filled.Description, contentDescription = null, tint = Purple600, modifier = Modifier.size(20.dp))
+            if (caseStudies.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("No case studies found.", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, Slate200)
+                ) {
+                    Column {
+                        caseStudies.forEachIndexed { index, case ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {}.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Surface(color = Purple50, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(40.dp)) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Filled.Description, contentDescription = null, tint = Purple600, modifier = Modifier.size(20.dp))
+                                        }
+                                    }
+                                    Column {
+                                        Text(case.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                                        Text("${case.type} • ${case.size}", style = MaterialTheme.typography.labelSmall.copy(color = Slate500))
                                     }
                                 }
-                                Column {
-                                    Text(case.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                                    Text("${case.type} • ${case.size}", style = MaterialTheme.typography.labelSmall.copy(color = Slate500))
-                                }
+                                Icon(Icons.Filled.Download, contentDescription = null, tint = Slate400, modifier = Modifier.size(18.dp))
                             }
-                            Icon(Icons.Filled.Download, contentDescription = null, tint = Slate400, modifier = Modifier.size(18.dp))
-                        }
-                        if (index < caseStudies.size - 1) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Slate100)
+                            if (index < caseStudies.size - 1) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Slate100)
+                            }
                         }
                     }
                 }
@@ -531,7 +555,7 @@ fun FacultyPortalView(onPublish: (LawCourse) -> Unit) {
     var instructor by remember { mutableStateOf("") }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().imePadding(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, Slate200)

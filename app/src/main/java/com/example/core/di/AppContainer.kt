@@ -16,6 +16,7 @@ import com.example.core.repository.StudentRepository
 import com.example.core.repository.StudentRepositoryImpl
 import com.example.core.repository.ParentRepository
 import com.example.core.repository.ParentRepositoryImpl
+import com.example.core.datastore.ParentPreferences
 import com.example.core.repository.FacultyRepository
 import com.example.core.repository.FacultyRepositoryImpl
 import com.example.core.repository.HODRepository
@@ -174,7 +175,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val apiService: CamsApiService by lazy {
         val authInterceptor = AuthInterceptor(authManager)
-        val okHttpClient = ApiClient.createHttpClient(authInterceptor)
+        val okHttpClient = ApiClient.createHttpClient(authInterceptor, database.apiCacheDao())
         val retrofit = ApiClient.createRetrofit(okHttpClient)
         ApiClient.createApiService(retrofit)
     }
@@ -196,7 +197,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     }
 
     override val parentRepository: ParentRepository by lazy {
-        ParentRepositoryImpl(apiService)
+        ParentRepositoryImpl(apiService, ParentPreferences(context))
     }
 
     override val facultyRepository: FacultyRepository by lazy {

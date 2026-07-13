@@ -59,9 +59,9 @@ class DashboardViewModel(
                             Notice(
                                 id = notice.id,
                                 title = notice.title,
-                                category = notice.category,
+                                category = notice.category ?: "",
                                 publisherName = "University",
-                                publishDate = notice.date,
+                                publishDate = notice.date ?: "",
                                 priority = "High" // Default
                             )
                         },

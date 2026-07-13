@@ -35,6 +35,8 @@ import com.example.features.campus_life.models.*
 import com.example.features.campus_life.providers.ClubsViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.LoadState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,20 +58,15 @@ fun StudentClubsScreen(
         ClubAnnouncement("Legal Aid Camp at Slum Area 4", "Legal Aid Clinic", "Oct 15", false)
     )
 
-    val filteredClubs = uiState.clubs.filter { club ->
-        val matchesSearch = club.name.contains(searchQuery, ignoreCase = true) || 
-                          club.category.contains(searchQuery, ignoreCase = true)
-        val matchesTab = activeTab == "directory" || club.role != "None"
-        matchesSearch && matchesTab
-    }
+    val pagingItems = viewModel.clubsPagingFlow.collectAsLazyPagingItems()
 
     val stats = remember(uiState.clubs) {
-        val memberships = uiState.clubs.count { it.role != "None" }
+        val memberships = uiState.clubs.count { it.role != "None" } // Note: real paging would get this from a separate endpoint
         val leadership = uiState.clubs.count { it.role != "None" && it.role != "Member" }
         mapOf("attended" to "12", "leadership" to leadership.toString(), "memberships" to memberships.toString())
     }
 
-    CamsScreen(scrollable = false,
+    CamsScreen(scrollable = true,
         title = "Clubs & Societies",
         subtitle = "Empowering Student Communities",
         onBackClick = { onNavigate(AppRoutes.STUDENT_DASHBOARD) }
@@ -125,16 +122,26 @@ fun StudentClubsScreen(
 
             // Main Content List
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (filteredClubs.isEmpty()) {
+                if (pagingItems.loadState.refresh is LoadState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                     EmptyClubsView()
                 } else {
-                    filteredClubs.forEach { club ->
-                        ClubCard(
-                            club = club,
-                            onViewDashboard = { selectedClub = it },
-                            onJoin = { viewModel.joinClub(it.id) },
-                            onLeave = { viewModel.leaveClub(it.id) }
-                        )
+                    for (index in 0 until pagingItems.itemCount) {
+                        val club = pagingItems[index]
+                        if (club != null) {
+                            val matchesSearch = club.name.contains(searchQuery, ignoreCase = true) || 
+                                              club.category.contains(searchQuery, ignoreCase = true)
+                            val matchesTab = activeTab == "directory" || club.role != "None"
+                            if (matchesSearch && matchesTab) {
+                                ClubCard(
+                                    club = club,
+                                    onViewDashboard = { selectedClub = it },
+                                    onJoin = { viewModel.joinClub(it.id) },
+                                    onLeave = { viewModel.leaveClub(it.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }

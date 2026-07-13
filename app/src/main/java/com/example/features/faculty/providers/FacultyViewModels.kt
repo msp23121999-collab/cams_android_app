@@ -96,6 +96,19 @@ class FacultyMaterialsViewModel(private val repository: FacultyRepository) : Vie
             }
         }
     }
+
+    fun uploadMaterial(payload: com.example.core.network.UploadMaterialRequestDto, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                repository.uploadStudyMaterial(payload)
+                loadMaterials()
+                onSuccess()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
 }
 
 class FacultyMaterialsViewModelFactory(private val repository: FacultyRepository) : ViewModelProvider.Factory {

@@ -12,7 +12,13 @@ interface PrincipalRepository {
     suspend fun approveTimetable(id: String, status: String, remarks: String)
     suspend fun getPendingLeaveApprovals(): List<LeaveApproval>
     suspend fun approveLeave(id: String, status: String, remarks: String)
+    suspend fun getPendingFaculty(): List<PrincipalPendingFaculty>
+    suspend fun approveFaculty(id: String)
+    suspend fun rejectFaculty(id: String)
     suspend fun getAcademicCalendar(): List<CalendarEventDto>
+    suspend fun getGrievances(): List<com.example.core.network.GrievanceDto>
+    suspend fun getCirculars(): List<com.example.core.network.NoticeDto>
+    suspend fun publishCircular(title: String, body: String, targetAudience: String)
 }
 
 class PrincipalRepositoryImpl(private val apiService: CamsApiService) : PrincipalRepository {
@@ -64,11 +70,12 @@ class PrincipalRepositoryImpl(private val apiService: CamsApiService) : Principa
             return response.body()!!.map { dto ->
                 LeaveApproval(
                     id = dto.id,
-                    applicantName = dto.applicantName,
-                    leaveType = dto.leaveType,
+                    applicantName = dto.userName ?: "Unknown",
+                    leaveType = dto.type,
                     startDate = dto.startDate,
                     endDate = dto.endDate,
-                    reason = dto.reason
+                    reason = dto.reason,
+                    departmentName = dto.departmentName
                 )
             }
         }
@@ -77,5 +84,46 @@ class PrincipalRepositoryImpl(private val apiService: CamsApiService) : Principa
 
     override suspend fun approveLeave(id: String, status: String, remarks: String) {
         apiService.approveLeave(id, ApprovalRequest(status, remarks))
+    }
+
+    override suspend fun getPendingFaculty(): List<PrincipalPendingFaculty> {
+        val response = apiService.getPrincipalPendingFaculty()
+        if (response.isSuccessful) {
+            return response.body()!!.map { dto ->
+                PrincipalPendingFaculty(
+                    id = dto.id,
+                    email = dto.email,
+                    fullName = dto.fullName,
+                    departmentName = dto.departmentName,
+                    designation = dto.designation
+                )
+            }
+        }
+        return emptyList()
+    }
+
+    override suspend fun approveFaculty(id: String) {
+        apiService.approvePrincipalFaculty(id)
+    }
+
+    override suspend fun rejectFaculty(id: String) {
+        apiService.rejectPrincipalFaculty(id)
+    }
+
+    override suspend fun getGrievances(): List<com.example.core.network.GrievanceDto> {
+        val response = apiService.getGrievancesForApproval()
+        if (response.isSuccessful) return response.body() ?: emptyList()
+        return emptyList()
+    }
+
+    override suspend fun getCirculars(): List<com.example.core.network.NoticeDto> {
+        val response = apiService.getPrincipalCirculars()
+        if (response.isSuccessful) return response.body() ?: emptyList()
+        return emptyList()
+    }
+
+    override suspend fun publishCircular(title: String, body: String, targetAudience: String) {
+        val audienceType = if (targetAudience.lowercase() == "all") null else targetAudience
+        apiService.publishPrincipalCircular(com.example.core.network.NoticeCreateRequest(title, body, audienceType))
     }
 }

@@ -44,14 +44,10 @@ fun AppTheme(
     dynamicColor: Boolean = false, // Disabled to enforce LexNova design system
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> LexNovaDarkColorScheme
-        else -> LexNovaLightColorScheme
-    }
+    // Force light color scheme — the CAMS design system uses hardcoded light colors
+    // (white cards, CamsBackground, explicit Color.White surfaces) throughout all screens.
+    // Dark theme causes invisible text and broken card backgrounds.
+    val colorScheme = LexNovaLightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

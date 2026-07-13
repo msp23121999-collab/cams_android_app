@@ -73,8 +73,8 @@ class FeesViewModel(
                         it.copy(
                             summary = summary,
                             isLoading = false,
-                            receipts = listOf(Receipt("1", "2026-01-10", "Semester Fees", 45000.0, "Online", "TXN123456")),
-                            notifications = listOf(FinancialNotification(1, "success", "Fee payment successful", "2 hours ago"))
+                            receipts = emptyList(),
+                            notifications = emptyList()
                         ) 
                     }
                 } else {

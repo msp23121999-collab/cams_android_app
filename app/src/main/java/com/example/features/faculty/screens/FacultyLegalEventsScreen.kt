@@ -22,8 +22,18 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyLegalEventsViewModel
+import com.example.features.faculty.providers.FacultyLegalEventsViewModelFactory
+import com.example.core.network.ApiClient
+
 @Composable
 fun FacultyLegalEventsScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyLegalEventsViewModelFactory(repository) }
+    val viewModel: FacultyLegalEventsViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Active Events", "History", "Leaderboard")
 
@@ -93,8 +103,8 @@ fun FacultyLegalEventsScreen(onNavigate: (String) -> Unit) {
 
             // Content based on tab
             when (selectedTab) {
-                0 -> ActiveEventsList()
-                1 -> EventHistoryList()
+                0 -> ActiveEventsList(uiState.events.filter { it.status == "Upcoming" || it.status == "Registration Open" })
+                1 -> EventHistoryList(uiState.events.filter { it.status == "Completed" })
                 2 -> LeaderboardList()
             }
         }
@@ -128,13 +138,7 @@ private fun EventStatsCard(
 }
 
 @Composable
-private fun ActiveEventsList() {
-    val events = listOf(
-        LegalEvent("National Moot Court", "25 Oct 2023", "Main Auditorium", "Upcoming"),
-        LegalEvent("Client Counseling", "12 Nov 2023", "Moot Court Hall", "Registration Open"),
-        LegalEvent("Legal Aid Camp", "05 Dec 2023", "Rural Extension", "Planning")
-    )
-
+private fun ActiveEventsList(events: List<com.example.core.network.FacultyLegalEventDto>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(events) { event ->
             EventCard(event)
@@ -143,12 +147,7 @@ private fun ActiveEventsList() {
 }
 
 @Composable
-private fun EventHistoryList() {
-    val events = listOf(
-        LegalEvent("Inter-College Debate", "15 Sep 2023", "Conference Hall", "Completed"),
-        LegalEvent("Judgement Writing", "20 Aug 2023", "Seminar Hall", "Completed")
-    )
-
+private fun EventHistoryList(events: List<com.example.core.network.FacultyLegalEventDto>) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(events) { event ->
             EventCard(event)
@@ -198,14 +197,14 @@ private fun LeaderboardList() {
                     }
                     Text(leader.points, color = CamsNavy, fontWeight = FontWeight.Bold)
                 }
-                if (index < leaders.size - 1) Divider(color = Color(0xFFF3F4F6))
+                if (index < leaders.size - 1) HorizontalDivider(color = Color(0xFFF3F4F6))
             }
         }
     }
 }
 
 @Composable
-private fun EventCard(event: LegalEvent) {
+private fun EventCard(event: com.example.core.network.FacultyLegalEventDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -224,7 +223,7 @@ private fun EventCard(event: LegalEvent) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Schedule, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(event.date, fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(event.date ?: "TBA", fontSize = 13.sp, color = CamsTextSecondary)
                     }
                 }
                 Surface(
@@ -237,7 +236,7 @@ private fun EventCard(event: LegalEvent) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        event.status,
+                        event.status ?: "Pending",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -254,7 +253,7 @@ private fun EventCard(event: LegalEvent) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.LocationOn, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(event.location, fontSize = 13.sp, color = CamsTextSecondary)
+                Text(event.location ?: "Virtual", fontSize = 13.sp, color = CamsTextSecondary)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
@@ -269,5 +268,4 @@ private fun EventCard(event: LegalEvent) {
     }
 }
 
-data class LegalEvent(val title: String, val date: String, val location: String, val status: String)
 data class Leader(val name: String, val points: String, val rank: String)

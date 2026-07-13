@@ -22,7 +22,20 @@ class ParentFeesViewModel(private val repository: ParentRepository) : ViewModel(
     private val _uiState = MutableStateFlow(ParentFeesState())
     val uiState: StateFlow<ParentFeesState> = _uiState.asStateFlow()
 
+    var currentChildId: String? = null
+        private set
+
     init {
+        viewModelScope.launch {
+            repository.selectedChildId.collect { id ->
+                currentChildId = id
+                loadData()
+            }
+        }
+    }
+
+    fun setChild(id: String) {
+        currentChildId = id
         loadData()
     }
 
@@ -30,8 +43,8 @@ class ParentFeesViewModel(private val repository: ParentRepository) : ViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val ledger = repository.getFeeStatus()
-                val profile = repository.getChildProfile()
+                val ledger = repository.getFeeStatus(currentChildId)
+                val profile = repository.getChildProfile(currentChildId)
                 _uiState.update { it.copy(feeLedger = ledger, childProfile = profile, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

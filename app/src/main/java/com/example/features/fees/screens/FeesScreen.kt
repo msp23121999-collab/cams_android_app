@@ -110,7 +110,7 @@ private fun Header(uiState: FeesUiState) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Text(
                 "CAMS / STUDENT / FINANCIAL SERVICES",
                 style = MaterialTheme.typography.labelSmall.copy(
@@ -220,7 +220,7 @@ private fun OverviewTab(uiState: FeesUiState) {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Payment Progress", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                     val pct = if (summary.netFees > 0) (summary.amountPaid / summary.netFees * 100).toInt() else 100
@@ -299,7 +299,7 @@ private fun LedgerItem(record: FeeRecord) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(record.feeType, fontWeight = FontWeight.Black, fontSize = 14.sp, color = CamsTextPrimary)
@@ -307,7 +307,7 @@ private fun LedgerItem(record: FeeRecord) {
                 }
                 StatusBadge(record.status)
             }
-            Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("Net Amount", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
@@ -346,7 +346,7 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     // Selector
                     Column {
                         Text("Select Fee Head", fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary, modifier = Modifier.padding(bottom = 8.dp))
@@ -406,7 +406,7 @@ private fun ReceiptsTab(uiState: FeesUiState) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(40.dp).background(CamsBackground, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Filled.FilePresent, null, tint = CamsTextSecondary)
                     }
@@ -437,7 +437,7 @@ private fun ScholarshipTab(uiState: FeesUiState) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Box(Modifier.size(48.dp).background(Color(0xFFD1FAE5), CircleShape), contentAlignment = Alignment.Center) {
                         Icon(Icons.Filled.Verified, null, tint = Color(0xFF059669))
                     }
@@ -458,7 +458,7 @@ private fun ScholarshipTab(uiState: FeesUiState) {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column {
                 Text("Supporting Documents", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp), color = CamsTextPrimary)
                 listOf("Income Certificate", "Caste Certificate", "Aadhaar Card").forEach { doc ->
                     Row(
@@ -474,7 +474,7 @@ private fun ScholarshipTab(uiState: FeesUiState) {
                         }
                     }
                     if (doc != "Aadhaar Card") {
-                        Divider(color = Color.LightGray.copy(alpha = 0.2f))
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                     }
                 }
             }
@@ -491,7 +491,7 @@ private fun LoansTab(uiState: FeesUiState) {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(40.dp).background(CamsBackground, CircleShape), contentAlignment = Alignment.Center) {
                          Icon(Icons.Filled.Business, null, tint = CamsNavy)
@@ -565,7 +565,7 @@ private fun AssistanceTab(uiState: FeesUiState) {
                 CamsCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(r.type, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
                             Text(r.date, fontSize = 13.sp, color = CamsTextSecondary)

@@ -117,26 +117,32 @@ fun LexNovaTimetable(timetable: List<TimetableEntry>, modifier: Modifier = Modif
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
-            timetable.forEach { entry ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
-                        Text(entry.time.split(" - ")[0], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
-                        Box(modifier = Modifier.width(1.dp).height(12.dp).background(Color.LightGray))
-                        Text(entry.time.split(" - ")[1], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (entry.isLive) CamsNavy.copy(alpha = 0.05f) else CamsBackground,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(entry.course, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                                Text("${entry.professor} • ${entry.room}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
-                            }
-                            if (entry.isLive) {
-                                Text("LIVE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = Color(0xFFF43F5E)))
+            if (timetable.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text("No classes scheduled.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                }
+            } else {
+                timetable.forEach { entry ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
+                            Text(entry.time.split(" - ")[0], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
+                            Box(modifier = Modifier.width(1.dp).height(12.dp).background(Color.LightGray))
+                            Text(entry.time.split(" - ")[1], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (entry.isLive) CamsNavy.copy(alpha = 0.05f) else CamsBackground,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text(entry.course, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                                    Text("${entry.professor} • ${entry.room}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
+                                }
+                                if (entry.isLive) {
+                                    Text("LIVE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = Color(0xFFF43F5E)))
+                                }
                             }
                         }
                     }
@@ -193,7 +199,7 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
         }
 
         // AI Mentor
-        CamsCard {
+        CamsCard(modifier = Modifier.imePadding()) {
             Column {
                 Row(modifier = Modifier.fillMaxWidth().background(CamsNavy.copy(alpha = 0.05f)).padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -240,19 +246,25 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
             Column {
                 Text("Knowledge Vault", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
                 Spacer(modifier = Modifier.height(20.dp))
-                state.documents.forEach { doc ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = CamsBackground, modifier = Modifier.size(40.dp)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(doc.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                if (state.documents.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text("No documents available in vault.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                    }
+                } else {
+                    state.documents.forEach { doc ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(8.dp), color = CamsBackground, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(doc.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                                }
                             }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(doc.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                                Text("${doc.author} • ${doc.size}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
+                            }
+                            Icon(Icons.Filled.Download, contentDescription = null, tint = CamsTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(doc.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                            Text("${doc.author} • ${doc.size}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
-                        }
-                        Icon(Icons.Filled.Download, contentDescription = null, tint = CamsTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                     }
                 }
             }

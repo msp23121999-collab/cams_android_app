@@ -1,6 +1,7 @@
 package com.example.features.extracurriculars.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -145,7 +146,27 @@ fun InnovationProjectCard(project: InnovationProject) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = project.abstractText, style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)))
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Mentor: ${project.mentor}", style = MaterialTheme.typography.labelMedium.copy(color = Color.White.copy(alpha = 0.7f)))
+            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(text = "Mentor: ${project.mentor}", style = MaterialTheme.typography.labelMedium.copy(color = Color.White.copy(alpha = 0.7f)))
+                
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    var isLiked by remember { mutableStateOf(false) }
+                    var likesCount by remember { mutableStateOf((10..50).random()) }
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.clickable { 
+                        isLiked = !isLiked
+                        if (isLiked) likesCount++ else likesCount--
+                    }) {
+                        Icon(if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, contentDescription = "Like", tint = if (isLiked) Color.Red else Color.White, modifier = Modifier.size(20.dp))
+                        Text(likesCount.toString(), color = Color.White)
+                    }
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Filled.ChatBubbleOutline, contentDescription = "Comment", tint = Color.White, modifier = Modifier.size(20.dp))
+                        Text(((5..20).random()).toString(), color = Color.White)
+                    }
+                }
+            }
         }
     }
 }

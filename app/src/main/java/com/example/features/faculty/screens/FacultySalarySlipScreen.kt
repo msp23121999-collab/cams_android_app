@@ -22,8 +22,19 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultySalaryViewModel
+import com.example.features.faculty.providers.FacultySalaryViewModelFactory
+import com.example.core.network.ApiClient
+import java.text.DateFormatSymbols
+
 @Composable
 fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultySalaryViewModelFactory(repository) }
+    val viewModel: FacultySalaryViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsState()
     FacultyBaseScreen(scrollable = false, 
         title = "Salary Slips",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_SALARY_SLIP,
@@ -45,14 +56,18 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("Total Net Pay (Last Month)", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                    Text("₹ 85,450.00", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
+                        val lastSlip = uiState.slips.firstOrNull()
+                        val netPay = lastSlip?.netSalary ?: 0.0
+                        val earnings = lastSlip?.baseSalary ?: 0.0
+                        val deductions = lastSlip?.deductions ?: 0.0
+                    Text("₹ %,.2f".format(netPay), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        SummaryItem("Earnings", "₹ 95,000", Icons.Filled.TrendingUp)
-                        SummaryItem("Deductions", "₹ 9,550", Icons.Filled.TrendingDown)
+                        SummaryItem("Earnings", "₹ %,.0f".format(earnings), Icons.Filled.TrendingUp)
+                        SummaryItem("Deductions", "₹ %,.0f".format(deductions), Icons.Filled.TrendingDown)
                     }
                 }
             }
@@ -62,15 +77,8 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
             Text("Payment History", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
             Spacer(modifier = Modifier.height(12.dp))
 
-            val salarySlips = listOf(
-                SalarySlip("October 2023", "₹ 85,450.00", "Paid on 01 Oct"),
-                SalarySlip("September 2023", "₹ 85,450.00", "Paid on 01 Sep"),
-                SalarySlip("August 2023", "₹ 82,200.00", "Paid on 02 Aug"),
-                SalarySlip("July 2023", "₹ 82,200.00", "Paid on 01 Jul")
-            )
-
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(salarySlips) { slip ->
+                items(uiState.slips) { slip ->
                     SalarySlipItem(slip)
                 }
             }
@@ -96,7 +104,7 @@ private fun SummaryItem(label: String, value: String, icon: ImageVector) {
 }
 
 @Composable
-private fun SalarySlipItem(slip: SalarySlip) {
+private fun SalarySlipItem(slip: com.example.core.network.FacultySalarySlipDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -117,13 +125,12 @@ private fun SalarySlipItem(slip: SalarySlip) {
                 ) {
                     Icon(Icons.Filled.ReceiptLong, null, tint = CamsNavy)
                 }
-                Column {
-                    Text(slip.month, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    val monthName = DateFormatSymbols().months.getOrNull(slip.month - 1) ?: "Unknown"
+                    Text("$monthName ${slip.year}", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
                     Text(slip.status, fontSize = 12.sp, color = CamsTextSecondary)
                 }
-            }
             Column(horizontalAlignment = Alignment.End) {
-                Text(slip.amount, fontWeight = FontWeight.Black, color = CamsNavy)
+                Text("₹ %,.2f".format(slip.netSalary), fontWeight = FontWeight.Black, color = CamsNavy)
                 IconButton(onClick = { /* Download PDF */ }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Filled.Download, "Download", tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
                 }
@@ -132,4 +139,4 @@ private fun SalarySlipItem(slip: SalarySlip) {
     }
 }
 
-data class SalarySlip(val month: String, val amount: String, val status: String)
+

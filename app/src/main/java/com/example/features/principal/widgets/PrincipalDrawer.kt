@@ -56,7 +56,7 @@ fun PrincipalDrawer(
                 }
             }
 
-            Divider(color = Color(0xFFF3F4F6))
+            HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(20.dp))
 
             androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.weight(1f)) {
@@ -66,7 +66,7 @@ fun PrincipalDrawer(
                 item { DrawerItem("Publish Notices", Icons.Filled.Campaign, AppRoutes.PRINCIPAL_CIRCULARS, currentRoute, onNavigate) }
                 
                 item { Spacer(modifier = Modifier.height(16.dp)) }
-                item { Divider(color = Color(0xFFF3F4F6)) }
+                item { HorizontalDivider(color = Color(0xFFF3F4F6)) }
                 item { Spacer(modifier = Modifier.height(16.dp)) }
                 
                 item { DrawerItem("Institutional Perf", Icons.Filled.Assessment, AppRoutes.PRINCIPAL_PERFORMANCE, currentRoute, onNavigate) }
@@ -80,7 +80,7 @@ fun PrincipalDrawer(
                 item { DrawerItem("Institutional Cal", Icons.Filled.CalendarMonth, AppRoutes.PRINCIPAL_CALENDAR, currentRoute, onNavigate) }
             }
 
-            Divider(color = Color(0xFFF3F4F6))
+            HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(10.dp))
             
             DrawerItem("Logout", Icons.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)

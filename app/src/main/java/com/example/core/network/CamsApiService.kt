@@ -195,7 +195,7 @@ interface CamsApiService {
     suspend fun getParentChildMarks(@Query("child_id") childId: String?): Response<List<ParentChildMarkDto>>
 
     @GET("parents/child/attendance")
-    suspend fun getParentChildAttendance(@Query("child_id") childId: String?): Response<List<ParentChildAttendanceDto>>
+    suspend fun getParentChildAttendance(@Query("child_id") childId: String?): Response<ParentChildAttendanceOverviewDto>
 
     @GET("parents/child/fees")
     suspend fun getParentChildFees(@Query("child_id") childId: String?): Response<ParentChildFeeDto>
@@ -220,7 +220,7 @@ interface CamsApiService {
     suspend fun getFacultyActivitySummary(): Response<ActivitySummaryDto>
 
     @GET("faculty/timetable")
-    suspend fun getFacultyTimetable(): Response<List<FacultyTimetableDayDto>>
+    suspend fun getFacultyTimetable(): Response<List<FacultyTimetableItemDto>>
 
     // HOD Portal Endpoints
     @GET("hods/dashboard/metrics")
@@ -276,10 +276,10 @@ interface CamsApiService {
     suspend fun getGrievancesForApproval(): Response<List<GrievanceDto>>
 
     @GET("principals/research-compliance")
-    suspend fun getResearchCompliance(): Response<List<ResearchComplianceDto>>
+    suspend fun getResearchCompliance(): Response<PrincipalComplianceResponseDto>
 
     @GET("principals/infrastructure")
-    suspend fun getInfrastructureDetails(): Response<InfrastructureDto>
+    suspend fun getInfrastructureDetails(): Response<InfrastructureResponseDto>
 
     // Admin Portal Endpoints
     @GET("admins/dashboard/metrics")
@@ -404,6 +404,90 @@ interface CamsApiService {
 
     @POST("auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
+
+    // Additional HOD Endpoints
+    @GET("hods/teaching-logs")
+    suspend fun getHODTeachingLogsDashboard(): Response<HODTeachingLogsDashboardDto>
+
+    @GET("hods/syllabus-metadata")
+    suspend fun getHODSyllabusMetadata(): Response<HODSyllabusMetadataDto>
+
+    @GET("hods/syllabus-courses")
+    suspend fun getHODSyllabusCourses(): Response<List<HODCourseDto>>
+
+    @GET("hods/attendance-monitoring")
+    suspend fun getHODAttendanceMonitoring(): Response<List<HODAttendanceMonitoringDto>>
+
+    @GET("hods/department-reports")
+    suspend fun getHODDepartmentReports(): Response<HODDepartmentReportDto>
+
+    @GET("hods/research-monitoring")
+    suspend fun getHODResearchMonitoring(): Response<List<HODResearchMonitoringDto>>
+
+    @GET("hods/pending-proofs")
+    suspend fun getHODPendingProofs(): Response<List<HODPendingProofDto>>
+
+    @POST("hods/research-proofs/{id}/verify")
+    suspend fun verifyResearchProof(@Path("id") proofId: String, @Body request: VerificationRequestDto): Response<Map<String, String>>
+
+    @GET("hods/workloads")
+    suspend fun getHODWorkloads(): Response<List<HODWorkloadDto>>
+
+    @GET("hods/mentors")
+    suspend fun getHODMentors(): Response<List<HODMentorDto>>
+
+    @POST("hods/mentors/assign")
+    suspend fun assignHODMentor(@Body request: MentorAssignmentRequestDto): Response<Unit>
+
+    @GET("hods/academic-setup")
+    suspend fun getAcademicSetup(): Response<AcademicSetupDto>
+
+    @GET("hods/subject-allocations")
+    suspend fun getSubjectAllocations(): Response<List<SubjectAllocationDto>>
+
+    @GET("hods/substitutions")
+    suspend fun getSubstitutions(): Response<List<HODSubstitutionDto>>
+
+    @GET("admins/payroll")
+    suspend fun getFacultyPayrollAdmin(): Response<List<AdminPayrollDto>>
+
+    @GET("admins/backups")
+    suspend fun getBackupHistoryAdmin(): Response<List<AdminBackupDto>>
+
+    @GET("admins/system-settings")
+    suspend fun getSystemSettingsAdmin(): Response<AdminSystemSettingsDto>
+
+    @GET("admins/audit-logs")
+    suspend fun getAuditLogsAdmin(): Response<List<AdminAuditLogDto>>
+
+
+    @GET("admins/users")
+    suspend fun getAllUsers(): Response<List<AdminUserDto>>
+
+    @GET("admins/departments")
+    suspend fun getDepartmentsList(): Response<List<AdminDepartmentDto>>
+
+    @GET("admins/degrees-list")
+    suspend fun getDegreesListAdmin(): Response<List<AdminDegreeDto>>
+
+    @GET("admins/courses-list")
+    suspend fun getAllCoursesAdmin(): Response<List<AdminCourseDto>>
+
+    @GET("admins/backups-list")
+    suspend fun getBackupsAdmin(): Response<List<AdminBackupDto>>
+
+    @GET("admins/attendance-defaulters-admin")
+    suspend fun getAttendanceDefaultersAdmin(): Response<List<AdminAttendanceDefaulterDto>>
+
+    @GET("admins/fee-structures")
+    suspend fun getAdminFeeStructures(): Response<List<AdminFeeStructureDto>>
+
+    @GET("admins/scholarship-types")
+    suspend fun getAdminScholarshipTypes(): Response<List<AdminScholarshipTypeDto>>
+
+    @GET("admins/search-fees")
+    suspend fun searchStudentsForFees(@Query("query") query: String): Response<List<AdminFeeStudentDto>>
+
 }
 
 @JsonClass(generateAdapter = true)
@@ -680,6 +764,8 @@ data class ApprovalRequest(val status: String, val remarks: String)
 @JsonClass(generateAdapter = true)
 data class PrincipalDashboardStatsDto(
     @Json(name = "total_students") val totalStudents: Int,
+    val totalDepartments: Int? = null,
+    val totalStaff: Int? = null,
     @Json(name = "total_faculty") val totalFaculty: Int,
     @Json(name = "active_approvals") val activeApprovals: Int,
     @Json(name = "revenue_this_month") val revenueThisMonth: Double
@@ -709,7 +795,15 @@ data class ResearchComplianceDto(
     val title: String,
     val researcher: String,
     val status: String,
-    @Json(name = "compliance_check") val complianceCheck: String
+    @Json(name = "compliance_check") val complianceCheck: String,
+    val completedCount: Int = 0,
+    val pendingCount: Int = 0,
+    val overdueCount: Int = 0,
+    val overdueFacultyList: List<String> = emptyList(),
+    val facultyName: String = "",
+    val department: String = "",
+    val publicationTitle: String = "",
+    val dueDate: String = ""
 )
 
 @JsonClass(generateAdapter = true)
@@ -914,33 +1008,35 @@ data class FacultyTimetablePeriodDto(
 
 @JsonClass(generateAdapter = true)
 data class ParentChildProfileDto(
-    val id: String,
-    @Json(name = "full_name") val fullName: String,
-    @Json(name = "roll_no") val rollNo: String,
-    val semester: String,
-    val batch: String,
-    val cgpa: Double,
-    @Json(name = "mentor_name") val mentorName: String,
-    @Json(name = "mentor_email") val mentorEmail: String,
-    @Json(name = "mentor_phone") val mentorPhone: String,
-    val dob: String,
-    val gender: String,
-    @Json(name = "blood_group") val bloodGroup: String,
-    val nationality: String,
-    @Json(name = "aadhaar_no") val aadhaarNo: String,
-    @Json(name = "contact_mobile") val contactMobile: String,
-    @Json(name = "contact_email") val contactEmail: String,
-    @Json(name = "emergency_contact") val emergencyContact: String,
-    @Json(name = "emergency_phone") val emergencyPhone: String,
-    @Json(name = "father_name") val fatherName: String,
-    @Json(name = "father_occupation") val fatherOccupation: String,
-    @Json(name = "father_mobile") val fatherMobile: String,
-    @Json(name = "father_email") val fatherEmail: String,
-    @Json(name = "mother_name") val motherName: String,
-    @Json(name = "mother_occupation") val motherOccupation: String,
-    @Json(name = "mother_mobile") val motherMobile: String,
-    @Json(name = "mother_email") val motherEmail: String,
-    val certifications: List<ParentChildCertificationDto>
+    val id: String = "",
+    @Json(name = "full_name") val fullName: String = "",
+    @Json(name = "roll_no") val rollNo: String = "",
+    val semester: String = "",
+    val batch: String? = null,
+    @Json(name = "batch_year") val batchYear: String? = null,
+    val cgpa: Double? = 0.0,
+    @Json(name = "mentor_name") val mentorName: String? = "N/A",
+    @Json(name = "mentor_email") val mentorEmail: String? = "",
+    @Json(name = "mentor_phone") val mentorPhone: String? = "",
+    val email: String? = "",
+    val dob: String? = "",
+    val gender: String? = "",
+    @Json(name = "blood_group") val bloodGroup: String? = "",
+    val nationality: String? = "",
+    @Json(name = "aadhaar_no") val aadhaarNo: String? = "",
+    @Json(name = "contact_mobile") val contactMobile: String? = "",
+    @Json(name = "contact_email") val contactEmail: String? = "",
+    @Json(name = "emergency_contact") val emergencyContact: String? = "",
+    @Json(name = "emergency_phone") val emergencyPhone: String? = "",
+    @Json(name = "father_name") val fatherName: String? = "",
+    @Json(name = "father_occupation") val fatherOccupation: String? = "",
+    @Json(name = "father_mobile") val fatherMobile: String? = "",
+    @Json(name = "father_email") val fatherEmail: String? = "",
+    @Json(name = "mother_name") val motherName: String? = "",
+    @Json(name = "mother_occupation") val motherOccupation: String? = "",
+    @Json(name = "mother_mobile") val motherMobile: String? = "",
+    @Json(name = "mother_email") val motherEmail: String? = "",
+    val certifications: List<ParentChildCertificationDto>? = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
@@ -954,14 +1050,21 @@ data class ParentChildCertificationDto(
 
 @JsonClass(generateAdapter = true)
 data class ParentChildMarkDto(
-    val subject: String,
-    @Json(name = "academic_year") val academicYear: String,
-    @Json(name = "internal_1") val internal1: String,
-    @Json(name = "internal_2") val internal2: String,
-    val model: String,
-    val assignments: String,
-    val attendance: String,
-    val total: String
+    val subject: String = "",
+    val subjectName: String = "",
+    @Json(name = "academic_year") val academicYear: String = "",
+    @Json(name = "internal_1") val internal1: String = "",
+    @Json(name = "internal_2") val internal2: String = "",
+    val model: String = "",
+    val assignments: String = "",
+    val attendance: String = "",
+    val total: String = "",
+    val internalExamMark: Double = 0.0,
+    val assignmentMark: Double = 0.0,
+    val presentationMark: Double = 0.0,
+    val vivaVoiceMark: Double = 0.0,
+    val attendanceMark: Double = 0.0,
+    val totalMark: Double = 0.0
 )
 
 @JsonClass(generateAdapter = true)
@@ -993,8 +1096,13 @@ data class ParentChildFeeRecordDto(
 
 @JsonClass(generateAdapter = true)
 data class ParentChildTimetableDayDto(
-    val day: String,
-    val periods: List<ParentChildTimetablePeriodDto>
+    val dayOfWeek: String = "",
+    val startTime: String = "",
+    val endTime: String = "",
+    val subjectName: String = "",
+    val subjectCode: String = "",
+    val roomNo: String = "",
+    val facultyName: String = ""
 )
 
 @JsonClass(generateAdapter = true)
@@ -1048,7 +1156,9 @@ data class InternalMarkDto(
     @Json(name = "subject_code") val subjectCode: String,
     @Json(name = "mark_obtained") val markObtained: Double,
     @Json(name = "max_mark") val maxMark: Double,
-    val component: String
+    val component: String,
+    val examType: String = "",
+    val mark: Double? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -1173,7 +1283,8 @@ data class CalendarEventDto(
     val id: String,
     val date: String,
     @Json(name = "event_name") val eventName: String,
-    @Json(name = "is_holiday") val isHoliday: Boolean
+    @Json(name = "is_holiday") val isHoliday: Boolean,
+    val title: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -1272,4 +1383,319 @@ data class UploadMaterialRequestDto(
     @Json(name="file_url") val fileUrl: String,
     @Json(name="file_format") val fileFormat: String,
     val status: String
+)
+
+
+@JsonClass(generateAdapter = true)
+data class RoomDto(
+    val id: String,
+    val name: String,
+    val type: String,
+    val capacity: Int
+)
+
+@JsonClass(generateAdapter = true)
+data class BuildingDto(
+    val id: String,
+    val name: String,
+    val floors: Int,
+    val rooms: List<RoomDto>
+)
+
+@JsonClass(generateAdapter = true)
+data class InfrastructureResponseDto(
+    val buildings: List<BuildingDto>
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODSyllabusMetadataDto(
+    val semCount: Int = 10,
+    val totalSubjects: Int = 0,
+    val completedSubjects: Int = 0,
+    val delayedSubjects: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class HODCourseDto(
+    val id: String,
+    val name: String = "",
+    val code: String = "",
+    val semester: Int = 1,
+    val credits: Int = 3
+)
+
+
+
+@JsonClass(generateAdapter = true)
+data class HODSubstitutionDto(
+    val id: String,
+    @Json(name = "faculty_id") val facultyId: String,
+    @Json(name = "substitute_id") val substituteId: String,
+    val date: String,
+    val period: Int,
+    val status: String = "",
+    val subject: String = "",
+    val absent_faculty: String = "",
+    val substitute_faculty: String = ""
+)
+
+
+@JsonClass(generateAdapter = true)
+data class SubjectAllocationDto(
+    val id: String = "",
+    val courseId: String = "",
+    val sectionId: String = "",
+    val facultyId: String = "",
+    @Json(name = "subject_name") val subjectName: String = "",
+    @Json(name = "subject_code") val subjectCode: String = ""
+)
+
+@JsonClass(generateAdapter = true)
+data class AcademicSetupDto(
+    @Json(name = "academic_year") val academicYear: String = "",
+    val semester: Int = 1
+)
+
+@JsonClass(generateAdapter = true)
+data class OverdueFacultyDto(
+    val facultyName: String = "",
+    val department: String = "",
+    val publicationTitle: String = "",
+    val dueDate: String = ""
+)
+
+@JsonClass(generateAdapter = true)
+data class PrincipalComplianceResponseDto(
+    val completedCount: Int = 0,
+    val pendingCount: Int = 0,
+    val overdueCount: Int = 0,
+    val overdueFacultyList: List<OverdueFacultyDto> = emptyList()
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODResearchMonitoringDto(
+    val id: String = "",
+    val title: String = "",
+    val faculty_name: String = "",
+    val type: String = "",
+    val status: String = "",
+    val latest_progress_percentage: Int = 0,
+    val area: String = ""
+)
+
+@JsonClass(generateAdapter = true)
+data class HODPendingProofDto(
+    val id: String = "",
+    val title: String = "",
+    val faculty_name: String = "",
+    val journal_name: String = "",
+    val issn_isbn: String = ""
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODMentorDto(
+    val faculty_id: String = "",
+    val faculty_name: String = "",
+    val department: String = "",
+    val total_students: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class HODDepartmentReportDto(
+    val totalFaculty: Int = 0,
+    val totalStudents: Int = 0,
+    val attendanceAverage: String = "0%",
+    val syllabusCompletionAverage: String = "0%",
+    val performanceDistribution: Map<String, Int> = emptyMap()
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODWorkloadDto(
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
+    val teaching_hours: Int = 0
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODAcademicMonitoringDto(
+    val subject: String = "",
+    val faculty: String = "",
+    val completion: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class HODAttendanceMonitoringDto(
+    val subject: String = "",
+    val subjectCode: String = "",
+    val semester: Int = 1,
+    val studentsCount: Int = 0,
+    val attendancePercentage: Double = 0.0,
+    val lowAttendanceCount: Int = 0
+)
+
+
+@JsonClass(generateAdapter = true)
+data class ParentChildAttendanceOverviewDto(
+    val percentage: Float = 0f,
+    val total: Int = 0,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val od: Int = 0,
+    val records: List<ParentChildAttendanceDto> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class VerificationRequestDto(
+    val status: String,
+    val remarks: String
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODTeachingLogsDashboardDto(
+    val total_lectures_conducted: Int = 0,
+    val pending_diaries_count: Int = 0,
+    val syllabus_status: List<HODAcademicMonitoringDto> = emptyList()
+)
+
+
+@JsonClass(generateAdapter = true)
+data class MentorAssignmentRequestDto(
+    val studentId: String,
+    val facultyId: String
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HODSyllabusCourseDto(
+    val courseName: String = "",
+    val facultyName: String = "",
+    val completionPercentage: Int = 0,
+    val status: String = "ON_TRACK"
+)
+
+@JsonClass(generateAdapter = true)
+data class FacultyTimetableItemDto(
+    val dayOfWeek: String = "",
+    val startTime: String = "",
+    val endTime: String = "",
+    val courseName: String = "",
+    val sessionType: String = "",
+    val roomNo: String = "",
+    val degreeName: String = "",
+    val semester: String = ""
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminPayrollDto(
+    val id: String,
+    val facultyId: String?,
+    val facultyName: String?,
+    val month: String?,
+    val amount: Double?,
+    val status: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminBackupDto(
+    val id: String,
+    val filename: String?,
+    val sizeBytes: Long?,
+    val status: String?,
+    val createdAt: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminSystemSettingsDto(
+    val institutionName: String?,
+    val academicYear: String?,
+    val semester: Int?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminAuditLogDto(
+    val id: String,
+    val userId: String?,
+    val action: String?,
+    val details: String?,
+    val timestamp: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminUserDto(
+    val id: String,
+    val email: String,
+    val phone: String?,
+    val fullName: String,
+    val role: String,
+    val isActive: Boolean,
+    val departmentId: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminDepartmentDto(
+    val id: String,
+    val code: String,
+    val name: String,
+    val hodId: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminDegreeDto(
+    val id: String, 
+    val name: String, 
+    val code: String,
+    val durationYears: Int?,
+    val programLevel: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminCourseDto(
+    val id: String,
+    val code: String,
+    val name: String,
+    val semester: Int,
+    val credits: Int?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminAttendanceDefaulterDto(
+    val studentId: String,
+    val studentName: String?,
+    val department: String?,
+    val attendancePercentage: Double?,
+    val status: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminFeeStructureDto(
+    val id: String,
+    val name: String?,
+    val amount: Double?,
+    val semester: Int?,
+    val departmentId: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminScholarshipTypeDto(
+    val id: String,
+    val name: String?,
+    val percentage: Double?
+)
+
+@JsonClass(generateAdapter = true)
+data class AdminFeeStudentDto(
+    val studentId: String,
+    val studentName: String?,
+    val department: String?,
+    val currentSemester: Int?,
+    val totalFees: Double?,
+    val paidFees: Double?,
+    val dueFees: Double?
 )

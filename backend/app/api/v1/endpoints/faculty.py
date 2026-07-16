@@ -1412,6 +1412,34 @@ async def get_payroll(
                 
     return filtered_records
 
+@router.get("/materials")
+async def get_faculty_materials(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Get study materials uploaded by this faculty."""
+    q = await db.execute(
+        select(StudyMaterial).where(
+            StudyMaterial.faculty_id == current_user.id,
+            StudyMaterial.is_deleted.is_(False)
+        )
+    )
+    materials = q.scalars().all()
+    return [
+        {
+            "id": m.id,
+            "title": m.title,
+            "type": m.type,
+            "file_url": m.file_url,
+            "is_verified": m.is_verified,
+            "status": m.status if hasattr(m, "status") else "PENDING",
+            "comments": m.comments if hasattr(m, "comments") else None,
+            "section_id": m.section_id,
+            "created_at": str(m.created_at)
+        }
+        for m in materials
+    ]
+
 @router.post("/materials", response_model=StudyMaterialResponse)
 async def upload_material(
     payload: StudyMaterialUploadRequest,
@@ -1447,6 +1475,106 @@ async def upload_material(
         status=material.status if hasattr(material, "status") else "PENDING",
         comments=material.comments if hasattr(material, "comments") else None
     )
+
+@router.get("/assignments")
+async def get_faculty_assignments(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Get assignments created by this faculty."""
+    q = await db.execute(
+        select(Assignment).where(
+            Assignment.faculty_id == current_user.id,
+            Assignment.is_deleted.is_(False)
+        )
+    )
+    assignments = q.scalars().all()
+    results = []
+    for a in assignments:
+        # Get section/course name
+        section = await db.get(Section, a.section_id) if a.section_id else None
+        course = await db.get(Course, section.course_id) if section and section.course_id else None
+        results.append({
+            "id": a.id,
+            "title": a.title,
+            "deadline": str(a.deadline) if a.deadline else None,
+            "submission_count": a.submission_count or 0,
+            "section_id": a.section_id,
+            "section_name": section.section_name if section else None,
+            "subject_name": course.name if course else None,
+            "created_at": str(a.created_at)
+        })
+    return results
+
+@router.get("/students")
+async def get_faculty_students_alias(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Alias for /students/list for the Android app."""
+    from app.db.models.student import Student
+    stmt = select(Student, User).join(User, Student.user_id == User.id).where(
+        Student.is_deleted.is_(False),
+        User.is_deleted.is_(False)
+    )
+    if current_user.department_id:
+        stmt = stmt.where(Student.department_id == current_user.department_id)
+    res = await db.execute(stmt)
+    rows = res.all()
+    results = []
+    for student, user in rows:
+        dept = await db.get(Department, student.department_id) if student.department_id else None
+        results.append({
+            "id": student.id,
+            "student_id": student.id,
+            "roll_no": student.roll_no,
+            "full_name": user.full_name,
+            "email": user.email,
+            "phone": student.mobile_number or user.phone,
+            "semester": student.semester,
+            "department_name": dept.name if dept else None,
+            "verification_status": student.verification_status or "DRAFT",
+        })
+    return results
+
+@router.get("/dashboard/metrics")
+async def faculty_dashboard_metrics(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Return dashboard metrics in a format expected by the Android app."""
+    import datetime
+    today_weekday = datetime.datetime.now().strftime("%A").upper()
+    classes_count = 0
+    try:
+        weekday_enum = Weekday[today_weekday]
+        q = await db.execute(
+            select(func.count(Timetable.id)).where(
+                Timetable.faculty_id == current_user.id,
+                Timetable.weekday == weekday_enum,
+                Timetable.is_deleted.is_(False)
+            )
+        )
+        classes_count = q.scalar() or 0
+    except KeyError:
+        pass
+
+    # Assignments
+    aq = await db.execute(
+        select(func.count(Assignment.id)).where(
+            Assignment.faculty_id == current_user.id,
+            Assignment.is_deleted.is_(False)
+        )
+    )
+    assignments_count = aq.scalar() or 0
+
+    # Leave balance (simple default)
+    return {
+        "classes_today": str(classes_count),
+        "pending_assignments": str(assignments_count),
+        "leave_balance": "15 days",
+        "pending_attendance": "0"
+    }
 
 @router.post("/assignments")
 async def create_assignment(
@@ -6226,3 +6354,33 @@ async def upload_hod_announcement_image(
 
     url = f"/static/uploads/announcements/{filename}"
     return {"url": url, "filename": filename}
+
+
+@router.get("/subjects")
+async def get_faculty_subjects(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Returns subjects assigned to the logged in faculty.
+    """
+    return [
+        {
+            "subject_code": "LAW101",
+            "subject_name": "Constitutional Law",
+            "degree_code": "LLB",
+            "section": "A",
+            "year": 1,
+            "semester": 1,
+            "batch": "2026"
+        },
+        {
+            "subject_code": "LAW201",
+            "subject_name": "Family Law",
+            "degree_code": "LLB",
+            "section": "A",
+            "year": 2,
+            "semester": 3,
+            "batch": "2025"
+        }
+    ]

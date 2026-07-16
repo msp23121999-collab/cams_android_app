@@ -1,11 +1,13 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +32,7 @@ fun ParentChildTimetableScreen(
     viewModel: ParentTimetableViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -59,7 +61,7 @@ fun ParentChildTimetableScreen(
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -98,7 +100,7 @@ fun ParentChildTimetableScreen(
 
                 if (timetableForDay == null || timetableForDay.periods.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().weight(1f).padding(40.dp), contentAlignment = Alignment.Center) {
-                        Text("No schedule available for $selectedDay", color = CamsTextSecondary)
+                        Text("No schedule available for $selectedDay", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     LazyColumn(
@@ -138,7 +140,7 @@ fun ParentChildTimetableScreen(
                                         Text(
                                             period.time,
                                             fontSize = 13.sp,
-                                            color = CamsTextSecondary,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontWeight = FontWeight.Medium
                                         )
                                     }
@@ -151,7 +153,7 @@ fun ParentChildTimetableScreen(
                                             period.subjectName,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 15.sp,
-                                            color = CamsTextPrimary,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             maxLines = 2,
                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
@@ -176,7 +178,7 @@ fun ParentChildTimetableScreen(
                                             Text(
                                                 period.room,
                                                 fontSize = 12.sp,
-                                                color = CamsTextSecondary,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -185,7 +187,7 @@ fun ParentChildTimetableScreen(
                                             Text(
                                                 "Instructor: ${period.instructor}",
                                                 fontSize = 13.sp,
-                                                color = CamsTextSecondary.copy(alpha = 0.8f),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                                                 maxLines = 1,
                                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                             )

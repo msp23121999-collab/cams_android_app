@@ -35,13 +35,13 @@ class MarksViewModel(
                 val marks = dtos.map { dto ->
                     InternalMarkRecord(
                         id = dto.id,
-                        subjectName = dto.subjectName,
-                        examScore = dto.markObtained,
+                        subjectName = if (dto.subjectName == "Unknown" && dto.examType.isNotEmpty()) dto.examType else dto.subjectName,
+                        examScore = dto.mark ?: dto.markObtained,
                         assignmentScore = 0.0,
                         presentationScore = 0.0,
                         vivaScore = 0.0,
                         attendanceScore = 0.0,
-                        totalScore = dto.markObtained
+                        totalScore = dto.mark ?: dto.markObtained
                     )
                 }
                 _uiState.update { it.copy(marks = marks, isLoading = false) }

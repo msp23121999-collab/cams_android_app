@@ -1,33 +1,42 @@
 package com.example.features.hod.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.hod.widgets.HODBaseScreen
 import com.example.core.navigation.AppRoutes
+import com.example.features.hod.providers.HODSubstitutionViewModel
+import com.example.core.network.HODSubstitutionDto
 
 @Composable
-fun HODSubstitutionManagementScreen(onNavigate: (String) -> Unit) {
+fun HODSubstitutionManagementScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: HODSubstitutionViewModel = viewModel()
+) {
     var activeTab by remember { mutableStateOf("allocation") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
+    val pendingOrAllocated = uiState.substitutions.filter { it.status == "PENDING" || it.status == "ALLOCATED" }
+    val completed = uiState.substitutions.filter { it.status == "COMPLETED" }
+
     HODBaseScreen(
         title = "Substitution Management",
         subtitle = "Manage substitute allocations & track completion",
@@ -43,9 +52,9 @@ fun HODSubstitutionManagementScreen(onNavigate: (String) -> Unit) {
     ) {
         // KPI Cards
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            KpiCard("Total Subs", "42", Icons.Filled.Groups, Color(0xFF64748B), Modifier.weight(1f))
-            KpiCard("Pending", "12", Icons.Filled.Schedule, Color(0xFFD97706), Modifier.weight(1f))
-            KpiCard("Completed", "28", Icons.Filled.CheckCircle, Color(0xFF059669), Modifier.weight(1f))
+            KpiCard("Total Subs", "${uiState.substitutions.size}", Icons.Filled.Groups, Color(0xFF64748B), Modifier.weight(1f))
+            KpiCard("Pending", "${uiState.substitutions.count { it.status == "PENDING" }}", Icons.Filled.Schedule, Color(0xFFD97706), Modifier.weight(1f))
+            KpiCard("Completed", "${completed.size}", Icons.Filled.CheckCircle, Color(0xFF059669), Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -58,33 +67,33 @@ fun HODSubstitutionManagementScreen(onNavigate: (String) -> Unit) {
 
         Spacer(Modifier.height(16.dp))
         
-        CamsCard(modifier = Modifier.fillMaxWidth()) {
-            if (activeTab == "allocation") {
-                Text("Substitute Allocation Register", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+        CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (activeTab == "allocation") {
+                Text("Substitute Allocation Register", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(5) { i ->
-                        SubItem(
-                            absent = "Dr. John Doe",
-                            substitute = "Prof. Jane Smith",
-                            subject = "Constitutional Law",
-                            date = "2026-07-07",
-                            status = if (i % 2 == 0) "PENDING" else "ALLOCATED"
-                        )
+                if (pendingOrAllocated.isEmpty()) {
+                    Text("No pending allocations.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(pendingOrAllocated) { sub ->
+                            SubItem(sub)
+                        }
                     }
                 }
             } else {
-                Text("Completion Tracker", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                Text("Completion Tracker", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(4) { i ->
-                        SubItem(
-                            absent = "Dr. Alice Brown",
-                            substitute = "Prof. Bob White",
-                            subject = "Criminal Law",
-                            date = "2026-07-05",
-                            status = if (i == 0) "COMPLETED" else "ALLOCATED"
-                        )
+                if (completed.isEmpty()) {
+                    Text("No completed substitutions.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(completed) { sub ->
+                            SubItem(sub)
+                        }
                     }
                 }
             }
@@ -102,7 +111,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
@@ -124,8 +133,8 @@ private fun TabButton(text: String, selected: Boolean, modifier: Modifier, onCli
 }
 
 @Composable
-private fun SubItem(absent: String, substitute: String, subject: String, date: String, status: String) {
-    val color = when(status) {
+private fun SubItem(sub: HODSubstitutionDto) {
+    val color = when(sub.status) {
         "PENDING" -> Color(0xFFD97706)
         "ALLOCATED" -> Color(0xFF2563EB)
         "COMPLETED" -> Color(0xFF059669)
@@ -136,15 +145,15 @@ private fun SubItem(absent: String, substitute: String, subject: String, date: S
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("$subject", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
+            Text(sub.subject, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(4.dp))
-            Text("Absent: $absent", fontSize = 13.sp, color = CamsTextSecondary)
-            Text("Sub: $substitute", fontSize = 13.sp, color = CamsTextSecondary)
+            Text("Absent: ${sub.absent_faculty}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Sub: ${sub.substitute_faculty}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(date, fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            Text(sub.date, fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Text(status, fontSize = 13.sp, fontWeight = FontWeight.Black, color = color, modifier = Modifier.background(color.copy(alpha=0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+            Text(sub.status, fontSize = 13.sp, fontWeight = FontWeight.Black, color = color, modifier = Modifier.background(color.copy(alpha=0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
         }
     }
 }

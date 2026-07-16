@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -44,7 +45,7 @@ fun StudentClubsScreen(
     viewModel: ClubsViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     var activeTab by remember { mutableStateOf("directory") }
     var searchQuery by remember { mutableStateOf("") }
@@ -79,7 +80,7 @@ fun StudentClubsScreen(
                 Text(
                     "Join and participate in campus clubs. Stay updated with club events, leadership roles, and membership status.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
             }
@@ -109,7 +110,7 @@ fun StudentClubsScreen(
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Search clubs...", fontSize = 12.sp) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp), tint = CamsNavy) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -210,11 +211,11 @@ private fun ClubCard(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(club.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+                        Icon(club.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     }
                 }
                 Column {
-                    Text(club.name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                    Text(club.name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                     Text(club.category.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
                 }
             }
@@ -223,7 +224,7 @@ private fun ClubCard(
             Text(
                 club.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = CamsTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -235,8 +236,8 @@ private fun ClubCard(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Filled.Groups, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
-                        Text("${club.membersCount}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextSecondary)
+                        Icon(Icons.Filled.Groups, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                        Text("${club.membersCount}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (club.role != "None") {
                         Surface(
@@ -244,7 +245,7 @@ private fun ClubCard(
                             shape = RoundedCornerShape(4.dp),
                         ) {
                             Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Icon(Icons.Filled.Shield, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(12.dp))
+                                Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                                 Text(club.role, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
                             }
                         }

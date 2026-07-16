@@ -1,5 +1,6 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminTimetableViewModel
+import com.example.features.admin.providers.AdminTimetableViewModelFactory
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.CamsApplication
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +31,12 @@ import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
 @Composable
-fun AdminFacultyAssignmentScreen(onNavigate: (String) -> Unit) {
+fun AdminFacultyAssignmentScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminTimetableViewModel = viewModel(factory = AdminTimetableViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     AdminBaseScreen(
         title = "Faculty Assignments",
         subtitle = "Assign subjects to faculty members",
@@ -31,7 +44,7 @@ fun AdminFacultyAssignmentScreen(onNavigate: (String) -> Unit) {
         onNavigate = onNavigate
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Current Assignments", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Current Assignments", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
                 Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
@@ -53,18 +66,18 @@ fun AdminFacultyAssignmentScreen(onNavigate: (String) -> Unit) {
                         }
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Prof. Name ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Constitutional Law", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Prof. Name ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Constitutional Law", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text(
                             "Semester ${i%3 + 1}", 
                             fontSize = 12.sp, 
                             fontWeight = FontWeight.Bold, 
-                            color = CamsTextSecondary, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, 
                             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         Spacer(Modifier.width(16.dp))
-                        Icon(Icons.Filled.MoreVert, null, tint = CamsTextSecondary)
+                        Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

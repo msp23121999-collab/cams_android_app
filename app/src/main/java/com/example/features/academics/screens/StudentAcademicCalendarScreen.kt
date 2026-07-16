@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,7 @@ fun StudentAcademicCalendarScreen(
     viewModel: AcademicCalendarViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -63,7 +64,7 @@ fun StudentAcademicCalendarScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                Text("Upcoming Events", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+                Text("Upcoming Events", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (uiState.isLoading) {
@@ -72,7 +73,7 @@ fun StudentAcademicCalendarScreen(
                     }
                 } else if (uiState.events.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No events scheduled.", color = CamsTextSecondary)
+                        Text("No events scheduled.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -108,7 +109,7 @@ private fun CalendarEventItem(event: CalendarEventModel) {
                 Icon(Icons.Filled.Event, null, tint = event.color, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(event.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(event.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(Icons.Filled.CalendarToday, null, tint = Color(0xFF64748B), modifier = Modifier.size(12.dp))
                     Text(event.date, fontSize = 12.sp, color = Color(0xFF64748B))

@@ -1,5 +1,6 @@
 package com.example.features.student.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +40,7 @@ fun StudentAcademicsScreen(
     onNavigate: (String) -> Unit,
     viewModel: com.example.features.student.providers.AcademicsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var activeTab by remember { mutableStateOf("timetable") }
@@ -143,7 +144,7 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Weekly Class Schedule", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Academic Year 2025-26", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                Text("Academic Year 2025-26", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
             Spacer(Modifier.width(8.dp))
             Surface(
@@ -164,11 +165,11 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
             Column(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 Row(modifier = Modifier.background(CamsBackground).padding(vertical = 12.dp)) {
                     Box(modifier = Modifier.width(60.dp).padding(horizontal = 12.dp)) {
-                        Text("Day", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("Day", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     periods.forEach { period ->
                         Box(modifier = Modifier.width(120.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
-                            Text(period, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextSecondary)
+                            Text(period, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -209,7 +210,7 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
                                         modifier = Modifier.fillMaxWidth().height(80.dp).border(1.dp, Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("FREE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary.copy(alpha = 0.5f))
+                                        Text("FREE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                                     }
                                 }
                             }
@@ -285,7 +286,7 @@ private fun StatCard(title: String, value: String, icon: androidx.compose.ui.gra
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(title, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold))
+                Text(title, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
             }
             Spacer(Modifier.height(8.dp))

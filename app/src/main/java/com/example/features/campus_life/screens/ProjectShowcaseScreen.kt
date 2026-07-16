@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +37,7 @@ fun ProjectShowcaseScreen(
     onNavigate: (String) -> Unit,
     viewModel: ProjectShowcaseViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf("all") }
 
     CamsScreen(scrollable = true,
@@ -57,9 +59,9 @@ fun ProjectShowcaseScreen(
                 border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
             ) {
                 Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Search titles...", style = MaterialTheme.typography.bodyMedium.copy(color = CamsTextSecondary))
+                    Text("Search titles...", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
             }
 
@@ -134,14 +136,14 @@ fun ResearchPaperCard(paper: ResearchPaper) {
                     }
                 }
                 Surface(color = CamsBackground, shape = CircleShape) {
-                    Text(paper.status.uppercase(), modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp))
+                    Text(paper.status.uppercase(), modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp))
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text(paper.title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary, lineHeight = 24.sp))
+            Text(paper.title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, lineHeight = 24.sp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(paper.abstract, style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+            Text(paper.abstract, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
 
             if (paper.awards.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -163,13 +165,13 @@ fun ResearchPaperCard(paper: ResearchPaper) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.Group, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                        Text(paper.team.joinToString(", "), style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                        Icon(Icons.Filled.Group, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Text(paper.team.joinToString(", "), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.School, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                        Text("Guide: ${paper.guide}", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                        Icon(Icons.Filled.School, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Text("Guide: ${paper.guide}", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                     }
                 }
                 

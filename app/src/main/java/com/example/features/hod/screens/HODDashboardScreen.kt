@@ -1,5 +1,6 @@
 package com.example.features.hod.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +37,7 @@ fun HODDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: HODViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HODBaseScreen(scrollable = true, 
         title = "HOD Command Center",
@@ -57,22 +59,22 @@ fun HODDashboardScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 DashboardStatCard("Pending Approvals", uiState.metrics.pendingApprovals, Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
-                DashboardStatCard("Active Subjects", uiState.metrics.activeSubjects, Icons.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                DashboardStatCard("Active Subjects", uiState.metrics.activeSubjects, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
             }
 
             // Academic Operations
-            Text("Academic Operations", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text("Academic Operations", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                ActionCard("Subject\nAllocation", Icons.Filled.MenuBook, Color(0xFF4F46E5), Color(0xFFEEF2FF), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_SUBJECT_ALLOCATION) }
+                ActionCard("Subject\nAllocation", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF4F46E5), Color(0xFFEEF2FF), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_SUBJECT_ALLOCATION) }
                 ActionCard("Class\nAdvisors", Icons.Filled.Groups, Color(0xFF8B5CF6), MaterialTheme.colorScheme.secondaryContainer, Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_CLASS_ADVISOR) }
                 ActionCard("Timetable\nSetup", Icons.Filled.CalendarMonth, Color(0xFF0EA5E9), Color(0xFFF0F9FF), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_TIMETABLE_SETUP) }
             }
 
             // Monitoring & Approvals
-            Text("Monitoring & Approvals", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text("Monitoring & Approvals", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 ActionCard("Faculty\nLeaves", Icons.Filled.AssignmentTurnedIn, Color(0xFFE11D48), Color(0xFFFFF1F2), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_LEAVE_APPROVALS) }
-                ActionCard("Marks\nApproval", Icons.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_MARK_APPROVALS) }
+                ActionCard("Marks\nApproval", Icons.AutoMirrored.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_MARK_APPROVALS) }
                 ActionCard("Attendance\nShortages", Icons.Filled.ReportProblem, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f)) { onNavigate(AppRoutes.HOD_ATTENDANCE_MONITORING) }
             }
 
@@ -84,7 +86,7 @@ fun HODDashboardScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Recent Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Recent Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(16.dp))
                     
                     uiState.activities.forEachIndexed { index, activity ->
@@ -112,8 +114,8 @@ private fun DashboardStatCard(label: String, value: String, icon: ImageVector, c
                 Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Medium)
-            Text(value, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = CamsTextPrimary)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -133,7 +135,7 @@ private fun ActionCard(title: String, icon: ImageVector, color: Color, bgColor: 
                 Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(title, fontSize = 13.sp, color = CamsTextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(title, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
@@ -145,9 +147,9 @@ private fun ActivityItem(title: String, time: String, icon: ImageVector, color: 
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(10.dp))
         }
         Column {
-            Text(title, fontSize = 14.sp, color = CamsTextPrimary, fontWeight = FontWeight.Medium)
+            Text(title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(4.dp))
-            Text(time, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

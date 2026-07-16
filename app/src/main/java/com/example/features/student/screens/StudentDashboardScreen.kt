@@ -1,5 +1,6 @@
 package com.example.features.student.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -51,7 +53,7 @@ fun StudentDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -77,7 +79,7 @@ fun StudentDashboardScreen(
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.ExitToApp, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout", tint = Color.White)
                 }
             },
             isOfflineMode = uiState.isOfflineMode,
@@ -224,8 +226,8 @@ private fun QuickActions(onNavigate: (String) -> Unit) {
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 QuickActionItem(Icons.Filled.CalendarToday, "Timetable") { onNavigate(AppRoutes.TIMETABLE) }
-                QuickActionItem(Icons.Filled.Send, "Apply Leave") { onNavigate(AppRoutes.LEAVE) }
-                QuickActionItem(Icons.Filled.Assignment, "Assignments") { onNavigate(AppRoutes.ASSIGNMENTS) }
+                QuickActionItem(Icons.AutoMirrored.Filled.Send, "Apply Leave") { onNavigate(AppRoutes.LEAVE) }
+                QuickActionItem(Icons.AutoMirrored.Filled.Assignment, "Assignments") { onNavigate(AppRoutes.ASSIGNMENTS) }
                 QuickActionItem(Icons.Filled.Payment, "Pay Fees") { onNavigate(AppRoutes.STUDENT_FEES) }
             }
         }
@@ -390,7 +392,7 @@ private fun QuickWidgets(
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         WidgetCard(
             title = "Digital Library",
-            icon = Icons.Filled.LibraryBooks,
+            icon = Icons.AutoMirrored.Filled.LibraryBooks,
             iconColor = Purple650,
             content = books.firstOrNull()?.let { "Currently Borrowed: ${it.title}. Due ${it.dueDate}." } ?: "No books borrowed.",
             modifier = Modifier.weight(1f)

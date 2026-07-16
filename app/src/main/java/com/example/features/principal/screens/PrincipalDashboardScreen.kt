@@ -1,5 +1,6 @@
 package com.example.features.principal.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,9 +9,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.principal.providers.PrincipalViewModel
 import com.example.features.principal.models.*
@@ -31,7 +34,7 @@ fun PrincipalDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: PrincipalViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     PrincipalBaseScreen(scrollable = false, 
         title = "Executive Dashboard",
@@ -56,7 +59,7 @@ fun PrincipalDashboardScreen(
 
             // Attendance Overview
             item {
-                Text("Today's Attendance Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+                Text("Today's Attendance Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -69,10 +72,10 @@ fun PrincipalDashboardScreen(
             // Institutional Academic Calendar
             item {
                 CamsCard {
-                    Text("Institutional Academic Calendar", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Institutional Academic Calendar", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(12.dp))
                     if (uiState.calendarEvents.isEmpty()) {
-                        Text("No upcoming events", color = CamsTextSecondary, fontSize = 14.sp)
+                        Text("No upcoming events", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     } else {
                         uiState.calendarEvents.take(3).forEach { event ->
                             CalendarItem(event.eventName, event.date)
@@ -87,7 +90,7 @@ fun PrincipalDashboardScreen(
 
             // Quick Actions
             item {
-                Text("Quick Actions", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+                Text("Quick Actions", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -108,8 +111,8 @@ private fun StatCard(label: String, value: String, icon: ImageVector, color: Col
             Box(Modifier.size(36.dp).background(color.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
             }
-            Text(value, fontWeight = FontWeight.Black, fontSize = 24.sp, color = CamsTextPrimary)
-            Text(label, fontSize = 13.sp, color = CamsTextSecondary)
+            Text(value, fontWeight = FontWeight.Black, fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -122,8 +125,8 @@ private fun KpiCard(label: String, value: String, icon: ImageVector, color: Colo
                 Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             }
             Column {
-                Text(value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = CamsTextPrimary)
-                Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+                Text(value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -135,8 +138,8 @@ private fun CalendarItem(title: String, date: String) {
         Box(Modifier.size(8.dp).background(CamsNavy, CircleShape))
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = CamsTextPrimary)
-            Text(date, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(date, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -153,8 +156,8 @@ private fun QuickActionCard(label: String, icon: ImageVector, onClick: () -> Uni
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(32.dp))
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = CamsTextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }

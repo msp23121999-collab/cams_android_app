@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +33,7 @@ fun FacultyResearchTrackerScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyResearchViewModelFactory(repository) }
     val viewModel: FacultyResearchViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Publications", "Mentorship", "Grants")
 
@@ -130,8 +131,8 @@ private fun ResearchStatsCard(
         ) {
             Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -153,7 +154,7 @@ private fun FacultyPublicationsList(papers: List<com.example.features.faculty.mo
                         verticalAlignment = Alignment.Top
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(paper.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                            Text(paper.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text(paper.publication ?: "Unknown Journal", fontSize = 13.sp, color = CamsNavy)
                         }
                         Surface(
@@ -171,9 +172,9 @@ private fun FacultyPublicationsList(papers: List<com.example.features.faculty.mo
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.CalendarToday, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.CalendarToday, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(paper.publicationDate?.take(4) ?: "N/A", fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(paper.publicationDate?.take(4) ?: "N/A", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -197,7 +198,7 @@ private fun StudentMentorshipList(students: List<com.example.core.network.Facult
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(mentee.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                        Text(mentee.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text(mentee.rollNo, fontSize = 12.sp, color = CamsNavy)
                     }
                     Surface(
@@ -233,11 +234,11 @@ private fun ResearchGrantsList(grants: List<com.example.features.faculty.models.
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(grant.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                        Text(grant.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text("₹ ${grant.grantAmount ?: "0.0"}", fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Source: ${grant.publisher ?: "Unknown"}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("Source: ${grant.publisher ?: "Unknown"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         color = if(grant.status == "Approved") Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFF59E0B).copy(alpha = 0.1f),

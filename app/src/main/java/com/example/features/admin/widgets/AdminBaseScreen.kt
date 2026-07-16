@@ -3,6 +3,7 @@ package com.example.features.admin.widgets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,7 @@ fun AdminBaseScreen(
                             }
                         }
                         IconButton(onClick = { onNavigate("LOGOUT") }) {
-                            Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = androidx.compose.ui.graphics.Color.White)
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = androidx.compose.ui.graphics.Color.White)
                         }
                     }
                 }

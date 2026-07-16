@@ -6,6 +6,7 @@ import com.example.core.ui.CamsScreen
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,7 @@ fun ParentBaseScreen(
                 val repository = (context.applicationContext as CamsApplication).container.parentRepository
                 ChildSwitcher(repository)
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             floatingActionButton = floatingActionButton,

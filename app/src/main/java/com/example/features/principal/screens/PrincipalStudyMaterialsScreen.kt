@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -31,16 +32,16 @@ fun PrincipalStudyMaterialsScreen(onNavigate: (String) -> Unit) {
         onNavigate = onNavigate
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            KpiCard("Pending Validation", "12", Icons.Filled.MenuBook, Color(0xFF3B82F6), Modifier.weight(1f))
+            KpiCard("Pending Validation", "12", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF3B82F6), Modifier.weight(1f))
             KpiCard("Lecture Notes", "8", Icons.Filled.Description, Color(0xFFF59E0B), Modifier.weight(1f))
             KpiCard("Case Studies", "3", Icons.Filled.Layers, Color(0xFF10B981), Modifier.weight(1f))
-            KpiCard("Question Banks", "1", Icons.Filled.FactCheck, Color(0xFFEF4444), Modifier.weight(1f))
+            KpiCard("Question Banks", "1", Icons.AutoMirrored.Filled.FactCheck, Color(0xFFEF4444), Modifier.weight(1f))
         }
         
         Spacer(modifier = Modifier.height(16.dp))
 
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Text("Pending Validation Inbox", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+            Text("Pending Validation Inbox", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             
             Spacer(Modifier.height(12.dp))
 
@@ -55,13 +56,13 @@ fun PrincipalStudyMaterialsScreen(onNavigate: (String) -> Unit) {
                         }
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Constitutional Law Notes Unit ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Fundamental Rights & Duties", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Constitutional Law Notes Unit ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Fundamental Rights & Duties", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Dr. A. Sharma", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextPrimary)
+                                Text("Dr. A. Sharma", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(Modifier.width(8.dp))
-                                Text("LECTURE NOTES", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp))
+                                Text("LECTURE NOTES", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                         Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEEF2FF)), shape = RoundedCornerShape(8.dp)) {
@@ -84,7 +85,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

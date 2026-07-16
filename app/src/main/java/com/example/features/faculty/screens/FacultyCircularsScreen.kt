@@ -78,8 +78,8 @@ private fun CircularItem(circular: Circular) {
                 Text(circular.date, fontSize = 13.sp, color = Color(0xFF64748B))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-            Text("Issued by: ${circular.issuer}", fontSize = 12.sp, color = CamsTextSecondary)
+            Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text("Issued by: ${circular.issuer}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = { /* View PDF */ },
@@ -89,7 +89,7 @@ private fun CircularItem(circular: Circular) {
             ) {
                 Icon(Icons.Filled.PictureAsPdf, null, modifier = Modifier.size(18.dp), tint = Color.Red)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("View Document", color = CamsTextPrimary)
+                Text("View Document", color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

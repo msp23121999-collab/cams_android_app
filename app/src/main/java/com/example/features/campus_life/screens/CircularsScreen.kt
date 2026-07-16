@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -49,7 +51,7 @@ fun CircularsScreen(
     viewModel: CircularsViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedNotice by remember { mutableStateOf<CircularNotice?>(null) }
 
     val categories = listOf(
@@ -75,7 +77,7 @@ fun CircularsScreen(
                         value = uiState.searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
                         placeholder = { Text("Search circulars...", fontSize = 14.sp) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp), tint = CamsTextSecondary) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -156,16 +158,16 @@ private fun FilterDropdown(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = CamsTextSecondary)
+                    Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         if (selectedOption == "ALL") "All ${label}s" else selectedOption,
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = CamsTextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = CamsTextSecondary)
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -232,7 +234,7 @@ private fun NoticeCard(notice: CircularNotice, onClick: () -> Unit) {
             Text(
                 notice.title,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black, lineHeight = 18.sp, fontSize = 16.sp),
-                color = CamsTextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -240,7 +242,7 @@ private fun NoticeCard(notice: CircularNotice, onClick: () -> Unit) {
             Text(
                 notice.body,
                 style = MaterialTheme.typography.bodySmall,
-                color = CamsTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 16.sp
@@ -256,12 +258,12 @@ private fun NoticeCard(notice: CircularNotice, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Filled.CalendarToday, contentDescription = null, modifier = Modifier.size(12.dp), tint = CamsTextSecondary)
-                    Text(notice.publishDate, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                    Icon(Icons.Filled.CalendarToday, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(notice.publishDate, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Read More", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black), color = CamsNavy)
-                    Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(12.dp), tint = CamsNavy)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }

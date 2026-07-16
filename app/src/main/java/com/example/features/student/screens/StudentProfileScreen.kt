@@ -1,5 +1,6 @@
 package com.example.features.student.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -49,7 +51,7 @@ fun StudentProfileScreen(
     viewModel: StudentProfileViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -78,7 +80,7 @@ fun StudentProfileScreen(
                     Icon(Icons.Filled.Download, contentDescription = "Download Profile", tint = Color.White)
                 }
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             scrollable = false
@@ -190,7 +192,7 @@ fun VerificationBanner(status: String, onVerifyClick: () -> Unit) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(32.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = color)
-                Text(desc, fontSize = 12.sp, color = CamsTextSecondary)
+                Text(desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (status == "DRAFT") {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
@@ -238,11 +240,11 @@ fun KPICard(label: String, value: String, icon: ImageVector, modifier: Modifier 
                     .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(16.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = CamsTextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(label.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -256,7 +258,7 @@ fun TabNavigation(activeTab: String, onTabSelected: (String) -> Unit) {
         TabItem("skills", Icons.Filled.Psychology, "Skills"),
         TabItem("aitools", Icons.Filled.AutoAwesome, "AI Hub"),
         TabItem("documents", Icons.Filled.UploadFile, "Docs"),
-        TabItem("advisor", Icons.Filled.Message, "Remarks")
+        TabItem("advisor", Icons.AutoMirrored.Filled.Message, "Remarks")
     )
 
     ScrollableTabRow(
@@ -320,7 +322,7 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
                 Icon(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = "Edit Contact Info",
-                    tint = CamsNavy,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -356,8 +358,8 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
             onDismissRequest = { showEditDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Edit, contentDescription = null, tint = CamsNavy)
-                    Text("Edit Contact Details", fontWeight = FontWeight.Black, fontSize = 18.sp, color = CamsTextPrimary)
+                    Icon(Icons.Filled.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("Edit Contact Details", fontWeight = FontWeight.Black, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
             },
             text = {
@@ -370,7 +372,7 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
                     Text(
                         text = "Update your contact information below. These changes will update your academic records once saved.",
                         fontSize = 12.sp,
-                        color = CamsTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 16.sp
                     )
 
@@ -514,10 +516,10 @@ fun AcademicTab(profile: StudentProfileResponse?) {
             modifier = Modifier.fillMaxWidth().height(240.dp),
         ) {
             Column {
-                Text("Performance Analytics", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                Text("Performance Analytics", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Analytics not available.", color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                    Text("Analytics not available.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -556,7 +558,7 @@ fun SkillsTab(profile: StudentProfileResponse?) {
         ) {
             Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Overall AIBE Readiness", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                    Text("Overall AIBE Readiness", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${profile?.aibeReadiness ?: 0}%", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = CamsNavy)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -578,14 +580,14 @@ fun SkillsTab(profile: StudentProfileResponse?) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     profile?.skillAssessment?.forEach { skill ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(skill.skill, modifier = Modifier.width(80.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                            Text(skill.skill, modifier = Modifier.width(80.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             LinearProgressIndicator(
                                 progress = skill.level / 100f,
                                 modifier = Modifier.weight(1f).height(4.dp).clip(CircleShape),
                                 color = CamsNavy,
                                 trackColor = CamsNavy.copy(alpha = 0.1f)
                             )
-                            Text("${skill.level}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                            Text("${skill.level}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -599,13 +601,13 @@ fun SkillsTab(profile: StudentProfileResponse?) {
             ) {
                 Column {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(pub.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.weight(1f), color = CamsTextPrimary)
+                        Text(pub.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
                         Surface(color = CamsNavy.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                             Text("Published", color = CamsNavy, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Published in: ${pub.journal} • ${pub.year}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("Published in: ${pub.journal} • ${pub.year}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (pub.coAuthors != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         SuggestionChip(onClick = {}, label = { Text("Co-authored with ${pub.coAuthors}", fontSize = 12.sp) })
@@ -653,7 +655,7 @@ fun AiHubTab() {
                 CamsCard(
                     modifier = Modifier.clickable { },
                 ) {
-                    Text(prompt, fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Medium)
+                    Text(prompt, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -667,11 +669,11 @@ fun AiHubTab() {
                     Text("92%", fontWeight = FontWeight.Bold, color = CamsNavy)
                 }
                 Column {
-                    Text("Corporate Law Match", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                    Text("Based on your GPA and Trilegal internship.", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("Corporate Law Match", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Based on your GPA and Trilegal internship.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = {}) { Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = CamsNavy) }
+                IconButton(onClick = {}) { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
             }
         }
     }
@@ -721,8 +723,8 @@ fun DocumentCard(label: String, url: String?, modifier: Modifier = Modifier) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
-            Text("PDF or JPG", fontSize = 12.sp, color = CamsTextSecondary)
+            Text(label, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text("PDF or JPG", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(
                 onClick = {},
@@ -738,7 +740,7 @@ fun DocumentCard(label: String, url: String?, modifier: Modifier = Modifier) {
 @Composable
 fun AdvisorRemarksTab(record: com.example.features.student.models.MentorshipRecord?) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionHeader(Icons.Filled.Message, "Mentorship Notes")
+        SectionHeader(Icons.AutoMirrored.Filled.Message, "Mentorship Notes")
         record?.let {
             RemarkCard("Academic Review", it.academicReview ?: "No review recorded.")
             RemarkCard("Improvement Plan", it.improvementPlan ?: "No plan recorded.")
@@ -756,8 +758,8 @@ fun MootCard(moot: MootCourt) {
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(moot.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                Text("Role: ${moot.role} • ${moot.date}", fontSize = 13.sp, color = CamsTextSecondary)
+                Text(moot.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("Role: ${moot.role} • ${moot.date}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Surface(
                 color = CamsNavy.copy(alpha = 0.1f),
@@ -776,12 +778,12 @@ fun InternshipCard(internship: Internship) {
     ) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(internship.organization ?: internship.company ?: "N/A", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(internship.organization ?: internship.company ?: "N/A", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(internship.status ?: "", color = CamsNavy, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
-            Text(internship.role ?: "Intern", fontSize = 12.sp, color = CamsTextSecondary)
+            Text(internship.role ?: "Intern", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(internship.responsibilities ?: "", fontSize = 13.sp, color = CamsTextSecondary)
+            Text(internship.responsibilities ?: "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -794,7 +796,7 @@ fun RemarkCard(title: String, content: String) {
         Column {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsNavy)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(content, fontSize = 13.sp, color = CamsTextSecondary, lineHeight = 18.sp)
+            Text(content, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
         }
     }
 }
@@ -817,8 +819,8 @@ fun ResultCard(sem: String, sgpa: String, modifier: Modifier) {
 @Composable
 fun SectionHeader(icon: ImageVector, title: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
-        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = CamsTextPrimary)
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -830,8 +832,8 @@ fun InfoGrid(items: List<Pair<String, String>>) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items.forEach { (label, value) ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(label, fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Medium)
-                    Text(value, fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.weight(1f).padding(start = 16.dp))
+                    Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    Text(value, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.weight(1f).padding(start = 16.dp))
                 }
                 if (label != items.last().first) {
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))

@@ -1,5 +1,6 @@
 package com.example.features.student.screens.hallticket
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +37,7 @@ fun HallTicketScreen(
     currentRoute: String,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     StudentBaseScreen(
         title = "Hall Tickets",
@@ -109,7 +110,7 @@ private fun HallTicketCard(ticket: HallTicketDto) {
                     Text(
                         text = "Date: ${ticket.examDate ?: "TBD"}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = CamsTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 

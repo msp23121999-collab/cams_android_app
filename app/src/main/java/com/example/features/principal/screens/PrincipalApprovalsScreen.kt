@@ -1,5 +1,6 @@
 package com.example.features.principal.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +37,7 @@ fun PrincipalApprovalsScreen(
         }
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Leave Requests", "Faculty Onboarding")
 
@@ -100,12 +102,12 @@ fun PrincipalLeavesTab(
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text(leave.applicantName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text(leave.departmentName ?: "Unknown Department", fontSize = 14.sp, color = CamsTextSecondary)
+                        Text(leave.applicantName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(leave.departmentName ?: "Unknown Department", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Filled.Event, null, modifier = Modifier.size(16.dp), tint = CamsTextSecondary)
-                            Text("${leave.startDate} to ${leave.endDate}", fontSize = 12.sp, color = CamsTextSecondary)
+                            Icon(Icons.Filled.Event, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${leave.startDate} to ${leave.endDate}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     Surface(
@@ -153,12 +155,12 @@ fun PrincipalFacultyOnboardingTab(
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text(faculty.fullName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text(faculty.departmentName, fontSize = 14.sp, color = CamsTextSecondary)
+                        Text(faculty.fullName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(faculty.departmentName, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Filled.Email, null, modifier = Modifier.size(16.dp), tint = CamsTextSecondary)
-                            Text(faculty.email, fontSize = 12.sp, color = CamsTextSecondary)
+                            Icon(Icons.Filled.Email, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(faculty.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

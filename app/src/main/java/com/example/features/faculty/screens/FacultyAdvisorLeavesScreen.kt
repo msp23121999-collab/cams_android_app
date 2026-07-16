@@ -33,7 +33,7 @@ fun FacultyAdvisorLeavesScreen(onNavigate: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Pending Requests", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Pending Requests", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             val studentLeaves = listOf(
@@ -75,14 +75,14 @@ private fun AdvisorLeaveItem(leave: StudentLeave) {
                         Text(leave.studentName.take(1), fontWeight = FontWeight.Bold, color = CamsNavy)
                     }
                     Column {
-                        Text(leave.studentName, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                        Text(leave.studentName, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text(leave.type, fontSize = 12.sp, color = CamsNavy)
                     }
                 }
                 Text(leave.dates, fontSize = 13.sp, color = Color(0xFF64748B))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Reason: ${leave.reason}", fontSize = 13.sp, color = CamsTextSecondary)
+            Text("Reason: ${leave.reason}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(

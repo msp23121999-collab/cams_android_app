@@ -22,7 +22,7 @@ import com.example.core.theme.*
 @Composable
 fun UnauthorizedScreen(onNavigateToLogin: () -> Unit) {
     Scaffold(
-        containerColor = CamsBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier
@@ -56,14 +56,14 @@ fun UnauthorizedScreen(onNavigateToLogin: () -> Unit) {
                     text = "403 Access Forbidden",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        color = CamsTextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 )
                 
                 Text(
                     text = "You do not have permission to access this page. Please contact your administrator if you believe this is an error.",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = CamsTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     ),
                     modifier = Modifier.padding(bottom = 8.dp)

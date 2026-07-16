@@ -33,7 +33,7 @@ fun HODTimetableSetupScreen(onNavigate: (String) -> Unit) {
     ) {
         CamsCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Term Configuration", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                Text("Term Configuration", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
@@ -59,7 +59,7 @@ fun HODTimetableSetupScreen(onNavigate: (String) -> Unit) {
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             // Working Days
             CamsCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                Text("Working Days", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                Text("Working Days", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(12.dp))
                 val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -69,7 +69,7 @@ fun HODTimetableSetupScreen(onNavigate: (String) -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(days[i], fontWeight = FontWeight.Medium, fontSize = 14.sp, color = CamsTextPrimary)
+                            Text(days[i], fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             Switch(checked = i < 5, onCheckedChange = { })
                         }
                     }
@@ -79,7 +79,7 @@ fun HODTimetableSetupScreen(onNavigate: (String) -> Unit) {
             // Time Slots
             CamsCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Time Slots", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text("Time Slots", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     IconButton(onClick = { }) {
                         Icon(Icons.Filled.Add, contentDescription = "Add Slot", tint = Color(0xFF4F46E5))
                     }
@@ -95,7 +95,7 @@ fun HODTimetableSetupScreen(onNavigate: (String) -> Unit) {
                         ) {
                             Column {
                                 Text(if(isBreak) "Lunch Break" else "Period ${if(i>3) i else i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if(isBreak) Color(0xFFC2410C) else CamsTextPrimary)
-                                Text("0${9+i}:00 - ${if(10+i > 12) (10+i)-12 else 10+i}:00 ${if(10+i>=12) "PM" else "AM"}", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text("0${9+i}:00 - ${if(10+i > 12) (10+i)-12 else 10+i}:00 ${if(10+i>=12) "PM" else "AM"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             IconButton(onClick = { }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Remove", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))

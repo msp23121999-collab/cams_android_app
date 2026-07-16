@@ -1,5 +1,6 @@
 package com.example.features.hod.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +32,7 @@ fun HODStudentManagementScreen(
     viewModel: HODStudentViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     HODBaseScreen(
         title = "Student Management",
@@ -86,8 +87,8 @@ fun HODStudentManagementScreen(
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Student Directory", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("View and manage student records", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Student Directory", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("View and manage student records", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Button(
                             onClick = { },
@@ -123,13 +124,13 @@ fun HODStudentManagementScreen(
                                         modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(student.name.take(1), fontWeight = FontWeight.Bold, color = CamsTextSecondary, fontSize = 14.sp)
+                                        Text(student.name.take(1), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(student.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                                        Text(student.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                         Spacer(Modifier.height(4.dp))
-                                        Text("Roll No: ${student.rollNo} • Semester ${student.semester}", fontSize = 12.sp, color = CamsTextSecondary)
+                                        Text("Roll No: ${student.rollNo} • Semester ${student.semester}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
@@ -140,7 +141,7 @@ fun HODStudentManagementScreen(
                                             modifier = Modifier.background(Color(0xFFECFDF5), RoundedCornerShape(16.dp)).padding(horizontal = 10.dp, vertical = 4.dp)
                                         )
                                         Spacer(Modifier.height(8.dp))
-                                        Text("Att: 85%", fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.SemiBold)
+                                        Text("Att: 85%", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
@@ -161,13 +162,13 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.fillMaxWidth())
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.background(bgColor, RoundedCornerShape(8.dp)).padding(6.dp)) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
                 }
-                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

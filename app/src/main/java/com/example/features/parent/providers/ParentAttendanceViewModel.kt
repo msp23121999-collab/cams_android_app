@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ParentAttendanceState(
-    val attendanceRecords: List<AttendanceRecord> = emptyList(),
+    val summary: AttendanceSummary? = null,
     val subjectAttendance: List<SubjectAttendance> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null
@@ -43,11 +43,11 @@ class ParentAttendanceViewModel(private val repository: ParentRepository) : View
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val records = repository.getAttendance(currentChildId)
+                val summary = repository.getAttendance(currentChildId)
                 val subjects = repository.getSubjectAttendance(currentChildId)
                 
                 _uiState.update { it.copy(
-                    attendanceRecords = records,
+                    summary = summary,
                     subjectAttendance = subjects,
                     isLoading = false
                 ) }

@@ -1,5 +1,6 @@
 package com.example.features.principal.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +36,7 @@ fun PrincipalGrievancesScreen(
         }
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     val grievances = uiState.grievances
 
@@ -75,8 +77,8 @@ fun PrincipalGrievancesScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(grievance.subject, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                                Text("Category: ${grievance.category}", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text(grievance.subject, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Category: ${grievance.category}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(grievance.description, fontSize = 14.sp, color = Color(0xFF64748B))
                             }

@@ -69,8 +69,8 @@ fun HODClassAdvisorManagementScreen(onNavigate: (String) -> Unit) {
                         )
                     }
                     Column {
-                        Text("Class Advisor Configuration", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                        Text("Assign faculty members to manage class student registers, attendance and leaves.", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("Class Advisor Configuration", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Assign faculty members to manage class student registers, attendance and leaves.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -106,8 +106,8 @@ fun HODClassAdvisorManagementScreen(onNavigate: (String) -> Unit) {
                             )
                         }
                         Column {
-                            Text("Active Department Classes", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Manage advisor roles for current batches", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Active Department Classes", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Manage advisor roles for current batches", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -119,10 +119,10 @@ fun HODClassAdvisorManagementScreen(onNavigate: (String) -> Unit) {
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("BATCH", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.weight(1f))
-                        Text("SECTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.weight(1f))
-                        Text("ASSIGNED CLASS ADVISOR", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.weight(2f))
-                        Text("ACTIONS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.End)
+                        Text("BATCH", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Text("SECTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Text("ASSIGNED CLASS ADVISOR", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(2f))
+                        Text("ACTIONS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), textAlign = TextAlign.End)
                     }
 
                     LazyColumn {
@@ -134,7 +134,7 @@ fun HODClassAdvisorManagementScreen(onNavigate: (String) -> Unit) {
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("202${6-i}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, modifier = Modifier.weight(1f))
+                                Text("202${6-i}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                                 Box(modifier = Modifier.weight(1f)) {
                                     Text(
                                         "Section ${'A' + i}",
@@ -157,8 +157,8 @@ fun HODClassAdvisorManagementScreen(onNavigate: (String) -> Unit) {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("-- Assign Faculty --", fontSize = 12.sp, color = CamsTextPrimary)
-                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = CamsTextSecondary)
+                                        Text("-- Assign Faculty --", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                                 Box(modifier = Modifier.weight(1.5f), contentAlignment = Alignment.CenterEnd) {

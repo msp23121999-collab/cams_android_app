@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -44,7 +45,7 @@ fun TimetableScreen(
     viewModel: TimetableViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(
         scrollable = false,
@@ -63,7 +64,7 @@ fun TimetableScreen(
                 if (uiState.activeTab == "timetable") "WEEKLY CLASS SCHEDULE" else "SUBJECTS & CREDITS",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = CamsTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp
             )
             Box(Modifier.weight(1f).height(1.dp).background(Color.LightGray.copy(alpha = 0.2f)))
@@ -130,8 +131,8 @@ private fun TimetableTab(timetable: List<TimetablePeriod>) {
     val periods = listOf("09:00", "10:00", "11:15", "12:15", "14:00", "15:00")
     
     Column(modifier = Modifier.fillMaxSize()) {
-        Text("Weekly Class Schedule", fontWeight = FontWeight.Black, fontSize = 18.sp, color = CamsTextPrimary)
-        Text("Academic Year 2025-26 — Room allocations are live", fontSize = 12.sp, color = CamsTextSecondary)
+        Text("Weekly Class Schedule", fontWeight = FontWeight.Black, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text("Academic Year 2025-26 — Room allocations are live", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         
         Spacer(Modifier.height(16.dp))
         
@@ -143,13 +144,13 @@ private fun TimetableTab(timetable: List<TimetablePeriod>) {
                     // Header Row
                     Row(modifier = Modifier.background(CamsBackground).border(1.dp, Color.LightGray.copy(alpha = 0.2f))) {
                         Box(Modifier.width(80.dp).padding(12.dp), contentAlignment = Alignment.Center) {
-                            Text("DAY", fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("DAY", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         periods.forEach { time ->
                             Box(Modifier.width(120.dp).padding(12.dp), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("PERIOD", fontWeight = FontWeight.Black, fontSize = 13.sp, color = CamsTextSecondary)
-                                    Text(time, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextPrimary)
+                                    Text("PERIOD", fontWeight = FontWeight.Black, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(time, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                         }
@@ -166,7 +167,7 @@ private fun TimetableTab(timetable: List<TimetablePeriod>) {
                                         .padding(12.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(day.take(3), fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsTextPrimary)
+                                    Text(day.take(3), fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 
                                 periods.forEach { time ->
@@ -242,16 +243,16 @@ private fun AcademicsTab(uiState: TimetableState) {
                 border = BorderStroke(1.dp, CamsNavy.copy(alpha = 0.1f))
             ) {
                 Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Filled.School, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.School, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Column {
-                        Text("BCI Approved Curriculum — Five-Year Integrated B.A. LL.B.", fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsTextPrimary)
-                        Text("Subjects listed below are part of your current semester's approved course load.", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("BCI Approved Curriculum — Five-Year Integrated B.A. LL.B.", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Subjects listed below are part of your current semester's approved course load.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
         item {
-            Text("Enrolled Subjects & Credit Distribution", fontWeight = FontWeight.Black, fontSize = 16.sp, color = CamsTextPrimary)
+            Text("Enrolled Subjects & Credit Distribution", fontWeight = FontWeight.Black, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         items(uiState.subjects) { subject ->
             SubjectListItem(subject)
@@ -272,8 +273,8 @@ private fun StatCard(label: String, value: String, icon: ImageVector, color: Col
                 Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
             }
             Column {
-                Text(value, fontWeight = FontWeight.Black, fontSize = 18.sp, color = CamsTextPrimary)
-                Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                Text(value, fontWeight = FontWeight.Black, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -294,7 +295,7 @@ private fun SubjectListItem(subject: AcademicSubject) {
                     Text(
                         subject.code,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 12.sp)
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                     )
                 }
                 Surface(
@@ -309,21 +310,21 @@ private fun SubjectListItem(subject: AcademicSubject) {
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text(subject.name, fontWeight = FontWeight.Black, fontSize = 15.sp, color = CamsTextPrimary)
-            Text(subject.type, fontSize = 13.sp, color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+            Text(subject.name, fontWeight = FontWeight.Black, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(subject.type, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("FACULTY", fontSize = 13.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary)
-                    Text(subject.faculty, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("FACULTY", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(subject.faculty, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("CREDITS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary)
+                    Text("CREDITS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(subject.credits.toString(), fontSize = 18.sp, fontWeight = FontWeight.Black, color = CamsNavy)
-                        Text("Cr", fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary)
+                        Text("Cr", fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

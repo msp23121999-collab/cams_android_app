@@ -1,13 +1,16 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +35,7 @@ fun ParentSettingsScreen(
     viewModel: ParentProfileViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showChangePasswordDialog by rememberSaveable { mutableStateOf(false) }
     var currentPassword by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
@@ -92,7 +95,7 @@ fun ParentSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Support Section
-            SectionHeader(icon = Icons.Filled.Help, title = "Support")
+            SectionHeader(icon = Icons.AutoMirrored.Filled.Help, title = "Support")
 
             SettingsCard(
                 icon = Icons.Filled.Info,
@@ -121,7 +124,7 @@ fun ParentSettingsScreen(
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Filled.Logout, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Sign Out", fontWeight = FontWeight.Bold)
             }
@@ -144,7 +147,7 @@ fun ParentSettingsScreen(
                     Icon(
                         Icons.Filled.Lock,
                         contentDescription = null,
-                        tint = CamsNavy,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -152,7 +155,7 @@ fun ParentSettingsScreen(
                         "Change Password",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = CamsTextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
@@ -261,7 +264,7 @@ fun ParentSettingsScreen(
                     Text(
                         "Password must be at least 8 characters with uppercase, lowercase, number, and special character.",
                         style = MaterialTheme.typography.labelSmall,
-                        color = CamsTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
@@ -326,7 +329,7 @@ private fun SectionHeader(icon: ImageVector, title: String) {
             icon,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
-            tint = CamsNavy
+            tint = MaterialTheme.colorScheme.primary
         )
         Text(
             title.uppercase(),
@@ -370,7 +373,7 @@ private fun SettingsCard(
                         icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = CamsNavy
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -382,14 +385,14 @@ private fun SettingsCard(
                     title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = CamsTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -399,7 +402,7 @@ private fun SettingsCard(
                 Icons.Filled.ChevronRight,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = CamsTextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

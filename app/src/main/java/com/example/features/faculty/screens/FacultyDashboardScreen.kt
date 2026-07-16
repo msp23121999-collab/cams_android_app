@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,10 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.faculty.providers.FacultyDashboardViewModel
 import com.example.features.faculty.models.*
@@ -31,7 +34,7 @@ fun FacultyDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: FacultyDashboardViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val metrics = uiState.metrics
     val subjects = uiState.assignedSubjects
     // For now, since recentActivities and upcomingEvents were hardcoded in the old VM and not in current state, 
@@ -49,14 +52,14 @@ fun FacultyDashboardScreen(
         // Stats Row
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard("Classes Today", metrics.classesToday, Icons.Filled.Event, CamsNavy, Modifier.weight(1f))
-            StatCard("Assignments", metrics.pendingAssignments, Icons.Filled.Assignment, Color(0xFF8B5CF6), Modifier.weight(1f))
+            StatCard("Assignments", metrics.pendingAssignments, Icons.AutoMirrored.Filled.Assignment, Color(0xFF8B5CF6), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard("Attendance Due", metrics.pendingAttendance, Icons.Filled.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
             StatCard("Leaves Left", metrics.leaveBalance, Icons.Filled.FlightTakeoff, Color(0xFFF59E0B), Modifier.weight(1f))
         }
 
-        Text("Today's Schedule", fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 18.sp)
+        Text("Today's Schedule", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
         CamsCard {
             if (subjects.isEmpty()) {
                 Text("No classes scheduled for today", modifier = Modifier.padding(16.dp))
@@ -67,32 +70,32 @@ fun FacultyDashboardScreen(
             }
         }
 
-        Text("Upcoming Events", fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 18.sp)
+        Text("Upcoming Events", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
         CamsCard {
             events.forEach { event ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(8.dp).background(event.color, CircleShape))
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(event.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                        Text("${event.date} • ${event.time}", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(event.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("${event.date} • ${event.time}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
 
-        Text("Recent Activities", fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 18.sp)
+        Text("Recent Activities", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
         CamsCard {
             activities.forEach { activity ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(activity.icon, null, tint = activity.color, modifier = Modifier.size(20.dp))
                         Column {
-                            Text(activity.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text(activity.time, fontSize = 12.sp, color = CamsTextSecondary)
+                            Text(activity.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(activity.time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Icon(Icons.Filled.ChevronRight, null, tint = CamsTextSecondary)
+                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -107,8 +110,8 @@ private fun StatCard(label: String, value: String, icon: ImageVector, color: Col
                 Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
             }
             Column {
-                Text(value, fontWeight = FontWeight.Black, fontSize = 20.sp, color = CamsTextPrimary)
-                Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                Text(value, fontWeight = FontWeight.Black, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -118,11 +121,11 @@ private fun StatCard(label: String, value: String, icon: ImageVector, color: Col
 private fun ScheduleItem(time: String, subject: String, room: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.width(80.dp)) {
-            Text(time, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextPrimary)
+            Text(time, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         Column {
-            Text(subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-            Text(room, fontSize = 13.sp, color = CamsTextSecondary)
+            Text(subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(room, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -131,9 +134,9 @@ private fun ScheduleItem(time: String, subject: String, room: String) {
 private fun TaskItem(title: String, subtitle: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-            Text(subtitle, fontSize = 13.sp, color = CamsTextSecondary)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Icon(Icons.Filled.ChevronRight, null, tint = CamsTextSecondary)
+        Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

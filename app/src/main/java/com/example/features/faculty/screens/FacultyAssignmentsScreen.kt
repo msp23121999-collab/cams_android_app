@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +29,7 @@ fun FacultyAssignmentsScreen(
     viewModel: FacultyAssignmentsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Active", "Evaluation", "Archived")
 
@@ -84,7 +85,7 @@ fun FacultyAssignmentsScreen(
                 Text(
                     "No assignments found in this category.",
                     modifier = Modifier.padding(20.dp),
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             } else {
@@ -151,7 +152,7 @@ fun AssignmentCard(assignment: com.example.core.network.FacultyAssignmentDto, is
                 assignment.title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = CamsTextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -162,8 +163,8 @@ fun AssignmentCard(assignment: com.example.core.network.FacultyAssignmentDto, is
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Submissions", fontSize = 13.sp, color = CamsTextSecondary)
-                    Text("${assignment.submitted}/${assignment.total}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Submissions", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${assignment.submitted}/${assignment.total}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 
                 val progress = if (assignment.total > 0) assignment.submitted.toFloat() / assignment.total.toFloat() else 0f

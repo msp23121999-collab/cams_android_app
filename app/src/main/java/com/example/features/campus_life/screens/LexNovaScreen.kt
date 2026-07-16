@@ -1,14 +1,17 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -34,7 +37,7 @@ fun LexNovaScreen(
     onNavigate: (String) -> Unit,
     viewModel: LexNovaViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(
         scrollable = true,
@@ -97,11 +100,11 @@ fun LexNovaCommandCenter(state: LexNovaState) {
 fun LexNovaKPIItem(kpi: LexNovaKPI, modifier: Modifier = Modifier) {
     CamsCard(modifier = modifier) {
         Column {
-            Icon(kpi.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+            Icon(kpi.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(kpi.value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+            Text(kpi.value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
             Text(kpi.label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = CamsNavy)
-            Text(kpi.subText, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = CamsTextSecondary)
+            Text(kpi.subText, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -111,7 +114,7 @@ fun LexNovaTimetable(timetable: List<TimetableEntry>, modifier: Modifier = Modif
     CamsCard(modifier = modifier) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("Academic Command Center", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                Text("Academic Command Center", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Surface(shape = RoundedCornerShape(4.dp), color = CamsBackground) {
                     Text("Fall 2026", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsNavy))
                 }
@@ -119,15 +122,15 @@ fun LexNovaTimetable(timetable: List<TimetableEntry>, modifier: Modifier = Modif
             Spacer(modifier = Modifier.height(20.dp))
             if (timetable.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("No classes scheduled.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                    Text("No classes scheduled.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 timetable.forEach { entry ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
-                            Text(entry.time.split(" - ")[0], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
+                            Text(entry.time.split(" - ")[0], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
                             Box(modifier = Modifier.width(1.dp).height(12.dp).background(Color.LightGray))
-                            Text(entry.time.split(" - ")[1], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
+                            Text(entry.time.split(" - ")[1], style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Surface(
@@ -137,8 +140,8 @@ fun LexNovaTimetable(timetable: List<TimetableEntry>, modifier: Modifier = Modif
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text(entry.course, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                                    Text("${entry.professor} • ${entry.room}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
+                                    Text(entry.course, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${entry.professor} • ${entry.room}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 if (entry.isLive) {
                                     Text("LIVE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = Color(0xFFF43F5E)))
@@ -156,13 +159,13 @@ fun LexNovaTimetable(timetable: List<TimetableEntry>, modifier: Modifier = Modif
 fun LexNovaDigitalID(modifier: Modifier = Modifier) {
     CamsCard(modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text("Digital Identity Hub", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+            Text("Digital Identity Hub", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(20.dp))
             Box(modifier = Modifier.size(100.dp).background(CamsBackground, RoundedCornerShape(8.dp)).padding(8.dp)) {
-                Icon(Icons.Filled.QrCode, contentDescription = null, tint = CamsNavy, modifier = Modifier.fillMaxSize())
+                Icon(Icons.Filled.QrCode, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.fillMaxSize())
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Arjun Mehta", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+            Text("Arjun Mehta", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
             Text("ID: LNS-2024-8932", style = MaterialTheme.typography.labelSmall.copy(color = CamsNavy))
             Spacer(modifier = Modifier.height(20.dp))
             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFECFDF5)) {
@@ -191,10 +194,10 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                 }
                 Spacer(modifier = Modifier.width(20.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Legal Skills & Certifications", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
-                    Text("LMS for specialized law courses", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                    Text("Legal Skills & Certifications", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
+                    Text("LMS for specialized law courses", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = CamsNavy)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -204,11 +207,11 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                 Row(modifier = Modifier.fillMaxWidth().background(CamsNavy.copy(alpha = 0.05f)).padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(shape = RoundedCornerShape(8.dp), color = CamsNavy.copy(alpha = 0.1f)) {
-                            Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = CamsNavy, modifier = Modifier.padding(4.dp).size(18.dp))
+                            Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(4.dp).size(18.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("LexNova AI Mentor", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                            Text("LexNova AI Mentor", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                             Text("RESEARCH ASSISTANT", style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsNavy))
                         }
                     }
@@ -216,7 +219,7 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                 }
                 
                 Box(modifier = Modifier.height(200.dp).padding(16.dp)) {
-                    Text("How can I assist your legal research today?", color = CamsTextSecondary, style = MaterialTheme.typography.bodySmall)
+                    Text("How can I assist your legal research today?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
 
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -235,7 +238,7 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = {}, modifier = Modifier.background(CamsNavy, RoundedCornerShape(12.dp))) {
-                        Icon(Icons.Filled.Send, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White)
                     }
                 }
             }
@@ -244,26 +247,26 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
         // Documents
         CamsCard {
             Column {
-                Text("Knowledge Vault", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                Text("Knowledge Vault", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(20.dp))
                 if (state.documents.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        Text("No documents available in vault.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                        Text("No documents available in vault.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     state.documents.forEach { doc ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(shape = RoundedCornerShape(8.dp), color = CamsBackground, modifier = Modifier.size(40.dp)) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(doc.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                                    Icon(doc.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 }
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(doc.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                                Text("${doc.author} • ${doc.size}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
+                                Text(doc.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                                Text("${doc.author} • ${doc.size}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Icon(Icons.Filled.Download, contentDescription = null, tint = CamsTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -285,11 +288,11 @@ fun LexNovaCareers(onNavigate: (String) -> Unit) {
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("LexSphere Internship Portal", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                Text("LexSphere Internship Portal", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                 Text(
                     "The premier enterprise platform connecting law students with Tier-1 firms and global legal opportunities.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(
@@ -315,13 +318,13 @@ fun LexNovaCareers(onNavigate: (String) -> Unit) {
 fun LexNovaEmptyState(tab: String) {
     CamsCard(modifier = Modifier.fillMaxWidth()) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 40.dp)) {
-            Icon(Icons.Filled.Scale, contentDescription = null, modifier = Modifier.size(48.dp), tint = CamsNavy.copy(alpha = 0.1f))
+            Icon(Icons.Filled.Scale, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Module Category: $tab", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+            Text("Module Category: $tab", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
             Text(
                 "These premium enterprise modules are seamlessly integrated into the LexNova ecosystem.",
                 style = MaterialTheme.typography.bodySmall,
-                color = CamsTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 40.dp)
             )

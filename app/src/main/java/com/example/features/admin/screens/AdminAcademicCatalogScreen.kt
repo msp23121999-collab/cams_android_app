@@ -1,5 +1,6 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,9 +36,9 @@ fun AdminAcademicCatalogScreen(
         }
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Degree Setup", "Course Setup")
+    val tabs = listOf("Departments", "Degree Setup", "Course Setup")
 
     AdminBaseScreen(
         title = "Academic Catalog",
@@ -69,10 +70,27 @@ fun AdminAcademicCatalogScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     if (selectedTabIndex == 0) {
+                        DepartmentSetupView(uiState.departments)
+                    } else if (selectedTabIndex == 1) {
                         DegreeSetupView(uiState.degrees)
                     } else {
                         CourseSetupView(uiState.courses)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DepartmentSetupView(departments: List<com.example.features.admin.models.AdminDepartment>) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(departments) { dept ->
+            CamsCard {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Text(dept.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Code: ${dept.code} • HOD: ${dept.hodId ?: "Not Assigned"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -85,9 +103,9 @@ private fun DegreeSetupView(degrees: List<com.example.features.admin.models.Admi
         items(degrees) { degree ->
             CamsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(degree.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text(degree.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(4.dp))
-                    Text("${degree.durationYears ?: 0} Years • Level: ${degree.programLevel ?: "N/A"}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("${degree.durationYears ?: 0} Years • Level: ${degree.programLevel ?: "N/A"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -100,9 +118,9 @@ private fun CourseSetupView(courses: List<com.example.features.admin.models.Admi
         items(courses) { course ->
             CamsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(course.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text(course.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(4.dp))
-                    Text("${course.code} • ${course.credits ?: 0} Credits • Sem ${course.semester}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("${course.code} • ${course.credits ?: 0} Credits • Sem ${course.semester}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

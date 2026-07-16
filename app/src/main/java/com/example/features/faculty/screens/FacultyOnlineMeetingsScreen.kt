@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,7 @@ fun FacultyOnlineMeetingsScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyOnlineMeetingsViewModelFactory(repository) }
     val viewModel: FacultyOnlineMeetingsViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FacultyBaseScreen(scrollable = false, 
         title = "Online Meetings",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_ONLINE_MEETINGS,
@@ -53,7 +54,7 @@ fun FacultyOnlineMeetingsScreen(onNavigate: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Upcoming Meetings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Upcoming Meetings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             if (uiState.isLoading) {
@@ -62,7 +63,7 @@ fun FacultyOnlineMeetingsScreen(onNavigate: (String) -> Unit) {
                 }
             } else if (uiState.meetings.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No upcoming meetings", color = CamsTextSecondary)
+                    Text("No upcoming meetings", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -104,7 +105,7 @@ private fun MeetingItem(meeting: com.example.core.network.OnlineMeetingDto) {
                 Text(meeting.date ?: "TBA", fontSize = 12.sp, color = Color(0xFF64748B))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(meeting.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+            Text(meeting.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(Icons.Filled.AccessTime, null, tint = Color(0xFF64748B), modifier = Modifier.size(14.dp))
                 Text(meeting.time ?: "N/A", fontSize = 13.sp, color = Color(0xFF64748B))

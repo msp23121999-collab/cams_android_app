@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,7 @@ fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyResearchViewModelFactory(repository) }
     val viewModel: FacultyResearchViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FacultyBaseScreen(scrollable = false, 
         title = "Mentor Student Management",
         currentRoute = "/faculty/mentor-student-management",
@@ -71,7 +72,7 @@ fun FacultyMentorStudentManagementScreen(onNavigate: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("My Mentees", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("My Mentees", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -102,11 +103,11 @@ private fun MenteeItem(mentee: com.example.core.network.FacultyMentorshipStudent
                     .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Person, null, tint = CamsNavy)
+                Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.primary)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(mentee.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 16.sp)
-                Text("ID: ${mentee.rollNo}", fontSize = 12.sp, color = CamsTextSecondary)
+                Text(mentee.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
+                Text("ID: ${mentee.rollNo}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(
@@ -114,7 +115,7 @@ private fun MenteeItem(mentee: com.example.core.network.FacultyMentorshipStudent
                             .size(8.dp)
                             .background(Color(0xFF10B981), CircleShape)
                     )
-                    Text("Semester ${mentee.semester ?: "N/A"}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Semester ${mentee.semester ?: "N/A"}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
             IconButton(onClick = { /* Open Mentorship Diary */ }) {

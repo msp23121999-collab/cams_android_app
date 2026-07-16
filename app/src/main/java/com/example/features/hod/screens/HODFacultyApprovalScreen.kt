@@ -30,7 +30,7 @@ fun HODFacultyApprovalScreen(onNavigate: (String) -> Unit) {
     ) {
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Pending Onboarding", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                Text("Pending Onboarding", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text("2 Pending", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4F46E5), modifier = Modifier.background(Color(0xFFEEF2FF), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
             }
             Spacer(Modifier.height(16.dp))
@@ -40,10 +40,10 @@ fun HODFacultyApprovalScreen(onNavigate: (String) -> Unit) {
                         Column(Modifier.padding(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text("New Faculty ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                    Text("newfac${i+1}@example.com", fontSize = 13.sp, color = CamsTextSecondary)
+                                    Text("New Faculty ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("newfac${i+1}@example.com", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(Modifier.height(4.dp))
-                                    Text("Designation: Assistant Professor", fontSize = 12.sp, color = CamsTextSecondary)
+                                    Text("Designation: Assistant Professor", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEF2F2), contentColor = Color(0xFFE11D48)), shape = RoundedCornerShape(8.dp)) {

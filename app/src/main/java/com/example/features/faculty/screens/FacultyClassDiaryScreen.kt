@@ -47,7 +47,7 @@ fun FacultyClassDiaryScreen(onNavigate: (String) -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Add Daily Entry", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Add Daily Entry", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,7 +82,7 @@ fun FacultyClassDiaryScreen(onNavigate: (String) -> Unit) {
                 }
             }
 
-            Text("Previous Entries", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Previous Entries", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
 
             val diaryEntries = listOf(
                 DiaryEntry("12 Oct 2023", "Introduction to JVM", "CS101 - Semester 1", "Completed Unit 1 basics"),
@@ -128,8 +128,8 @@ private fun DiaryItem(entry: DiaryEntry) {
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(entry.topic, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
-            Text(entry.description, fontSize = 13.sp, color = CamsTextSecondary)
+            Text(entry.topic, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(entry.description, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import com.example.core.ui.CamsCard
 import com.example.core.ui.CamsScreen
 
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.faculty.providers.FacultyTimetableViewModel
 
@@ -37,7 +39,7 @@ fun FacultyTimetableScreen(
     onNavigate: (String) -> Unit,
     viewModel: FacultyTimetableViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
     var selectedDay by remember { mutableStateOf("Monday") }
 
@@ -68,7 +70,7 @@ fun FacultyTimetableScreen(
             val timetableForDay = uiState.timetable.find { d -> d.dayName == selectedDay }
             if (timetableForDay == null || timetableForDay.periods.isEmpty()) {
                 Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                    Text("No classes scheduled for $selectedDay", color = CamsTextSecondary)
+                    Text("No classes scheduled for $selectedDay", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 timetableForDay.periods.forEach { period ->
@@ -122,7 +124,7 @@ private fun TimetableCard(slot: TimetableSlot) {
                 modifier = Modifier.width(80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(slot.startTime, fontWeight = FontWeight.Black, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(slot.startTime, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Icon(Icons.Filled.AccessTime, null, tint = Color.LightGray, modifier = Modifier.size(14.dp))
                 Text(slot.endTime, fontSize = 13.sp, color = Color(0xFF64748B))
             }

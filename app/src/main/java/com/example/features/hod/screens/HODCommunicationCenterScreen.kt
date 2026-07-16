@@ -66,7 +66,7 @@ fun HODCommunicationCenterScreen(onNavigate: (String) -> Unit) {
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
             if (activeTab == "announcements") {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("HOD Announcement History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text("HOD Announcement History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF18181B)), shape = RoundedCornerShape(8.dp)) {
                         Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
@@ -81,8 +81,8 @@ fun HODCommunicationCenterScreen(onNavigate: (String) -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Exam Schedule Update ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                Text("Examination Notice • All BA LLB Students", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text("Exam Schedule Update ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Examination Notice • All BA LLB Students", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
@@ -93,14 +93,14 @@ fun HODCommunicationCenterScreen(onNavigate: (String) -> Unit) {
                                     modifier = Modifier.background(Color(0xFFD1FAE5), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                                 Spacer(Modifier.height(4.dp))
-                                Text("Read Rate: 85%", fontSize = 13.sp, color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                                Text("Read Rate: 85%", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("$activeTab content goes here", color = CamsTextSecondary)
+                    Text("$activeTab content goes here", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -117,7 +117,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

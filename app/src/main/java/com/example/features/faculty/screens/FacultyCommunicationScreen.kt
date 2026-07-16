@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -106,7 +107,7 @@ private fun ChatItem(chat: Chat) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(chat.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp)
+                    Text(chat.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp)
                     Text(chat.time, fontSize = 13.sp, color = Color(0xFF64748B))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -115,7 +116,7 @@ private fun ChatItem(chat: Chat) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(chat.lastMessage, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 1)
+                    Text(chat.lastMessage, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                     if (chat.unreadCount > 0) {
                         Surface(
                             color = CamsNavy,

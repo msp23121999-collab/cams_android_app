@@ -1,5 +1,6 @@
 package com.example.features.debug
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -22,7 +23,7 @@ fun DebugScreen(onBack: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     var currentUrl by remember { mutableStateOf(AppConfig.BASE_URL) }
     var connectionStatus by remember { mutableStateOf("Not tested") }
-    val networkError by GlobalNetworkHandler.networkError.collectAsState()
+    val networkError by GlobalNetworkHandler.networkError.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

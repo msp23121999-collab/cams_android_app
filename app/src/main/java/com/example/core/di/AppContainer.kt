@@ -272,6 +272,6 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     override val timetableDao: TimetableDao by lazy { database.timetableDao() }
     override val workingDayConfigDao: WorkingDayConfigDao by lazy { database.workingDayConfigDao() }
     override fun provideAdminUserViewModelFactory(): com.example.features.admin.providers.AdminUserViewModelFactory {
-        return com.example.features.admin.providers.AdminUserViewModelFactory(database.usersDao())
+        return com.example.features.admin.providers.AdminUserViewModelFactory(adminRepository)
     }
 }

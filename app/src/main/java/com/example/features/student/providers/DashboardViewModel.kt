@@ -68,7 +68,7 @@ class DashboardViewModel(
                         calendarEvents = academicCalendar.map { event ->
                             CalendarEvent(
                                 id = event.id,
-                                title = event.eventName,
+                                title = if (event.eventName.isNotBlank()) event.eventName else event.title ?: "",
                                 startDate = event.date,
                                 category = "Academic",
                                 isHoliday = event.isHoliday

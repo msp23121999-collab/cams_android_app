@@ -1,5 +1,6 @@
 package com.example.features.hod.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,7 @@ fun HODFacultyManagementScreen(
     viewModel: HODFacultyViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     HODBaseScreen(
         title = "Faculty Management",
@@ -52,7 +54,7 @@ fun HODFacultyManagementScreen(
                 KpiCard("On Leave Today", "3", Icons.Filled.Event, Color(0xFFBE123C), Color(0xFFFFF1F2), Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                KpiCard("Subject Coverage", "100%", Icons.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                KpiCard("Subject Coverage", "100%", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
                 KpiCard("Pending Approvals", "5", Icons.Filled.PendingActions, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
             }
 
@@ -86,8 +88,8 @@ fun HODFacultyManagementScreen(
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Faculty Directory", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Manage teaching staff and allocations", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Faculty Directory", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Manage teaching staff and allocations", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Button(
                             onClick = { },
@@ -123,13 +125,13 @@ fun HODFacultyManagementScreen(
                                         modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(faculty.name.take(1), fontWeight = FontWeight.Bold, color = CamsTextSecondary, fontSize = 14.sp)
+                                        Text(faculty.name.take(1), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(faculty.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                                        Text(faculty.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                         Spacer(Modifier.height(4.dp))
-                                        Text("Professor • Computer Science", fontSize = 12.sp, color = CamsTextSecondary)
+                                        Text("Professor • Computer Science", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
@@ -140,7 +142,7 @@ fun HODFacultyManagementScreen(
                                             modifier = Modifier.background(Color(0xFFECFDF5), RoundedCornerShape(16.dp)).padding(horizontal = 10.dp, vertical = 4.dp)
                                         )
                                         Spacer(Modifier.height(8.dp))
-                                        Text("3 Subjects", fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.SemiBold)
+                                        Text("3 Subjects", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
@@ -161,13 +163,13 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.fillMaxWidth())
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.background(bgColor, RoundedCornerShape(8.dp)).padding(6.dp)) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
                 }
-                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

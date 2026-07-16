@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import com.example.core.navigation.AppRoutes
 import com.example.core.theme.*
@@ -137,7 +138,7 @@ fun ParentDrawer(
         Spacer(Modifier.weight(1f))
 
         NavigationDrawerItem(
-            icon = { Icon(Icons.Filled.Logout, contentDescription = null) },
+            icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
             label = { Text("Logout") },
             selected = false,
             onClick = { onNavigate("LOGOUT") },

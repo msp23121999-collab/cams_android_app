@@ -33,7 +33,7 @@ fun FacultyClassDiaryHODScreen(onNavigate: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("HOD Remarks & Approval", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("HOD Remarks & Approval", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             val reviews = listOf(
@@ -87,7 +87,7 @@ private fun DiaryReviewItem(review: DiaryReview) {
                 Icon(Icons.Filled.Comment, null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
                 Column {
                     Text("HOD Remarks:", fontSize = 13.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
-                    Text(review.remarks, fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(review.remarks, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

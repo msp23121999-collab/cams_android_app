@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +38,7 @@ fun InnovationWallScreen(
     onNavigate: (String) -> Unit,
     viewModel: InnovationWallViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var activeFilter by remember { mutableStateOf("All Projects") }
     
     val categories = listOf("All Projects", "Research", "Legal Technology", "Community Projects", "Startups")
@@ -52,12 +54,12 @@ fun InnovationWallScreen(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(Icons.Filled.Lightbulb, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(32.dp))
-                        Text("Innovation Hub", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                        Text("Innovation Hub", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Showcasing groundbreaking legal tech projects and startups built by students.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary)
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
             }
@@ -68,7 +70,7 @@ fun InnovationWallScreen(
                     value = "",
                     onValueChange = {},
                     placeholder = { Text("Search projects...", fontSize = 14.sp) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary) },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -114,7 +116,7 @@ fun InnovationWallScreen(
                 ) {
                     Icon(Icons.Filled.Lightbulb, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No projects found in this category.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                    Text("No projects found in this category.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 filteredProjects.forEach { project ->
@@ -137,14 +139,14 @@ fun InnovationProjectCard(project: InnovationProject) {
                     color = CamsBackground
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Code, contentDescription = null, tint = CamsNavy)
+                        Icon(Icons.Filled.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(project.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                    Text(project.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                     Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(color = CamsBackground, shape = CircleShape) {
-                            Text(project.category.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 7.sp, color = CamsTextSecondary))
+                            Text(project.category.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 7.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                         project.badges.forEach { badge ->
                             Surface(color = Color(0xFFFFF7ED), shape = CircleShape) {
@@ -157,21 +159,21 @@ fun InnovationProjectCard(project: InnovationProject) {
                         }
                     }
                 }
-                Icon(Icons.Filled.OpenInNew, contentDescription = null, tint = CamsTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            Text(project.description, style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+            Text(project.description, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             
             Spacer(modifier = Modifier.height(20.dp))
             Surface(color = CamsBackground, shape = RoundedCornerShape(16.dp)) {
                 Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("MENTOR", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp))
-                        Text(project.mentor, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = CamsTextPrimary))
+                        Text("MENTOR", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp))
+                        Text(project.mentor, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface))
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("TEAM", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp))
+                        Text("TEAM", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp))
                         Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
                             project.team.forEach { _ ->
                                 Surface(modifier = Modifier.size(24.dp), shape = CircleShape, color = Color.LightGray, border = BorderStroke(1.dp, Color.White)) {}
@@ -188,17 +190,17 @@ fun InnovationProjectCard(project: InnovationProject) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Filled.ThumbUp, contentDescription = null, modifier = Modifier.size(14.dp), tint = CamsTextSecondary)
-                        Text(project.likes.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                        Icon(Icons.Filled.ThumbUp, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(project.likes.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Filled.ChatBubble, contentDescription = null, modifier = Modifier.size(14.dp), tint = CamsTextSecondary)
-                        Text(project.comments.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                        Icon(Icons.Filled.ChatBubble, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(project.comments.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(14.dp), tint = CamsTextSecondary)
-                    Text("SHARE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary))
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("SHARE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
             }
         }

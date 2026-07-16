@@ -78,6 +78,15 @@ data class SubjectAttendance(
     val percentage: Int
 )
 
+data class AttendanceSummary(
+    val percentage: Double,
+    val total: Int,
+    val present: Int,
+    val absent: Int,
+    val od: Int,
+    val records: List<AttendanceRecord>
+)
+
 @JsonClass(generateAdapter = true)
 data class AttendanceRecord(
     val date: String,

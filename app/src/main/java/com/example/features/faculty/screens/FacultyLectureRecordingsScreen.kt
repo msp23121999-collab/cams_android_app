@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +28,7 @@ fun FacultyLectureRecordingsScreen(
     viewModel: FacultyRecordingsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     FacultyBaseScreen(scrollable = false, 
         title = "Lecture Recordings",
@@ -48,7 +49,7 @@ fun FacultyLectureRecordingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Cloud Storage", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("Cloud Storage", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("12.4 GB / 50 GB used", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CamsNavy)
                     }
                     CircularProgressIndicator(
@@ -64,11 +65,11 @@ fun FacultyLectureRecordingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // 2. Recent Recordings
-            Text("Recent Recordings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Recent Recordings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             if (state.recordings.isEmpty()) {
-                Text("No recordings found.", modifier = Modifier.padding(20.dp), color = CamsTextSecondary)
+                Text("No recordings found.", modifier = Modifier.padding(20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(state.recordings) { recording ->
@@ -116,19 +117,19 @@ fun RecordingRow(data: com.example.core.network.FacultyRecordingDto) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(data.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(data.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(data.subject, fontSize = 12.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(data.duration, fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(data.duration, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(" • ", color = Color.LightGray)
-                    Text(data.date, fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(data.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(" • ", color = Color.LightGray)
-                    Text("${data.views} views", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("${data.views} views", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             IconButton(onClick = { /* More options */ }) {
-                Icon(Icons.Filled.Share, null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
             }
         }
     }

@@ -34,11 +34,11 @@ fun HODMarkApprovalsScreen(onNavigate: (String) -> Unit) {
                     Column(Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("PENDING", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB45309), modifier = Modifier.background(Color(0xFFFEF3C7), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
-                            Text("AY: 2026-2027", fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                            Text("AY: 2026-2027", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Course ${i+1}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text("Sem 1 - Section A", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("Course ${i+1}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Sem 1 - Section A", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

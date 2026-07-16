@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -32,7 +34,7 @@ fun FacultyStudyMaterialsScreen(
     viewModel: FacultyMaterialsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
     var showUploadDialog by remember { mutableStateOf(false) }
@@ -56,7 +58,7 @@ fun FacultyStudyMaterialsScreen(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search materials...") },
-                leadingIcon = { Icon(Icons.Filled.Search, null, tint = CamsTextSecondary) },
+                leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
@@ -107,7 +109,7 @@ fun FacultyStudyMaterialsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             // 3. Material List
-            Text("Recent Uploads", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+            Text("Recent Uploads", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -120,8 +122,8 @@ fun FacultyStudyMaterialsScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(50.dp),
-                        placeholder = { Text("Search materials...", color = CamsTextSecondary) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = CamsTextSecondary) },
+                        placeholder = { Text("Search materials...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         shape = RoundedCornerShape(25.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = CamsNavy,
@@ -168,7 +170,7 @@ fun FacultyStudyMaterialsScreen(
                 }
 
                 if (filtered.isEmpty()) {
-                    Text("No materials match your filters.", modifier = Modifier.padding(20.dp), color = CamsTextSecondary)
+                    Text("No materials match your filters.", modifier = Modifier.padding(20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -255,7 +257,7 @@ fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.netw
                 }
                 
                 // Placeholder for file selection
-                Text("File will be attached automatically in this demo.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                Text("File will be attached automatically in this demo.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {
@@ -279,7 +281,7 @@ fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.netw
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = CamsTextSecondary)
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )
@@ -294,11 +296,11 @@ private fun MaterialStat(label: String, value: String, icon: ImageVector) {
                 .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(value, fontWeight = FontWeight.Black, fontSize = 16.sp, color = CamsTextPrimary)
-        Text(label, fontSize = 11.sp, color = CamsTextSecondary)
+        Text(value, fontWeight = FontWeight.Black, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 @Composable
@@ -323,27 +325,27 @@ fun MaterialRow(data: com.example.core.network.FacultyMaterialDto) {
                 val icon = when(data.type.lowercase()) {
                     "notes" -> Icons.Filled.Description
                     "qp" -> Icons.Filled.Quiz
-                    "lab" -> Icons.Filled.Assignment
-                    else -> Icons.Filled.MenuBook
+                    "lab" -> Icons.AutoMirrored.Filled.Assignment
+                    else -> Icons.AutoMirrored.Filled.MenuBook
                 }
-                Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(22.dp))
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
             
             Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
-                Text(data.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(data.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(data.type, fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
                     Text(" • ", fontSize = 13.sp, color = Color.LightGray)
-                    Text(data.size, fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(data.size, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(" • ", fontSize = 13.sp, color = Color.LightGray)
-                    Text(data.date, fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(data.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             
             IconButton(onClick = { /* More options */ }) {
-                Icon(Icons.Filled.MoreVert, null, tint = CamsTextSecondary)
+                Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

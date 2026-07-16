@@ -62,7 +62,7 @@ private fun EventCard(event: CalendarEvent) {
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(event.date, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = event.color)
-                Text(event.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
+                Text(event.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             
             Surface(

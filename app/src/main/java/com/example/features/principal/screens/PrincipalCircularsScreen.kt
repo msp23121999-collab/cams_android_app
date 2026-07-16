@@ -1,12 +1,15 @@
 package com.example.features.principal.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +37,7 @@ fun PrincipalCircularsScreen(
         }
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var targetAudience by remember { mutableStateOf("All") }
@@ -49,12 +52,12 @@ fun PrincipalCircularsScreen(
                 title = ""
                 content = ""
             }, containerColor = CamsNavy, contentColor = Color.White) {
-                Icon(Icons.Filled.Send, "Publish")
+                Icon(Icons.AutoMirrored.Filled.Send, "Publish")
             }
         }
     ) {
         CamsCard {
-            Text("Create New Circular", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Create New Circular", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = title,
@@ -73,7 +76,7 @@ fun PrincipalCircularsScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Target Audience:", fontWeight = FontWeight.Medium, color = CamsTextPrimary)
+                Text("Target Audience:", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = targetAudience == "All", onClick = { targetAudience = "All" }, label = { Text("All") })
                     FilterChip(selected = targetAudience == "Faculty", onClick = { targetAudience = "Faculty" }, label = { Text("Faculty") })
@@ -83,7 +86,7 @@ fun PrincipalCircularsScreen(
         }
         
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Recent Circulars", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+        Text("Recent Circulars", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
         Spacer(modifier = Modifier.height(8.dp))
         
         if (uiState.isLoading) {
@@ -96,7 +99,7 @@ fun PrincipalCircularsScreen(
                     CamsCard {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column {
-                                Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                                Text(circular.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Surface(color = CamsNavy.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {

@@ -12,7 +12,7 @@ interface ParentRepository {
     suspend fun getPerformanceAnalytics(childId: String? = null): List<PerformanceData>
     suspend fun getFeeStatus(childId: String? = null): ChildFeeLedger
     suspend fun getNotices(childId: String? = null): List<CollegeNotice>
-    suspend fun getAttendance(childId: String? = null): List<AttendanceRecord>
+    suspend fun getAttendance(childId: String? = null): AttendanceSummary?
     suspend fun getSubjectAttendance(childId: String? = null): List<SubjectAttendance>
     suspend fun getTimetable(childId: String? = null): List<TimetableDay>
     suspend fun changePassword(currentPassword: String, newPassword: String)

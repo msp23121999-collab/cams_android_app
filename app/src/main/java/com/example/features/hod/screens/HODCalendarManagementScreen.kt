@@ -76,14 +76,14 @@ fun HODCalendarManagementScreen(onNavigate: (String) -> Unit) {
                                     Text(if(isHoliday) "HOLIDAY" else "ACADEMIC EVENT", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if(isHoliday) Color(0xFFBE123C) else Color(0xFF4338CA), modifier = Modifier.background(if(isHoliday) Color(0xFFFFE4E6) else Color(0xFFEEF2FF), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
                                 }
                                 Spacer(Modifier.height(4.dp))
-                                Text(if(isHoliday) "Diwali Vacation" else "Guest Lecture on Constitutional Law", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                Text("Department of Law", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text(if(isHoliday) "Diwali Vacation" else "Guest Lecture on Constitutional Law", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Department of Law", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.AccessTime, null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(12.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Oct 20, 2026", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                                    Text("Oct 20, 2026", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -91,7 +91,7 @@ fun HODCalendarManagementScreen(onNavigate: (String) -> Unit) {
                 }
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Calendar View Grid Here", color = CamsTextSecondary)
+                    Text("Calendar View Grid Here", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

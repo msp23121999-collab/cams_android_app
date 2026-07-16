@@ -71,8 +71,8 @@ fun HODStudyMaterialVerificationScreen(onNavigate: (String) -> Unit) {
             CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Syllabus Study Materials Directory", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text("Review academic notes, lecture slides, and case study files submitted by law faculty.", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text("Syllabus Study Materials Directory", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Review academic notes, lecture slides, and case study files submitted by law faculty.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
                         Icon(Icons.Filled.Sync, null, modifier = Modifier.size(16.dp))
@@ -94,8 +94,8 @@ fun HODStudyMaterialVerificationScreen(onNavigate: (String) -> Unit) {
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Constitutional Law - Unit ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                Text("Prof. Smith • Sem 1 • PDF", fontSize = 12.sp, color = CamsTextSecondary)
+                                Text("Constitutional Law - Unit ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Prof. Smith • Sem 1 • PDF", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             val isPending = i < 2
                             Text(
@@ -112,7 +112,7 @@ fun HODStudyMaterialVerificationScreen(onNavigate: (String) -> Unit) {
         } else {
             CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("$activeTab content goes here", color = CamsTextSecondary)
+                    Text("$activeTab content goes here", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -129,7 +129,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

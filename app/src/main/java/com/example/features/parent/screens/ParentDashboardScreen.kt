@@ -1,5 +1,6 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +39,7 @@ fun ParentDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: ParentDashboardViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     ParentBaseScreen(
@@ -58,13 +60,13 @@ fun ParentDashboardScreen(
             )
         } else if (uiState.childProfileExtended == null) {
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Text("No dashboard data available.", color = CamsTextSecondary)
+                Text("No dashboard data available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             val profile = uiState.childProfileExtended
 
             // Student Profile Quick info
-            Text("Child Information", fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 16.sp)
+            Text("Child Information", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
             
             CamsCard(onClick = { onNavigate(AppRoutes.PARENT_PROFILE) }) {
                 Row(
@@ -78,21 +80,21 @@ fun ParentDashboardScreen(
                             .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Filled.Person, null, tint = CamsNavy, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             profile?.fullName ?: "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
-                            color = CamsTextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Text(
                             "Roll No: ${profile?.rollNo ?: ""} • ${profile?.semester ?: ""}",
                             fontSize = 13.sp,
-                            color = CamsTextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
@@ -100,13 +102,13 @@ fun ParentDashboardScreen(
                     Icon(
                         Icons.Filled.ChevronRight,
                         contentDescription = "View Profile",
-                        tint = CamsTextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             // Grid of 4 Metric Cards
-            Text("Academic Metrics", fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 16.sp)
+            Text("Academic Metrics", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
             
             BoxWithConstraints {
                 val isTablet = maxWidth > 600.dp
@@ -196,7 +198,7 @@ fun ParentDashboardScreen(
             }
 
             // Notices & Support Section
-            Text("Circular Notices (For Parents)", fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 16.sp)
+            Text("Circular Notices (For Parents)", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
 
             CamsCard(onClick = { onNavigate(AppRoutes.PARENT_CIRCULARS) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -236,7 +238,7 @@ fun ParentDashboardScreen(
                                 notice.title,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = CamsTextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
@@ -244,14 +246,14 @@ fun ParentDashboardScreen(
                             Text(
                                 notice.body,
                                 fontSize = 12.sp,
-                                color = CamsTextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 notice.publishDate,
                                 fontSize = 12.sp,
-                                color = CamsTextSecondary.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
@@ -272,12 +274,12 @@ fun ParentDashboardScreen(
             }
 
             // Support Desk Card (real ACTION_SENDTO mailto support)
-            Text("Institutional Support", fontWeight = FontWeight.Black, color = CamsTextPrimary, fontSize = 16.sp)
+            Text("Institutional Support", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
 
             CamsCard {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.SupportAgent, null, tint = CamsNavy)
+                        Icon(Icons.Filled.SupportAgent, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
                         Text("Administrative Desk Support", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     }
@@ -285,7 +287,7 @@ fun ParentDashboardScreen(
                     Text(
                         "For any academic, scheduling, or fee-related queries, contact our college administration desk directly.",
                         fontSize = 13.sp,
-                        color = CamsTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Row(
@@ -295,13 +297,13 @@ fun ParentDashboardScreen(
                             .background(CamsBackground, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
-                        Icon(Icons.Filled.Mail, null, tint = CamsTextSecondary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.Mail, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "admin@cams.local",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = CamsTextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
@@ -310,7 +312,7 @@ fun ParentDashboardScreen(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, "Email copied to clipboard", Toast.LENGTH_SHORT).show()
                         }) {
-                            Icon(Icons.Filled.ContentCopy, "Copy", tint = CamsNavy, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.ContentCopy, "Copy", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
 
@@ -330,7 +332,7 @@ fun ParentDashboardScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Filled.Send, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.Send, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Compose Support Email", fontWeight = FontWeight.Bold)
                     }
@@ -377,14 +379,14 @@ private fun DashboardMetricCard(
                 ) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
                 }
-                Icon(Icons.Filled.ArrowOutward, null, tint = CamsTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.ArrowOutward, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 value,
                 fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
-                color = CamsTextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -392,7 +394,7 @@ private fun DashboardMetricCard(
                 label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = CamsTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -400,7 +402,7 @@ private fun DashboardMetricCard(
             Text(
                 subtext,
                 fontSize = 13.sp,
-                color = CamsTextSecondary.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )

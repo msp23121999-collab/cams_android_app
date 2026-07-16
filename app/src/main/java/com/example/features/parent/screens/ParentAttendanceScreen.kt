@@ -1,5 +1,6 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,7 @@ fun ParentAttendanceScreen(
     viewModel: ParentAttendanceViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -58,7 +60,7 @@ fun ParentAttendanceScreen(
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -71,22 +73,23 @@ fun ParentAttendanceScreen(
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     Text(uiState.error ?: "Failed to load attendance", color = Color.Red)
                 }
-            } else if (uiState.attendanceRecords.isEmpty()) {
+            } else if (uiState.summary == null || uiState.summary?.records?.isEmpty() == true) {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    Text("No attendance records found.", color = CamsTextSecondary)
+                    Text("No attendance records found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
+                val summary = uiState.summary!!
                 BoxWithConstraints {
                     val isTablet = maxWidth > 600.dp
                     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                         // Summary Stats
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            AttendanceStatCard("Present", uiState.attendanceRecords.count { it.status == "Present" }.toString(), Color(0xFF10B981), Modifier.weight(1f))
-                            AttendanceStatCard("Absent", uiState.attendanceRecords.count { it.status == "Absent" }.toString(), Color(0xFFEF4444), Modifier.weight(1f))
-                            AttendanceStatCard("Overall", "88%", CamsNavy, Modifier.weight(1f))
+                            AttendanceStatCard("Present", summary.present.toString(), Color(0xFF10B981), Modifier.weight(1f))
+                            AttendanceStatCard("Absent", summary.absent.toString(), Color(0xFFEF4444), Modifier.weight(1f))
+                            AttendanceStatCard("Overall", "${summary.percentage.toInt()}%", CamsNavy, Modifier.weight(1f))
                         }
 
-                Text("Attendance Calendar - June 2024", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                Text("Attendance Calendar - June 2024", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 
                 CamsCard {
                     LazyVerticalGrid(
@@ -96,7 +99,7 @@ fun ParentAttendanceScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         userScrollEnabled = false
                     ) {
-                        items(uiState.attendanceRecords) { record ->
+                        items(summary.records) { record ->
                             val color = when (record.status) {
                                 "Present" -> Color(0xFF10B981)
                                 "Absent" -> Color(0xFFEF4444)
@@ -105,8 +108,7 @@ fun ParentAttendanceScreen(
                             Box(
                                 modifier = Modifier
                                     .aspectRatio(1f)
-                                    .background(color.copy(alpha = 0.2f), CircleShape)
-                                    .background(if (record.status == "Absent") color.copy(alpha = 0.1f) else Color.Transparent, CircleShape),
+                                    .background(color.copy(alpha = 0.2f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -127,25 +129,27 @@ fun ParentAttendanceScreen(
                     }
                 }
 
-                Text("Subject-wise Analysis", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                
-                uiState.subjectAttendance.forEach { subject ->
-                    CamsCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(subject.subject, fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                Text("${subject.present}/${subject.totalClasses} Classes attended", fontSize = 12.sp, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                if (uiState.subjectAttendance.isNotEmpty()) {
+                    Text("Subject-wise Analysis", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    
+                    uiState.subjectAttendance.forEach { subject ->
+                        CamsCard {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(subject.subject, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Text("${subject.present}/${subject.totalClasses} Classes attended", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                }
+                                Text("${subject.percentage}%", fontWeight = FontWeight.Black, fontSize = 18.sp, color = if (subject.percentage < 75) Color.Red else CamsNavy)
                             }
-                            Text("${subject.percentage}%", fontWeight = FontWeight.Black, fontSize = 18.sp, color = if (subject.percentage < 75) Color.Red else CamsNavy)
+                            Spacer(Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { subject.percentage / 100f },
+                                modifier = Modifier.fillMaxWidth().height(6.dp),
+                                color = if (subject.percentage < 75) Color.Red else CamsNavy,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
                         }
-                        Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { subject.percentage / 100f },
-                            modifier = Modifier.fillMaxWidth().height(6.dp),
-                            color = if (subject.percentage < 75) Color.Red else CamsNavy,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
                     }
                 }
                 
@@ -163,7 +167,7 @@ private fun AttendanceStatCard(label: String, value: String, color: Color, modif
     CamsCard(modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }
 }
@@ -173,6 +177,6 @@ private fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(8.dp).background(color, CircleShape))
         Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

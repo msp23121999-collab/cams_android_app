@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -61,8 +62,8 @@ fun PrincipalDrawer(
 
             androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.weight(1f)) {
                 item { DrawerItem("Dashboard", Icons.Filled.Dashboard, AppRoutes.PRINCIPAL_DASHBOARD, currentRoute, onNavigate) }
-                item { DrawerItem("Approvals", Icons.Filled.Rule, AppRoutes.PRINCIPAL_APPROVALS, currentRoute, onNavigate) }
-                item { DrawerItem("Grievance Inbox", Icons.Filled.HelpOutline, AppRoutes.PRINCIPAL_GRIEVANCES, currentRoute, onNavigate) }
+                item { DrawerItem("Approvals", Icons.AutoMirrored.Filled.Rule, AppRoutes.PRINCIPAL_APPROVALS, currentRoute, onNavigate) }
+                item { DrawerItem("Grievance Inbox", Icons.AutoMirrored.Filled.HelpOutline, AppRoutes.PRINCIPAL_GRIEVANCES, currentRoute, onNavigate) }
                 item { DrawerItem("Publish Notices", Icons.Filled.Campaign, AppRoutes.PRINCIPAL_CIRCULARS, currentRoute, onNavigate) }
                 
                 item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -71,11 +72,11 @@ fun PrincipalDrawer(
                 
                 item { DrawerItem("Institutional Perf", Icons.Filled.Assessment, AppRoutes.PRINCIPAL_PERFORMANCE, currentRoute, onNavigate) }
                 item { DrawerItem("Faculty Overview", Icons.Filled.Groups, AppRoutes.PRINCIPAL_FACULTY_OVERVIEW, currentRoute, onNavigate) }
-                item { DrawerItem("Class Diary", Icons.Filled.MenuBook, AppRoutes.PRINCIPAL_CLASS_DIARY, currentRoute, onNavigate) }
+                item { DrawerItem("Class Diary", Icons.AutoMirrored.Filled.MenuBook, AppRoutes.PRINCIPAL_CLASS_DIARY, currentRoute, onNavigate) }
                 item { DrawerItem("Events Mgmt", Icons.Filled.Event, AppRoutes.PRINCIPAL_EVENTS_MGMT, currentRoute, onNavigate) }
                 item { DrawerItem("Infrastructure", Icons.Filled.Domain, AppRoutes.PRINCIPAL_INFRASTRUCTURE, currentRoute, onNavigate) }
                 item { DrawerItem("Research Comp.", Icons.Filled.Science, AppRoutes.PRINCIPAL_RESEARCH_COMPLIANCE, currentRoute, onNavigate) }
-                item { DrawerItem("Study Materials", Icons.Filled.LibraryBooks, AppRoutes.PRINCIPAL_STUDY_MATERIALS, currentRoute, onNavigate) }
+                item { DrawerItem("Study Materials", Icons.AutoMirrored.Filled.LibraryBooks, AppRoutes.PRINCIPAL_STUDY_MATERIALS, currentRoute, onNavigate) }
                 item { DrawerItem("Budget & Grants", Icons.Filled.AccountBalance, AppRoutes.PRINCIPAL_BUDGET_GRANTS, currentRoute, onNavigate) }
                 item { DrawerItem("Institutional Cal", Icons.Filled.CalendarMonth, AppRoutes.PRINCIPAL_CALENDAR, currentRoute, onNavigate) }
             }
@@ -83,7 +84,7 @@ fun PrincipalDrawer(
             HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(10.dp))
             
-            DrawerItem("Logout", Icons.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
+            DrawerItem("Logout", Icons.AutoMirrored.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
         }
     }
 }

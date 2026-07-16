@@ -1,9 +1,11 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,6 +13,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminFeesViewModel
+import com.example.features.admin.providers.AdminFeesViewModelFactory
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.CamsApplication
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +32,12 @@ import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
 @Composable
-fun AdminFeeMgmtScreen(onNavigate: (String) -> Unit) {
+fun AdminFeeMgmtScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminFeesViewModel = viewModel(factory = AdminFeesViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     AdminBaseScreen(
         title = "Fee Management",
         subtitle = "Overview of institutional fee collection",
@@ -39,21 +53,21 @@ fun AdminFeeMgmtScreen(onNavigate: (String) -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Text("Recent Transactions", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+            Text("Recent Transactions", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(12.dp))
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(6) { i ->
-                    val isSuccess = i % 3 != 0
+                items(uiState.feeStructures) { struct ->
+                    val isSuccess = true
                     Row(
                         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Tuition Fee - Sem ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Paid by: Student ${i+1}", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text(struct.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Sem: ${struct.semester}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("₹45,000", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                            Text("₹${struct.amount}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 if(isSuccess) "SUCCESS" else "FAILED", 
@@ -80,7 +94,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +27,7 @@ fun AdminDashboardScreen(
     onNavigate: (String) -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     AdminBaseScreen(
         title = "Admin Portal Dashboard",
@@ -34,21 +35,21 @@ fun AdminDashboardScreen(
         currentRoute = AppRoutes.ADMIN_DASHBOARD,
         onNavigate = onNavigate
     ) {
-        Text("Campus Overview", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextSecondary)
+        Text("Campus Overview", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            DashboardStatCard("Total Users", uiState.metrics.totalUsers, Icons.Filled.Groups, Color(0xFF3B82F6), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_USER_MGMT) })
+            DashboardStatCard("Total Users", uiState.metrics.totalUsers?.toString() ?: "0", Icons.Filled.Groups, Color(0xFF3B82F6), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_USER_MGMT) })
             DashboardStatCard("System Health", "${uiState.systemHealth.map { it.health }.average().toInt()}%", Icons.Filled.Dns, Color(0xFF10B981), Modifier.weight(1f), onClick = {  })
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            DashboardStatCard("Active Batches", uiState.metrics.activeBatches, Icons.Filled.Layers, Color(0xFFF59E0B), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_BATCH_SETUP) })
-            DashboardStatCard("Fee Collection", uiState.metrics.collectionToday, Icons.Filled.AccountBalanceWallet, Color(0xFF8B5CF6), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_COLLECT_FEE) })
+            DashboardStatCard("Active Batches", uiState.metrics.metrics.find { it.id == "alerts" }?.value ?: "0", Icons.Filled.Layers, Color(0xFFF59E0B), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_BATCH_SETUP) })
+            DashboardStatCard("Fee Collection", uiState.metrics.metrics.find { it.id == "collection" }?.value ?: "₹0", Icons.Filled.AccountBalanceWallet, Color(0xFF8B5CF6), Modifier.weight(1f), onClick = { onNavigate(AppRoutes.ADMIN_COLLECT_FEE) })
         }
                 
         Spacer(Modifier.height(24.dp))
                 
-        Text("Administrative Actions", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextSecondary)
+        Text("Administrative Actions", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
                 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -77,13 +78,13 @@ private fun DashboardStatCard(label: String, value: String, icon: androidx.compo
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(label, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,  fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = CamsTextSecondary, modifier = Modifier.weight(1f))
+                Text(label, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,  fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Box(Modifier.background(color.copy(alpha=0.1f), RoundedCornerShape(8.dp)).padding(8.dp)) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Text(value, fontSize = 28.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+            Text(value, fontSize = 28.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -98,8 +99,8 @@ private fun QuickLinkItem(label: String, icon: androidx.compose.ui.graphics.vect
         onClick = onClick
     ) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
-            Text(label, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,  fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Text(label, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,  fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.features.hod.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +35,7 @@ fun HODApprovalsScreen(
     viewModel: HODApprovalsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HODBaseScreen(scrollable = false, 
         title = "Pending Approvals",
@@ -52,11 +54,11 @@ fun HODApprovalsScreen(
             // KPI Cards
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 KpiCard("Pending Faculty Leaves", "5", Icons.Filled.EventBusy, Color(0xFFE11D48), Color(0xFFFFF1F2), Modifier.weight(1f))
-                KpiCard("Pending Mark Approvals", "8", Icons.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                KpiCard("Pending Mark Approvals", "8", Icons.AutoMirrored.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 KpiCard("Student Shortages", "15", Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
-                KpiCard("Syllabus Revisions", "2", Icons.Filled.MenuBook, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
+                KpiCard("Syllabus Revisions", "2", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
             }
 
             Card(
@@ -89,8 +91,8 @@ fun HODApprovalsScreen(
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Recent Approval Requests", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("Review and take action on pending requests", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Recent Approval Requests", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Review and take action on pending requests", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Button(
                             onClick = { },
@@ -116,7 +118,7 @@ fun HODApprovalsScreen(
                         } else if (uiState.pendingLeaves.isEmpty()) {
                             item {
                                 Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                                    Text("No pending approvals", color = CamsTextSecondary)
+                                    Text("No pending approvals", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         } else {
@@ -134,13 +136,13 @@ fun HODApprovalsScreen(
                                         modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Filled.Notifications, null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Filled.Notifications, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("${approval.type} Leave", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                                        Text("${approval.type} Leave", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                         Spacer(Modifier.height(4.dp))
-                                        Text("${approval.userName ?: "Unknown"} • ${approval.startDate} to ${approval.endDate}", fontSize = 12.sp, color = CamsTextSecondary)
+                                        Text("${approval.userName ?: "Unknown"} • ${approval.startDate} to ${approval.endDate}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         IconButton(
@@ -175,13 +177,13 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, modifier = Modifier.fillMaxWidth())
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.background(bgColor, RoundedCornerShape(8.dp)).padding(6.dp)) {
                     Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
                 }
-                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+                Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

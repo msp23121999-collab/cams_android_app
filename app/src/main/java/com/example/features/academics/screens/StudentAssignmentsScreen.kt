@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
@@ -53,7 +55,7 @@ fun StudentAssignmentsScreen(
     viewModel: AssignmentsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf("Available") }
 
     CamsScreen(
@@ -130,8 +132,8 @@ private fun AvailableAssignmentsTab(viewModel: AssignmentsViewModel) {
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search assignments...", color = CamsTextSecondary) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary) },
+                placeholder = { Text("Search assignments...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CamsNavy,
@@ -219,7 +221,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                             Text(
                                 assignment.title,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = CamsTextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -256,7 +258,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                 Text(
                     assignment.description ?: "",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -272,14 +274,14 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                         Text(
                             "Faculty: Admin",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = CamsTextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             "Due: ${formatDeadline(assignment.deadline)}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = CamsTextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -355,7 +357,7 @@ private fun SubmissionCard(assignment: Assignment) {
                     .background(CamsBackground),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Description, contentDescription = null, tint = CamsNavy)
+                Icon(Icons.Filled.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -363,15 +365,15 @@ private fun SubmissionCard(assignment: Assignment) {
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "Due on ${formatDeadline(assignment.deadline)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = Color.LightGray.copy(alpha = 0.4f))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.LightGray.copy(alpha = 0.4f))
         }
     }
 }
@@ -428,24 +430,24 @@ private fun PerformanceSummaryCard(evaluated: List<Assignment>) {
                 Text(
                     "$percentage%",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Column {
                 Text(
                     "Overall Performance",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     "${totalObtained.roundToInt()}/$totalPossible marks",
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "${evaluated.size} assignments evaluated",
                     style = MaterialTheme.typography.labelSmall,
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -470,8 +472,8 @@ private fun EvaluatedAssignmentCard(assignment: Assignment) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E))
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(assignment.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                    Text(assignment.subject, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                    Text(assignment.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(assignment.subject, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Box(
                     modifier = Modifier
@@ -493,8 +495,8 @@ private fun EvaluatedAssignmentCard(assignment: Assignment) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Score", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextSecondary)
-                        Text("${evaluation.marksObtained.roundToInt()}/${evaluation.totalMarks}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                        Text("Score", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${evaluation.marksObtained.roundToInt()}/${evaluation.totalMarks}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     LinearProgressIndicator(
@@ -516,11 +518,11 @@ private fun EvaluatedAssignmentCard(assignment: Assignment) {
                         .padding(12.dp)
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.Message, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(14.dp))
+                        Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                         Text(
                             "\"${evaluation.feedback}\"",
                             style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-                            color = CamsTextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -567,7 +569,7 @@ private fun StatsMiniCard(modifier: Modifier, label: String, value: String, colo
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black), color = color)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -585,8 +587,8 @@ private fun TimelineItem(assignment: Assignment) {
         ) {
             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(assignment.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                    Text(assignment.subject, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                    Text(assignment.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(assignment.subject, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Due: ${formatDeadline(assignment.deadline)}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = dlInfo.color)
                 }
                 Box(

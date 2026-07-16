@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +32,7 @@ fun FacultyAttendanceScreen(
     onNavigate: (String) -> Unit,
     viewModel: FacultyAttendanceViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedSubject by remember { mutableStateOf<com.example.features.faculty.models.FacultySubject?>(null) }
     var selectedDegree by remember { mutableStateOf("B.Tech CSE") }
     var selectedBatch by remember { mutableStateOf("2021-2025") }
@@ -61,7 +62,7 @@ fun FacultyAttendanceScreen(
                     "Class Selection",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -95,7 +96,7 @@ fun FacultyAttendanceScreen(
             "Student List",
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
-            color = CamsTextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
         )
         
@@ -134,7 +135,7 @@ fun FacultyAttendanceScreen(
 @Composable
 fun FilterDropdown(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Text(label, fontSize = 12.sp, color = CamsTextSecondary, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -146,8 +147,8 @@ fun FilterDropdown(label: String, value: String, modifier: Modifier = Modifier) 
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(value, fontSize = 14.sp, color = CamsTextPrimary)
-                Icon(Icons.Filled.ArrowDropDown, null, tint = CamsTextSecondary, modifier = Modifier.size(20.dp))
+                Text(value, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.Filled.ArrowDropDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -165,7 +166,7 @@ fun StatItem(label: String, value: String, color: Color, modifier: Modifier = Mo
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
         }
     }
@@ -185,8 +186,8 @@ fun StudentAttendanceCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                Text(student.rollNo, fontSize = 13.sp, color = CamsTextSecondary)
+                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(student.rollNo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

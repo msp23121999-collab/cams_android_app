@@ -1,9 +1,11 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,6 +13,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminPayrollViewModel
+import com.example.features.admin.providers.AdminPayrollViewModelFactory
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.CamsApplication
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +32,12 @@ import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
 @Composable
-fun AdminSalaryMgmtScreen(onNavigate: (String) -> Unit) {
+fun AdminSalaryMgmtScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminPayrollViewModel = viewModel(factory = AdminPayrollViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     AdminBaseScreen(
         title = "Salary Management",
         subtitle = "Faculty payroll and salary slips",
@@ -39,24 +53,24 @@ fun AdminSalaryMgmtScreen(onNavigate: (String) -> Unit) {
 
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Salary Slips", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                Text("Salary Slips", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
                     Text("Generate Slips", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(Modifier.height(12.dp))
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(5) { i ->
+                items(uiState.payrollRecords) { payroll ->
                     Row(
                         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Prof. Sharma", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                            Text("May 2026", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text(payroll.facultyName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(payroll.month, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("₹85,000", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                            Text("₹${payroll.amount}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 "PROCESSED", 
@@ -83,7 +97,7 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
                     Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
                 }
             }
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary, modifier = Modifier.padding(top = 8.dp))
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

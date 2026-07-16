@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import com.example.features.faculty.providers.FacultyStudentsViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +30,7 @@ fun FacultyStudentDirectoryScreen(
     viewModel: FacultyStudentsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     
     val filteredStudents = state.students.filter { 
@@ -52,7 +54,7 @@ fun FacultyStudentDirectoryScreen(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search by name or roll number...", fontSize = 14.sp) },
-                leadingIcon = { Icon(Icons.Filled.Search, null, tint = CamsTextSecondary) },
+                leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
@@ -92,8 +94,8 @@ private fun DirectoryFilterChip(label: String) {
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-            Icon(Icons.Filled.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = CamsTextSecondary)
+            Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Filled.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -121,8 +123,8 @@ private fun StudentCard(student: com.example.core.network.FacultyStudentDto) {
             }
             
             Column(modifier = Modifier.weight(1f)) {
-                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
-                Text("Roll No: ${student.rollNo}", fontSize = 13.sp, color = CamsTextSecondary)
+                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("Roll No: ${student.rollNo}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             Column(horizontalAlignment = Alignment.End) {

@@ -1,5 +1,6 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -28,9 +29,15 @@ import com.example.core.navigation.AppRoutes
 @Composable
 fun AdminUserMgmtScreen(
     onNavigate: (String) -> Unit,
-    viewModel: AdminUserViewModel = viewModel()
+    viewModel: AdminUserViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return AdminUserViewModel(com.example.core.repository.AdminRepositoryImpl(com.example.CamsApplication.instance.container.apiService)) as T
+            }
+        }
+    )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddUserDialog by remember { mutableStateOf(false) }
 
     AdminBaseScreen(
@@ -40,7 +47,7 @@ fun AdminUserMgmtScreen(
         onNavigate = onNavigate
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("User Directory", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("User Directory", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Button(
                 onClick = { showAddUserDialog = true }, 
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), 
@@ -62,7 +69,7 @@ fun AdminUserMgmtScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Filled.People, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
-                    Text("No users found", color = CamsTextSecondary)
+                    Text("No users found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -88,7 +95,7 @@ fun AdminUserMgmtScreen(
 }
 
 @Composable
-private fun UserListItem(user: com.example.core.database.entities.UsersEntity, onDelete: () -> Unit) {
+private fun UserListItem(user: com.example.features.admin.models.AdminUser, onDelete: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,14 +109,14 @@ private fun UserListItem(user: com.example.core.database.entities.UsersEntity, o
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(user.fullName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-            Text(user.email, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(user.fullName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(user.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(
             user.role, 
             fontSize = 12.sp, 
             fontWeight = FontWeight.Bold, 
-            color = CamsTextSecondary, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant, 
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
         )
         Spacer(Modifier.width(8.dp))
@@ -120,7 +127,7 @@ private fun UserListItem(user: com.example.core.database.entities.UsersEntity, o
 }
 
 @Composable
-private fun AddUserDialog(onDismiss: () -> Unit, onConfirm: (com.example.core.database.entities.UsersEntity) -> Unit) {
+private fun AddUserDialog(onDismiss: () -> Unit, onConfirm: (com.example.features.admin.models.AdminUser) -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("STUDENT") }
@@ -159,19 +166,14 @@ private fun AddUserDialog(onDismiss: () -> Unit, onConfirm: (com.example.core.da
             Button(
                 onClick = {
                     onConfirm(
-                        com.example.core.database.entities.UsersEntity(
+                        com.example.features.admin.models.AdminUser(
                             id = java.util.UUID.randomUUID().toString(),
                             email = email,
                             fullName = name,
                             role = role,
                             phone = "",
-                            hashedPassword = "password",
                             isActive = true,
-                            departmentId = "DEPT1",
-                            createdAt = java.time.Instant.now().toString(),
-                            updatedAt = java.time.Instant.now().toString(),
-                            isDeleted = false,
-                            deletedAt = null
+                            departmentId = "DEPT1"
                         )
                     )
                 },

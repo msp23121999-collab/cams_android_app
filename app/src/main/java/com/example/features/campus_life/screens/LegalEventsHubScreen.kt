@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +42,7 @@ fun LegalEventsHubScreen(
     onNavigate: (String) -> Unit,
     viewModel: LegalEventsViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedEvent by remember { mutableStateOf<LegalEvent?>(null) }
     val pagingItems = viewModel.legalEventsPagingFlow.collectAsLazyPagingItems()
 
@@ -101,7 +103,7 @@ fun LegalEventsHubScreen(
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                         } else if (pagingItems.itemCount == 0 && pagingItems.loadState.append.endOfPaginationReached) {
                             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No events found in this category.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                                Text("No events found in this category.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else {
                             for (index in 0 until pagingItems.itemCount) {
@@ -171,11 +173,11 @@ fun LegalEventCard(
                         Text(event.status.label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = if (event.status == EventStatus.LIVE_NOW) Color.Red else CamsNavy))
                     }
                 }
-                Text(event.category.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+                Text(event.category.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Text(event.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+            Text(event.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
             
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -186,8 +188,8 @@ fun LegalEventCard(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(event.speaker.name, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                    Text(event.speaker.designation, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                    Text(event.speaker.name, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(event.speaker.designation, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -232,9 +234,9 @@ fun EventMetaItem(icon: ImageVector, text: String, modifier: Modifier = Modifier
         color = CamsBackground
     ) {
         Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(12.dp))
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = CamsTextSecondary, maxLines = 1)
+            Text(text, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 }
@@ -252,12 +254,12 @@ fun AskJudgeSection(
     Column(verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.imePadding()) {
         CamsCard(modifier = Modifier.fillMaxWidth()) {
             Column {
-                Text("Submit Your Question", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
-                Text("Selected questions will be answered live by the guest judge", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                Text("Submit Your Question", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
+                Text("Selected questions will be answered live by the guest judge", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                Text("Select Event", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                Text("Select Event", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = selectedEventId,
@@ -272,7 +274,7 @@ fun AskJudgeSection(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Topic", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                Text("Topic", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = topic,
@@ -287,7 +289,7 @@ fun AskJudgeSection(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Question", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                Text("Question", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = question,
@@ -314,17 +316,17 @@ fun AskJudgeSection(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
                 ) {
-                    Icon(Icons.Filled.Send, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("SUBMIT QUESTION", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black))
                 }
             }
         }
 
-        Text("My Submitted Questions", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+        Text("My Submitted Questions", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
         if (questions.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                Text("No questions submitted yet.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                Text("No questions submitted yet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             questions.forEach { q ->
@@ -334,12 +336,12 @@ fun AskJudgeSection(
                             Surface(shape = RoundedCornerShape(50), color = CamsBackground) {
                                 Text(q.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsNavy))
                             }
-                            Text(q.submittedAt, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                            Text(q.submittedAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(q.question, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                        Text(q.question, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("${q.topic} • ${q.eventTitle}", style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                        Text("${q.topic} • ${q.eventTitle}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -364,7 +366,7 @@ fun DebateArenaSection(debates: List<DebateEntry>) {
 
         if (debates.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No debates currently available.", style = MaterialTheme.typography.bodyMedium, color = CamsTextSecondary)
+                Text("No debates currently available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             debates.forEach { debate ->
@@ -374,10 +376,10 @@ fun DebateArenaSection(debates: List<DebateEntry>) {
                             Surface(shape = RoundedCornerShape(50), color = if (debate.status == "Live") Color(0xFFFEF2F2) else CamsBackground) {
                                 Text(debate.status.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black, color = if (debate.status == "Live") Color.Red else CamsTextSecondary))
                             }
-                            Text(debate.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = CamsTextSecondary)
+                            Text(debate.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(debate.title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                        Text(debate.title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

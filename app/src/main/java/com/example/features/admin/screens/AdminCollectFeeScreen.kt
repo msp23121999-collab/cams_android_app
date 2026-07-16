@@ -1,11 +1,20 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminFeesViewModel
+import com.example.features.admin.providers.AdminFeesViewModelFactory
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.CamsApplication
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,7 +27,12 @@ import com.example.features.admin.widgets.AdminBaseScreen
 import com.example.core.navigation.AppRoutes
 
 @Composable
-fun AdminCollectFeeScreen(onNavigate: (String) -> Unit) {
+fun AdminCollectFeeScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminFeesViewModel = viewModel(factory = AdminFeesViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     var searchQuery by remember { mutableStateOf("") }
     
     AdminBaseScreen(
@@ -40,9 +54,11 @@ fun AdminCollectFeeScreen(onNavigate: (String) -> Unit) {
             
             CamsCard {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Select Fee Type", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text("Select Fee Type", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     
-                    val feeTypes = listOf("Tuition Fee", "Hostel Fee", "Exam Fee", "Library Fine")
+                    // List replaced by ViewModel
+            val students = uiState.feeStructures as? List<Any> ?: emptyList()
+                    val feeTypes = listOf("Tuition Fee", "Hostel Fee", "Transport Fee", "Library Fine")
                     var selectedFeeType by remember { mutableStateOf(feeTypes[0]) }
                     
                     feeTypes.forEach { type ->

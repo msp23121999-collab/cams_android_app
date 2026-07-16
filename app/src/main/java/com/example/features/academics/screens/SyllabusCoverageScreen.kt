@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -42,7 +44,7 @@ fun SyllabusCoverageScreen(
     onNavigate: (String) -> Unit = {},
     viewModel: SyllabusViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(
         scrollable = false,
@@ -123,19 +125,19 @@ private fun HeaderSection() {
                     .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Book, contentDescription = null, tint = CamsNavy)
+                Icon(Icons.Filled.Book, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
             Column {
                 Text(
                     "Syllabus Tracking",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "Monitor covered vs pending topics and unit progress.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -179,7 +181,7 @@ private fun SubjectCard(
                     Text(
                         "${progress.daysRemaining ?: 90} days remaining",
                         style = MaterialTheme.typography.labelSmall,
-                        color = CamsTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -188,7 +190,7 @@ private fun SubjectCard(
                     subject,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Black,
-                        color = CamsTextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp
                     ),
                     maxLines = 1,
@@ -222,7 +224,7 @@ private fun SubjectCard(
                     Icon(
                         if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         contentDescription = null,
-                        tint = CamsTextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -240,7 +242,7 @@ private fun SubjectCard(
                         "SYLLABUS COVERAGE TIMELINE",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Black,
-                            color = CamsTextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
                         )
                     )
@@ -265,11 +267,11 @@ private fun TrackingItem(item: LessonPlanItem) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.unit, fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsNavy, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(item.plannedTopic, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(item.plannedTopic, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (item.actualTopic != null && item.actualTopic != item.plannedTopic) {
-                    Text("Taught: ${item.actualTopic}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text("Taught: ${item.actualTopic}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(item.dateTaught ?: "Scheduled Topic", fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                Text(item.dateTaught ?: "Scheduled Topic", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
             StatusBadge(
                 label = item.status,
@@ -316,7 +318,7 @@ private fun EmptyState(onRetry: (() -> Unit)? = null) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outlineVariant)
+        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(16.dp))
         Text("No Syllabus Data Loaded", fontWeight = FontWeight.Black, color = LexNovaSlateDark)
         Text(

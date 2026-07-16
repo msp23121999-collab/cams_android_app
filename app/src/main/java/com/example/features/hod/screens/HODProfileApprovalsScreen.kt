@@ -38,7 +38,7 @@ fun HODProfileApprovalsScreen(onNavigate: (String) -> Unit) {
         Spacer(Modifier.height(16.dp))
 
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Text("Pending Requests Inbox", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+            Text("Pending Requests Inbox", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(3) { i ->
@@ -46,8 +46,8 @@ fun HODProfileApprovalsScreen(onNavigate: (String) -> Unit) {
                         Column(Modifier.padding(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text(if (activeTab == "faculty") "Faculty Member ${i+1}" else "Student ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                                    Text("Department of Law", fontSize = 13.sp, color = CamsTextSecondary)
+                                    Text(if (activeTab == "faculty") "Faculty Member ${i+1}" else "Student ${i+1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Department of Law", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text("PENDING", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB45309), modifier = Modifier.background(Color(0xFFFEF3C7), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
                             }

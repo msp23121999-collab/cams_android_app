@@ -86,8 +86,8 @@ private fun ClassStudentItem(student: ClassStudent) {
                         Text(student.name.take(1), fontWeight = FontWeight.Bold, color = CamsNavy)
                     }
                     Column {
-                        Text(student.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text("Roll No: ${student.rollNo}", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(student.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Roll No: ${student.rollNo}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Surface(
@@ -142,7 +142,7 @@ private fun ClassStudentItem(student: ClassStudent) {
 private fun StatItem(label: String, value: String) {
     Column {
         Text(label, fontSize = 13.sp, color = Color(0xFF64748B))
-        Text(value, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+        Text(value, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
@@ -49,7 +51,7 @@ fun StudyMaterialsScreen(
     viewModel: StudyMaterialsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -81,7 +83,7 @@ fun StudyMaterialsScreen(
                         modifier = Modifier
                             .fillMaxWidth(),
                         placeholder = { Text("Search title, subject or faculty...") },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsNavy) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = CamsNavy,
@@ -104,7 +106,7 @@ fun StudyMaterialsScreen(
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = CamsNavy,
                                     selectedLabelColor = Color.White,
-                                    containerColor = CamsBackground
+                                    containerColor = MaterialTheme.colorScheme.background
                                 ),
                                 border = FilterChipDefaults.filterChipBorder(
                                     enabled = true,
@@ -180,7 +182,7 @@ fun MaterialCard(material: StudyMaterial) {
                         Text(
                             text = material.title,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp),
-                            color = CamsTextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -203,7 +205,7 @@ fun MaterialCard(material: StudyMaterial) {
                         .size(36.dp)
                         .background(CamsBackground, CircleShape)
                 ) {
-                    Icon(Icons.Filled.Download, contentDescription = "Download", tint = CamsNavy, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -216,12 +218,12 @@ fun MaterialCard(material: StudyMaterial) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(12.dp), tint = CamsTextSecondary)
-                        Text(material.facultyName, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                        Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(material.facultyName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(12.dp), tint = CamsTextSecondary)
-                        Text(material.uploadDate, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(material.uploadDate, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -234,7 +236,7 @@ fun MaterialCard(material: StudyMaterial) {
                         text = material.category.uppercase(),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 12.sp),
-                        color = CamsTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -256,8 +258,8 @@ fun MaterialCard(material: StudyMaterial) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(Icons.Filled.AttachFile, contentDescription = null, modifier = Modifier.size(10.dp), tint = CamsNavy)
-                                Text(attachment.name, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = CamsTextPrimary)
+                                Icon(Icons.Filled.AttachFile, contentDescription = null, modifier = Modifier.size(10.dp), tint = MaterialTheme.colorScheme.primary)
+                                Text(attachment.name, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }
@@ -275,7 +277,7 @@ fun EmptyMaterialsState() {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Filled.LibraryBooks,
+            imageVector = Icons.AutoMirrored.Filled.LibraryBooks,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = Color(0xFFCBD5E1)

@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,7 +35,7 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultySalaryViewModelFactory(repository) }
     val viewModel: FacultySalaryViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FacultyBaseScreen(scrollable = false, 
         title = "Salary Slips",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_SALARY_SLIP,
@@ -74,7 +75,7 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Payment History", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Payment History", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -123,11 +124,11 @@ private fun SalarySlipItem(slip: com.example.core.network.FacultySalarySlipDto) 
                         .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Filled.ReceiptLong, null, tint = CamsNavy)
+                    Icon(Icons.Filled.ReceiptLong, null, tint = MaterialTheme.colorScheme.primary)
                 }
                     val monthName = DateFormatSymbols().months.getOrNull(slip.month - 1) ?: "Unknown"
-                    Text("$monthName ${slip.year}", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                    Text(slip.status, fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("$monthName ${slip.year}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(slip.status, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             Column(horizontalAlignment = Alignment.End) {
                 Text("₹ %,.2f".format(slip.netSalary), fontWeight = FontWeight.Black, color = CamsNavy)

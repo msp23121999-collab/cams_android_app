@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import com.example.core.navigation.AppRoutes
 import com.example.core.theme.*
@@ -109,7 +110,7 @@ fun StudentDrawer(
             colors = drawerItemColors
         )
         NavigationDrawerItem(
-            icon = { Icon(Icons.Filled.Assignment, contentDescription = null) },
+            icon = { Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null) },
             label = { Text("Assignments") },
             selected = currentRoute == AppRoutes.ASSIGNMENTS,
             onClick = { onNavigate(AppRoutes.ASSIGNMENTS) },
@@ -141,7 +142,7 @@ fun StudentDrawer(
             colors = drawerItemColors
         )
         NavigationDrawerItem(
-            icon = { Icon(Icons.Filled.LibraryBooks, contentDescription = null) },
+            icon = { Icon(Icons.AutoMirrored.Filled.LibraryBooks, contentDescription = null) },
             label = { Text("Syllabus") },
             selected = currentRoute == AppRoutes.STUDENT_SYLLABUS,
             onClick = { onNavigate(AppRoutes.STUDENT_SYLLABUS) },
@@ -304,7 +305,7 @@ fun StudentDrawer(
         Spacer(Modifier.height(24.dp))
         
         NavigationDrawerItem(
-            icon = { Icon(Icons.Filled.Logout, contentDescription = null) },
+            icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
             label = { Text("Logout") },
             selected = false,
             onClick = { onNavigate("LOGOUT") },

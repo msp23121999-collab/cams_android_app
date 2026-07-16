@@ -1,5 +1,6 @@
 package com.example.features.fees.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -45,7 +46,7 @@ fun FeesScreen(
     onNavigate: (String) -> Unit = {},
     viewModel: FeesViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(
         scrollable = false,
@@ -115,7 +116,7 @@ private fun Header(uiState: FeesUiState) {
                 "CAMS / STUDENT / FINANCIAL SERVICES",
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.Black,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.sp
                 )
             )
@@ -123,7 +124,7 @@ private fun Header(uiState: FeesUiState) {
                 "My Fees & Finance",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Black,
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -144,8 +145,8 @@ private fun InfoBox(label: String, value: String, modifier: Modifier = Modifier)
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(label.uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+            Text(label.uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -222,7 +223,7 @@ private fun OverviewTab(uiState: FeesUiState) {
         ) {
             Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Payment Progress", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Payment Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     val pct = if (summary.netFees > 0) (summary.amountPaid / summary.netFees * 100).toInt() else 100
                     Text("$pct% Cleared", fontWeight = FontWeight.Black, color = CamsNavy)
                 }
@@ -235,8 +236,8 @@ private fun OverviewTab(uiState: FeesUiState) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("₹0", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-                    Text("Target: ₹${summary.netFees.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                    Text("₹0", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Target: ₹${summary.netFees.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -302,15 +303,15 @@ private fun LedgerItem(record: FeeRecord) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(record.feeType, fontWeight = FontWeight.Black, fontSize = 14.sp, color = CamsTextPrimary)
-                    Text("Due: ${record.dueDate}", fontSize = 13.sp, color = CamsTextSecondary)
+                    Text(record.feeType, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Due: ${record.dueDate}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 StatusBadge(record.status)
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Net Amount", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
+                    Text("Net Amount", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("₹${record.amount.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = CamsNavy)
                 }
                 if (record.scholarshipAmount > 0) {
@@ -340,7 +341,7 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
         
         if (pendingRecords.isEmpty()) {
             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Text("No pending fees found.", color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                Text("No pending fees found.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
         } else {
             CamsCard(
@@ -349,7 +350,7 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     // Selector
                     Column {
-                        Text("Select Fee Head", fontSize = 12.sp, fontWeight = FontWeight.Black, color = CamsTextSecondary, modifier = Modifier.padding(bottom = 8.dp))
+                        Text("Select Fee Head", fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                         pendingRecords.forEach { r ->
                             val isSelected = selectedRecordId == r.id
                             Surface(
@@ -362,8 +363,8 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
                                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     RadioButton(selected = isSelected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = CamsNavy))
                                     Column {
-                                        Text(r.feeType, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
-                                        Text("Balance: ₹${r.amount.toInt()}", fontSize = 13.sp, color = CamsTextSecondary)
+                                        Text(r.feeType, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("Balance: ₹${r.amount.toInt()}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -408,16 +409,16 @@ private fun ReceiptsTab(uiState: FeesUiState) {
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(40.dp).background(CamsBackground, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.FilePresent, null, tint = CamsTextSecondary)
+                        Icon(Icons.Filled.FilePresent, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(r.head, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = CamsTextPrimary)
-                        Text("${r.date} • ${r.mode}", fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(r.head, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
+                        Text("${r.date} • ${r.mode}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("₹${r.amount.toInt()}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = CamsTextPrimary)
+                        Text("₹${r.amount.toInt()}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         IconButton(onClick = { /* Download */ }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Filled.Download, null, tint = CamsNavy, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Download, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -450,7 +451,7 @@ private fun ScholarshipTab(uiState: FeesUiState) {
             }
         } else {
              Box(Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                Text("No active scholarship assigned.", color = CamsTextSecondary, fontWeight = FontWeight.Bold)
+                Text("No active scholarship assigned.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -459,16 +460,16 @@ private fun ScholarshipTab(uiState: FeesUiState) {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column {
-                Text("Supporting Documents", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp), color = CamsTextPrimary)
+                Text("Supporting Documents", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp), color = MaterialTheme.colorScheme.onSurface)
                 listOf("Income Certificate", "Caste Certificate", "Aadhaar Card").forEach { doc ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(doc, fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(doc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         TextButton(onClick = { /* Upload */ }) {
-                            Icon(Icons.Filled.Upload, null, modifier = Modifier.size(14.dp), tint = CamsNavy)
+                            Icon(Icons.Filled.Upload, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(4.dp))
                             Text("Upload", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsNavy)
                         }
@@ -494,11 +495,11 @@ private fun LoansTab(uiState: FeesUiState) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(40.dp).background(CamsBackground, CircleShape), contentAlignment = Alignment.Center) {
-                         Icon(Icons.Filled.Business, null, tint = CamsNavy)
+                         Icon(Icons.Filled.Business, null, tint = MaterialTheme.colorScheme.primary)
                     }
                     Column {
-                        Text(loan.bank, fontWeight = FontWeight.Black, fontSize = 15.sp, color = CamsTextPrimary)
-                        Text(loan.branch, fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(loan.bank, fontWeight = FontWeight.Black, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(loan.branch, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.weight(1f))
                     StatusBadge(loan.status)
@@ -512,8 +513,8 @@ private fun LoansTab(uiState: FeesUiState) {
                 Spacer(Modifier.height(16.dp))
                 Surface(color = CamsBackground, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Outstanding Balance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-                        Text("₹${loan.outstanding.toInt()}", fontSize = 13.sp, fontWeight = FontWeight.Black, color = CamsTextPrimary)
+                        Text("Outstanding Balance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("₹${loan.outstanding.toInt()}", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -560,15 +561,15 @@ private fun AssistanceTab(uiState: FeesUiState) {
 
         // History
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Request History", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+            Text("Request History", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             requests.forEach { r ->
                 CamsCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(r.type, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = CamsTextPrimary)
-                            Text(r.date, fontSize = 13.sp, color = CamsTextSecondary)
+                            Text(r.type, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(r.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         StatusBadge(r.status)
                     }

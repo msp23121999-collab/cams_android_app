@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.*
@@ -48,7 +49,7 @@ fun OnlineMeetingsScreen(
     viewModel: OnlineMeetingsViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedMeeting by remember { mutableStateOf<OnlineMeeting?>(null) }
     val context = LocalContext.current
 
@@ -137,8 +138,8 @@ private fun MeetingKPICard(modifier: Modifier, label: String, value: String, ico
                 }
             }
             Column {
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = CamsTextSecondary)
-                Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -175,7 +176,7 @@ private fun MeetingFilters(viewModel: OnlineMeetingsViewModel, state: com.exampl
             value = state.searchQuery,
             onValueChange = { viewModel.updateSearch(it) },
             placeholder = { Text("Search by title or organizer...", fontSize = 14.sp) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -215,11 +216,11 @@ private fun MeetingCard(meeting: OnlineMeeting, onDetail: () -> Unit, onJoin: ()
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 StatusBadge(meeting.status)
-                Text(meeting.id, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextSecondary)
+                Text(meeting.id, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             Spacer(modifier = Modifier.height(12.dp))
-            Text(meeting.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(meeting.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
             
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

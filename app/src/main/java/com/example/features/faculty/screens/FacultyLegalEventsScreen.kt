@@ -1,11 +1,13 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -33,7 +35,7 @@ fun FacultyLegalEventsScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyLegalEventsViewModelFactory(repository) }
     val viewModel: FacultyLegalEventsViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Active Events", "History", "Leaderboard")
 
@@ -64,7 +66,7 @@ fun FacultyLegalEventsScreen(onNavigate: (String) -> Unit) {
             ) {
                 EventStatsCard("Active", "12", Icons.Filled.EventAvailable, Color(0xFF3B82F6), Modifier.weight(1f))
                 EventStatsCard("Pending", "5", Icons.Filled.PendingActions, Color(0xFFF59E0B), Modifier.weight(1f))
-                EventStatsCard("Total", "48", Icons.Filled.Assignment, Color(0xFF10B981), Modifier.weight(1f))
+                EventStatsCard("Total", "48", Icons.AutoMirrored.Filled.Assignment, Color(0xFF10B981), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -131,8 +133,8 @@ private fun EventStatsCard(
         ) {
             Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -193,7 +195,7 @@ private fun LeaderboardList() {
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(leader.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                        Text(leader.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                     Text(leader.points, color = CamsNavy, fontWeight = FontWeight.Bold)
                 }
@@ -218,12 +220,12 @@ private fun EventCard(event: com.example.core.network.FacultyLegalEventDto) {
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(event.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text(event.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Schedule, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Schedule, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(event.date ?: "TBA", fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(event.date ?: "TBA", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Surface(
@@ -251,9 +253,9 @@ private fun EventCard(event: com.example.core.network.FacultyLegalEventDto) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.LocationOn, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(event.location ?: "Virtual", fontSize = 13.sp, color = CamsTextSecondary)
+                Text(event.location ?: "Virtual", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(

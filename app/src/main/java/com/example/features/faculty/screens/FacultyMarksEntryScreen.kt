@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +32,7 @@ fun FacultyMarksEntryScreen(
     viewModel: FacultyStudentsViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedExamType by remember { mutableStateOf("Internal Assessment 1") }
     var selectedSubject by remember { mutableStateOf("Computer Networks (CS8591)") }
     
@@ -55,7 +56,7 @@ fun FacultyMarksEntryScreen(
             // 1. Config Card
             CamsCard {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Assessment Configuration", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                    Text("Assessment Configuration", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     FilterDropdown("Exam Type", selectedExamType, modifier = Modifier.fillMaxWidth())
@@ -70,11 +71,11 @@ fun FacultyMarksEntryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Max Marks", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Max Marks", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("50", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = CamsNavy)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Passing Marks", fontSize = 12.sp, color = CamsTextSecondary)
+                            Text("Passing Marks", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("25", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
                         }
                     }
@@ -90,8 +91,8 @@ fun FacultyMarksEntryScreen(
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Student Details", modifier = Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary)
-                Text("Marks", modifier = Modifier.width(80.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsTextSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text("Student Details", modifier = Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Marks", modifier = Modifier.width(80.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
             
             // 3. Student List
@@ -156,8 +157,8 @@ fun StudentMarksRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                Text(student.rollNo, fontSize = 13.sp, color = CamsTextSecondary)
+                Text(student.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(student.rollNo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             OutlinedTextField(

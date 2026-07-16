@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -44,7 +46,7 @@ fun InternshipsScreen(
     onNavigate: (String) -> Unit,
     viewModel: InternshipsViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddModal by remember { mutableStateOf(false) }
     var selectedInternship by remember { mutableStateOf<InternshipRecord?>(null) }
 
@@ -58,7 +60,7 @@ fun InternshipsScreen(
             CamsCard {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Filled.Shield, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(12.dp))
+                        Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                         Text(
                             "PROFESSIONAL DEVELOPMENT",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy, letterSpacing = 1.sp)
@@ -67,12 +69,12 @@ fun InternshipsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         "Internships & Clerkships",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary)
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Record and manage your legal internships and clerkships. Complete mandatory weeks for your degree audit.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary, lineHeight = 18.sp)
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
                     )
                 }
             }
@@ -98,7 +100,7 @@ fun InternshipsScreen(
                     value = uiState.searchQuery,
                     onValueChange = { viewModel.updateSearch(it) },
                     placeholder = { Text("Search internships...", fontSize = 14.sp) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary) },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -176,8 +178,8 @@ fun InternshipMetricCard(modifier: Modifier = Modifier, label: String, value: St
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 0.5.sp))
-                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.5.sp))
+                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
             }
             Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp).size(20.dp))
@@ -233,18 +235,18 @@ fun InternshipListItem(
             }
             
             Spacer(modifier = Modifier.height(12.dp))
-            Text(intern.organization, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-            Text(intern.role, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+            Text(intern.organization, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+            Text(intern.role, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
             
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                    Text(formatDateRange(intern.startDate, intern.endDate), style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                    Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                    Text(formatDateRange(intern.startDate, intern.endDate), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Filled.Person, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                    Text(intern.supervisor, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                    Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                    Text(intern.supervisor, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
             }
         }
@@ -258,10 +260,10 @@ fun EmptyInternshipsView() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-                Icon(Icons.Filled.BusinessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = CamsNavy.copy(alpha = 0.1f))
+                Icon(Icons.Filled.BusinessCenter, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("No Records Found", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-                Text("Start recording your internships and clerkships.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+                Text("No Records Found", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+                Text("Start recording your internships and clerkships.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
     }
 }
 
@@ -286,14 +288,14 @@ fun AddInternshipDialog(onDismiss: () -> Unit, onAdd: (InternshipRecord) -> Unit
         ) {
             Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Filled.BusinessCenter, contentDescription = null, tint = CamsNavy)
+                    Icon(Icons.Filled.BusinessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Text("Add Internship", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
                 }
                 
                 OutlinedTextField(value = org, onValueChange = { org = it }, label = { Text("Organization / Chambers") }, modifier = Modifier.fillMaxWidth())
                 
                 Column {
-                    Text("Type", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+                    Text("Type", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         types.forEach { t ->
                             FilterChip(
@@ -320,7 +322,7 @@ fun AddInternshipDialog(onDismiss: () -> Unit, onAdd: (InternshipRecord) -> Unit
                 OutlinedTextField(value = responsibilities, onValueChange = { responsibilities = it }, label = { Text("Responsibilities") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = CamsTextSecondary) }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Button(
                         onClick = {
                             onAdd(InternshipRecord("i${System.currentTimeMillis()}", org, type, role, startDate, endDate, supervisor, responsibilities, "Pending Verification"))
@@ -351,11 +353,11 @@ fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
                         Text(intern.status.uppercase(), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy))
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = CamsTextSecondary)
+                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 
-                Text(intern.organization, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                Text(intern.organization, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                 Text(intern.role, style = MaterialTheme.typography.titleMedium.copy(color = CamsNavy, fontWeight = FontWeight.Bold))
                 
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
@@ -366,10 +368,10 @@ fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
                 
                 if (intern.responsibilities.isNotBlank()) {
                     Column(modifier = Modifier.padding(top = 8.dp)) {
-                        Text("Responsibilities", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+                        Text("Responsibilities", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
                         Spacer(modifier = Modifier.height(8.dp))
                         Surface(color = CamsBackground, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Text(intern.responsibilities, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall.copy(color = CamsTextPrimary))
+                            Text(intern.responsibilities, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface))
                         }
                     }
                 }
@@ -394,10 +396,10 @@ fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
 @Composable
 fun DetailItem(label: String, value: String, icon: ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(icon, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(16.dp))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Column {
-            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp, letterSpacing = 0.5.sp))
-            Text(value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = CamsTextPrimary))
+            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, letterSpacing = 0.5.sp))
+            Text(value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface))
         }
     }
 }

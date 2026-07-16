@@ -1,5 +1,6 @@
 package com.example.features.principal.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -22,83 +23,74 @@ import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.principal.widgets.PrincipalBaseScreen
 import com.example.core.navigation.AppRoutes
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.principal.providers.*
 
 @Composable
-fun PrincipalInfrastructureScreen(onNavigate: (String) -> Unit) {
+fun PrincipalInfrastructureScreen(onNavigate: (String) -> Unit, viewModel: PrincipalInfrastructureViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     PrincipalBaseScreen(
         title = "Campus Infrastructure Management",
         subtitle = "Define, structure, and visualize floors, classroom coordinates, and administrative blueprints.",
         currentRoute = AppRoutes.PRINCIPAL_INFRASTRUCTURE,
         onNavigate = onNavigate
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Buildings Sidebar
-            Card(modifier = Modifier.weight(1f).height(120.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, Color(0xFF8B5CF6)), elevation = CardDefaults.cardElevation(2.dp)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.background(Color(0xFFEEF2FF), RoundedCornerShape(8.dp)).padding(8.dp)) {
-                        Icon(Icons.Filled.Domain, null, tint = Color(0xFF4F46E5))
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Main Academic Block", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text("MAB", fontSize = 12.sp, color = CamsTextSecondary)
-                        Spacer(Modifier.height(8.dp))
-                        Text("3 Floors • 15 Rooms", fontSize = 12.sp, color = CamsTextSecondary, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
-                    }
-                }
-            }
-            Card(modifier = Modifier.weight(1f).height(120.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(8.dp)) {
-                        Icon(Icons.Filled.Domain, null, tint = CamsTextSecondary)
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Justice Guild Hall", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text("JGH", fontSize = 12.sp, color = CamsTextSecondary)
-                        Spacer(Modifier.height(8.dp))
-                        Text("2 Floors • 8 Rooms", fontSize = 12.sp, color = CamsTextSecondary, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+        if (uiState.isLoading) {
+            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (uiState.data == null || uiState.data!!.buildings.isEmpty()) {
+            com.example.core.ui.EnterpriseEmptyState("No Infrastructure Data", "Infrastructure details are not currently available.")
+        } else {
+            val buildings = uiState.data!!.buildings
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                buildings.take(3).forEach { building ->
+                    Card(modifier = Modifier.weight(1f).height(120.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(8.dp)) {
+                                Icon(Icons.Filled.Domain, null, tint = Color(0xFF4F46E5))
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(building.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text(building.id.uppercase(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(8.dp))
+                                Text("${building.floors} Floors • ${building.rooms.size} Rooms", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+                            }
+                        }
                     }
                 }
             }
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopEnd) {
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
-                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Floor", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        
-        Spacer(Modifier.height(20.dp))
-        
-        CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Text("Ground Floor", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-            Spacer(Modifier.height(16.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(3) { i ->
-                    val type = if(i==0) "Classroom" else if(i==1) "Office" else "Staff Room"
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            
+            Spacer(Modifier.height(20.dp))
+            
+            val firstBuilding = buildings.first()
+            CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                Text("${firstBuilding.name} - Rooms", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.height(16.dp))
+                if (firstBuilding.rooms.isEmpty()) {
+                     Text("No rooms configured.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Icon(if(i==0) Icons.Filled.School else if(i==1) Icons.Filled.BusinessCenter else Icons.Filled.Groups, null, tint = Color(0xFF4F46E5))
-                            Spacer(Modifier.height(8.dp))
-                            Text("Room 10${i+1}", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                            Text(type, fontSize = 12.sp, color = CamsTextSecondary, fontWeight = FontWeight.Bold)
-                            
-                            if (i == 0) {
-                                Spacer(Modifier.height(8.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                                Spacer(Modifier.height(8.dp))
-                                Text("L2", fontSize = 12.sp, color = CamsTextPrimary, fontWeight = FontWeight.Black)
-                                Text("Batch 2026-2031", fontSize = 12.sp, color = CamsTextSecondary)
-                                Text("1st Year - Section A", fontSize = 12.sp, color = CamsTextSecondary)
+                        items(firstBuilding.rooms.size) { i ->
+                            val room = firstBuilding.rooms[i]
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Icon(if(room.type == "Classroom") Icons.Filled.School else if(room.type == "Lab") Icons.Filled.Computer else Icons.Filled.BusinessCenter, null, tint = Color(0xFF4F46E5))
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(room.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(room.type, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                    
+                                    Spacer(Modifier.height(8.dp))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("Capacity: ${room.capacity}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
                         }
                     }

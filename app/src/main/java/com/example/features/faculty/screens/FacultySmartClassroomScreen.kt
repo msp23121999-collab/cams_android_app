@@ -56,7 +56,7 @@ fun FacultySmartClassroomScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // 2. Control Grid
-        Text("Device Controls", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+        Text("Device Controls", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -104,7 +104,7 @@ fun FacultySmartClassroomScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("AC Temperature", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CamsTextPrimary)
+                        Text("AC Temperature", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("${temperature.toInt()}°C", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsNavy)
                     }
                     Slider(
@@ -129,8 +129,8 @@ fun FacultySmartClassroomScreen(
 fun EnvironmentStat(label: String, value: String, icon: ImageVector, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
-        Text(value, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-        Text(label, fontSize = 13.sp, color = CamsTextSecondary)
+        Text(value, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -197,3 +197,55 @@ class PrincipalCircularsViewModel(private val repository: PrincipalRepository) :
         }
     }
 }
+
+// --- Principal Research ViewModel ---
+data class PrincipalResearchState(
+    val compliance: com.example.core.network.PrincipalComplianceResponseDto? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+class PrincipalResearchViewModel(private val repository: PrincipalRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(PrincipalResearchState())
+    val uiState: StateFlow<PrincipalResearchState> = _uiState.asStateFlow()
+
+    init { loadResearch() }
+
+    fun loadResearch() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val data = repository.getResearchCompliance()
+                _uiState.update { it.copy(compliance = data, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+}
+
+// --- Principal Infrastructure ViewModel ---
+data class PrincipalInfrastructureState(
+    val data: com.example.core.network.InfrastructureResponseDto? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+class PrincipalInfrastructureViewModel(private val repository: PrincipalRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(PrincipalInfrastructureState())
+    val uiState: StateFlow<PrincipalInfrastructureState> = _uiState.asStateFlow()
+
+    init { loadInfrastructure() }
+
+    fun loadInfrastructure() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val data = repository.getInfrastructureDetails()
+                _uiState.update { it.copy(data = data, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+}

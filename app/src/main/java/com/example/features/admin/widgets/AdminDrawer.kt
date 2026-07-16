@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -75,7 +76,7 @@ fun AdminDrawer(
             HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(10.dp))
             
-            DrawerItem("Logout", Icons.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
+            DrawerItem("Logout", Icons.AutoMirrored.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
         }
     }
 }

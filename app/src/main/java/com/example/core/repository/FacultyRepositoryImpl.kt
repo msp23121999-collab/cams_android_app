@@ -101,23 +101,27 @@ class FacultyRepositoryImpl(private val apiService: CamsApiService) : FacultyRep
     override suspend fun getTimetable(): List<TimetableDay> {
         val response = apiService.getFacultyTimetable()
         if (response.isSuccessful) {
-            return response.body()!!.map { dayDto ->
+                        val items = response.body() ?: return emptyList()
+            // Group flat timetable items by dayOfWeek
+            val grouped = items.groupBy { it.dayOfWeek }
+            
+            return grouped.map { (day, dayItems) ->
                 TimetableDay(
-                    dayName = dayDto.day,
-                    periods = dayDto.periods.map { pDto ->
-                        TimetablePeriod(
-                            periodNo = pDto.periodNo,
-                            time = pDto.time,
-                            subjectName = pDto.subject,
-                            subjectCode = pDto.code,
-                            room = pDto.room,
-                            instructor = pDto.batch // Reusing instructor field for batch in faculty view if needed
+                    dayName = day,
+                    periods = dayItems.mapIndexed { index, itemDto ->
+                        com.example.features.parent.models.TimetablePeriod(
+                            periodNo = index + 1,
+                            time = "${itemDto.startTime} - ${itemDto.endTime}",
+                            subjectName = itemDto.courseName,
+                            subjectCode = "",
+                            room = itemDto.roomNo,
+                            instructor = ""
                         )
                     }
                 )
             }
         }
-        throw IOException("Failed to fetch faculty timetable")
+        throw IOException("Failed to fetch timetable")
     }
 
     override suspend fun getNotices(): List<CollegeNotice> {

@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +41,7 @@ fun CommunityServiceScreen(
     onNavigate: (String) -> Unit,
     viewModel: CommunityServiceViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(scrollable = true,
         title = "Community Service",
@@ -60,13 +62,13 @@ fun CommunityServiceScreen(
             // Upcoming Opportunities
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("UPCOMING OPPORTUNITIES", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+                    Text("UPCOMING OPPORTUNITIES", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
                     TextButton(onClick = {}) { Text("Browse All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFF10B981))) }
                 }
                 
                 
                 if (uiState.opportunities.isEmpty()) {
-                    Text("No upcoming opportunities at the moment.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                    Text("No upcoming opportunities at the moment.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     uiState.opportunities.forEach { opp ->
                         ServiceOpportunityItem(opp)
@@ -76,12 +78,12 @@ fun CommunityServiceScreen(
 
             // Recent Service Log
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("RECENT SERVICE LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+                Text("RECENT SERVICE LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
                 
                 CamsCard(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (uiState.logs.isEmpty()) {
-                            Text("No service logs recorded yet.", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+                            Text("No service logs recorded yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 12.dp))
                         } else {
                             uiState.logs.forEachIndexed { index, log ->
                                 ServiceLogItem(log)
@@ -94,10 +96,10 @@ fun CommunityServiceScreen(
                         Button(
                             onClick = {},
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = CamsBackground),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("View Full Log", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextPrimary, fontWeight = FontWeight.Bold))
+                            Text("View Full Log", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold))
                         }
                     }
                 }
@@ -115,8 +117,8 @@ fun ServiceStatCard(modifier: Modifier = Modifier, label: String, value: String,
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp).size(20.dp))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 0.5.sp))
+            Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.5.sp))
         }
     }
 }
@@ -127,14 +129,14 @@ fun ServiceOpportunityItem(opp: CommunityServiceOpportunity) {
         Column {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(opp.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                    Text(opp.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                     Text(opp.ngo, style = MaterialTheme.typography.labelMedium.copy(color = Color(0xFF059669), fontWeight = FontWeight.Bold))
                 }
                 Surface(color = CamsBackground, shape = CircleShape) {
                     Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(10.dp), tint = CamsTextSecondary)
+                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(10.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(opp.hours, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 12.sp, color = CamsTextPrimary))
+                        Text(opp.hours, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface))
                     }
                 }
             }
@@ -155,12 +157,12 @@ fun ServiceOpportunityItem(opp: CommunityServiceOpportunity) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                        Text(opp.date, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                        Icon(Icons.Filled.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Text(opp.date, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(12.dp))
-                        Text(opp.location, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Text(opp.location, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                     }
                 }
                 
@@ -188,9 +190,9 @@ fun ServiceLogItem(log: CommunityServiceLog) {
         ) {}
         
         Column(modifier = Modifier.weight(1f)) {
-            Text(log.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+            Text(log.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
             Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(log.date.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp))
+                Text(log.date.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp))
                 Text("+${log.hours} HRS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = Color(0xFF10B981), fontSize = 12.sp))
                 Text(log.status.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = if (log.status == "Verified") Color(0xFF10B981) else Color(0xFFF59E0B), fontSize = 12.sp))
             }
@@ -203,7 +205,7 @@ fun ServiceLogItem(log: CommunityServiceLog) {
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Download, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(10.dp))
+                        Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(10.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("DOWNLOAD CERTIFICATE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy, fontSize = 12.sp))
                     }

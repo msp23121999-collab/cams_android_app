@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -42,7 +44,7 @@ fun CertificationsScreen(
     onNavigate: (String) -> Unit,
     viewModel: CertificationsViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showUploadModal by remember { mutableStateOf(false) }
 
     CamsScreen(
@@ -76,7 +78,7 @@ fun CertificationsScreen(
                     value = uiState.searchQuery,
                     onValueChange = { viewModel.updateSearch(it) },
                     placeholder = { Text("Search certificates...", fontSize = 14.sp) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = CamsTextSecondary) },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -157,12 +159,12 @@ fun CertMetricCard(modifier: Modifier = Modifier, label: String, value: String, 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Surface(modifier = Modifier.size(52.dp), color = bgColor, shape = RoundedCornerShape(16.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 }
             }
             Column {
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 0.5.sp))
-                Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.5.sp))
+                Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
             }
         }
     }
@@ -187,7 +189,7 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
                                 else -> Icons.Filled.EmojiEvents
                             },
                             contentDescription = null,
-                            tint = CamsNavy
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -220,8 +222,8 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            Text(cert.title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary, lineHeight = 26.sp))
-            Text(cert.authority, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+            Text(cert.title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, lineHeight = 26.sp))
+            Text(cert.authority, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
             
             Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -229,7 +231,7 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
                     Text(cert.category.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy, fontSize = 13.sp))
                 }
                 Surface(color = CamsBackground, shape = RoundedCornerShape(8.dp)) {
-                    Text(cert.date, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = CamsTextSecondary, fontSize = 13.sp))
+                    Text(cert.date, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp))
                 }
             }
             
@@ -239,7 +241,7 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("ID: ${cert.id}", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold))
+                Text("ID: ${cert.id}", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = { onDelete(cert.id) }, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
@@ -252,7 +254,7 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
                         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.Download, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -267,7 +269,7 @@ fun CertTimeline(certs: List<CertificationRecord>) {
     
     CamsCard(modifier = Modifier.fillMaxWidth()) {
         Column {
-            Text("ACHIEVEMENT TIMELINE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+            Text("ACHIEVEMENT TIMELINE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
             Spacer(modifier = Modifier.height(20.dp))
             
             certs.sortedByDescending { it.date }.take(3).forEachIndexed { index, cert ->
@@ -285,8 +287,8 @@ fun CertTimeline(certs: List<CertificationRecord>) {
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(cert.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-                        Text(cert.date, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold))
+                        Text(cert.title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+                        Text(cert.date, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
                     }
                 }
                 if (index < 2) Spacer(modifier = Modifier.height(12.dp))
@@ -388,13 +390,13 @@ fun DigitalSignatureDialog(cert: CertificationRecord, onDismiss: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.fillMaxWidth().height(150.dp).background(CamsBackground, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.QrCode2, contentDescription = "QR Code", modifier = Modifier.size(100.dp), tint = CamsNavy)
+                    Icon(Icons.Filled.QrCode2, contentDescription = "QR Code", modifier = Modifier.size(100.dp), tint = MaterialTheme.colorScheme.primary)
                 }
                 Text("Issuer: ${cert.authority}", style = MaterialTheme.typography.bodyMedium)
                 Text("Issued to: ${cert.title}", style = MaterialTheme.typography.bodyMedium)
                 Text("Date: ${cert.date}", style = MaterialTheme.typography.bodyMedium)
-                Text("Signature Hash: SHA-256: 0x8F9A...4C21", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
-                Text("Blockchain Tx: tx_904xca11...", style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                Text("Signature Hash: SHA-256: 0x8F9A...4C21", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Blockchain Tx: tx_904xca11...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {

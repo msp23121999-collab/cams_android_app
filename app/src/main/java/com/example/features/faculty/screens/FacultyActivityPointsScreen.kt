@@ -110,8 +110,8 @@ private fun ActivityStatsCard(
         ) {
             Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -139,13 +139,13 @@ private fun PendingApprovalQueue() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(req.studentName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                            Text(req.studentName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text(req.activity, fontSize = 13.sp, color = CamsNavy)
                         }
                         Text(req.points, fontWeight = FontWeight.ExtraBold, color = Color(0xFF10B981), fontSize = 18.sp)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Category: ${req.category}", fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Category: ${req.category}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -196,7 +196,7 @@ private fun StudentPointsRecords() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(rec.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                        Text(rec.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text(rec.status, fontSize = 12.sp, color = when(rec.status) {
                             "Exceeding" -> Color(0xFF10B981)
                             "On Track" -> Color(0xFF3B82F6)
@@ -231,11 +231,11 @@ private fun ActivityCategoriesList() {
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(cat.icon, null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+                    Icon(cat.icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(cat.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text(cat.limit, fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(cat.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(cat.limit, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

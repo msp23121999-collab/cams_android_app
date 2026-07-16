@@ -1,5 +1,6 @@
 package com.example.features.auth
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,7 +81,7 @@ fun LoginScreen(
     var tapCount by remember { mutableStateOf(0) }
     var lastTapTime by remember { mutableStateOf(0L) }
 
-    val authState by authViewModel.uiState.collectAsState()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     // Trigger success callback on token change
     LaunchedEffect(authState.token, authState.role) {
@@ -101,7 +103,7 @@ fun LoginScreen(
     }
 
     Scaffold(
-        containerColor = CamsBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -125,7 +127,7 @@ fun LoginScreen(
                     Icon(
                         Icons.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = CamsNavy
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -185,7 +187,7 @@ fun LoginScreen(
                 Text(
                     text = "Please sign in to continue",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = CamsTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     ),
                     textAlign = TextAlign.Center
@@ -239,7 +241,7 @@ fun LoginScreen(
                             trailingIcon = {
                                 if (email.isNotEmpty()) {
                                     IconButton(onClick = { email = "" }) {
-                                        Icon(Icons.Filled.Clear, "Clear Email", tint = CamsTextSecondary)
+                                        Icon(Icons.Filled.Clear, "Clear Email", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             },
@@ -288,7 +290,7 @@ fun LoginScreen(
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                                    Icon(icon, "Toggle Password Visibility", tint = CamsTextSecondary)
+                                    Icon(icon, "Toggle Password Visibility", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             },
                             modifier = Modifier
@@ -313,7 +315,7 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 email = "${currentRole.lowercase()}@cams.local"
-                                password = "Password@123"
+                                password = "Password@1"
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),

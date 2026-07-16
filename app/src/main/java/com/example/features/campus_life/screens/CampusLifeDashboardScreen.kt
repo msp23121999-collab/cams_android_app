@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -49,7 +51,8 @@ fun CampusLifeDashboardScreen(
     viewModel: CampusLifeViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedTab by remember { mutableStateOf("calendar") }
 
     CamsScreen(scrollable = true,
         title = "Campus Life",
@@ -63,27 +66,59 @@ fun CampusLifeDashboardScreen(
                 Text(
                     "Legal network hub. Discover events, research, and connect with societies.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
-                        onClick = { },
-                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        onClick = { selectedTab = "calendar" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedTab == "calendar") CamsNavy else Color.Transparent
+                        ),
                         shape = RoundedCornerShape(12.dp),
+                        border = if (selectedTab != "calendar") BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)) else null,
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
                     ) {
-                        Text("Calendar", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Calendar", style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedTab == "calendar") Color.White else CamsTextPrimary
+                        ))
                     }
-                    OutlinedButton(
-                        onClick = { },
+                    Button(
+                        onClick = { selectedTab = "registrations" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedTab == "registrations") CamsNavy else Color.Transparent
+                        ),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CamsTextPrimary),
+                        border = if (selectedTab != "registrations") BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)) else null,
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
                     ) {
-                        Text("Registrations", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Registrations", style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedTab == "registrations") Color.White else CamsTextPrimary
+                        ))
+                    }
+                }
+
+                // Registrations content
+                if (selectedTab == "registrations") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (uiState.events.isEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Filled.EventAvailable, contentDescription = null, tint = CamsNavy.copy(alpha = 0.4f), modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("No upcoming registrations", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Check back later for new events", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                        }
+                    } else {
+                        uiState.events.forEach { event ->
+                            RegistrationEventRow(event)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }
@@ -132,10 +167,10 @@ fun CampusLifeDashboardScreen(
                         modifier = Modifier.weight(1f).height(120.dp).clickable { onNavigate("/student/legal-events") },
                     ) {
                         Column(verticalArrangement = Arrangement.Center) {
-                            Icon(Icons.Filled.EventSeat, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+                            Icon(Icons.Filled.EventSeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("LEGAL HUB", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-                            Text("Lectures", style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = CamsTextSecondary))
+                            Text("LEGAL HUB", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+                            Text("Lectures", style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                     }
                 }
@@ -154,22 +189,22 @@ fun CampusLifeDashboardScreen(
                         modifier = Modifier.size(56.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.Shield, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                         }
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Student Council",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                            color = CamsTextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             "Your voice on campus hub.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = CamsTextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = CamsNavy)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
 
@@ -215,7 +250,7 @@ fun CampusLifeDashboardScreen(
 private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, color: Color = CamsNavy) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Text(title.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp), color = CamsTextSecondary)
+        Text(title.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -234,18 +269,18 @@ private fun StatCard(stat: CampusLifeStat) {
                     .background(CamsNavy.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(stat.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(16.dp))
+                Icon(stat.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             }
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 stat.value,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 20.sp),
-                color = CamsTextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 stat.label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, fontSize = 13.sp),
-                color = CamsTextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -265,21 +300,21 @@ private fun ExperienceModuleCard(modifier: Modifier, module: ExperienceModule, o
                 modifier = Modifier.size(40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(module.icon, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                    Icon(module.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
             }
             Column {
                 Text(
                     module.title,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     module.description,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -318,7 +353,7 @@ private fun EventCard(event: CampusLifeEvent) {
                 Text(
                     event.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 16.sp),
-                    color = CamsTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -413,6 +448,65 @@ private fun AchievementItem(achievement: Achievement) {
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 color = Color(0xFF94A3B8),
                 modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegistrationEventRow(event: CampusLifeEvent) {
+    var isRegistered by remember { mutableStateOf(event.registered) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isRegistered) Color(0xFF10B981).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(CamsNavy.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                if (isRegistered) Icons.Filled.CheckCircle else Icons.Filled.Event,
+                contentDescription = null,
+                tint = if (isRegistered) Color(0xFF10B981) else CamsNavy,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                event.title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${event.date} • ${event.venue}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Button(
+            onClick = { isRegistered = !isRegistered },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isRegistered) Color(0xFF10B981) else CamsNavy
+            ),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                if (isRegistered) "Registered" else "Register",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
             )
         }
     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -64,9 +65,9 @@ fun FacultyDrawer(
             DrawerItem("Profile", Icons.Filled.Person, "/faculty/profile", currentRoute, onNavigate)
             DrawerItem("Student Directory", Icons.Filled.People, "/faculty/students", currentRoute, onNavigate)
             DrawerItem("Attendance", Icons.Filled.HowToReg, "/faculty/attendance", currentRoute, onNavigate)
-            DrawerItem("Assignments", Icons.Filled.Assignment, "/faculty/assignments", currentRoute, onNavigate)
+            DrawerItem("Assignments", Icons.AutoMirrored.Filled.Assignment, "/faculty/assignments", currentRoute, onNavigate)
             DrawerItem("Marks Entry", Icons.Filled.Grade, "/faculty/marks-entry", currentRoute, onNavigate)
-            DrawerItem("Study Materials", Icons.Filled.MenuBook, "/faculty/study-materials", currentRoute, onNavigate)
+            DrawerItem("Study Materials", Icons.AutoMirrored.Filled.MenuBook, "/faculty/study-materials", currentRoute, onNavigate)
             DrawerItem("Lecture Recordings", Icons.Filled.VideoLibrary, "/faculty/lecture-recordings", currentRoute, onNavigate)
             DrawerItem("Smart Classroom", Icons.Filled.SettingsRemote, com.example.core.navigation.AppRoutes.FACULTY_SMART_CLASSROOM, currentRoute, onNavigate)
             DrawerItem("Legal Events", Icons.Filled.Gavel, com.example.core.navigation.AppRoutes.FACULTY_LEGAL_EVENTS, currentRoute, onNavigate)
@@ -84,7 +85,7 @@ fun FacultyDrawer(
             DrawerItem("Advisor Leaves", Icons.Filled.Checklist, com.example.core.navigation.AppRoutes.FACULTY_ADVISOR_LEAVES, currentRoute, onNavigate)
             DrawerItem("Class Management", Icons.Filled.ManageAccounts, com.example.core.navigation.AppRoutes.FACULTY_CLASS_STUDENT_MGMT, currentRoute, onNavigate)
             DrawerItem("Mentor Management", Icons.Filled.SupervisorAccount, com.example.core.navigation.AppRoutes.FACULTY_MENTOR_STUDENT_MGMT, currentRoute, onNavigate)
-            DrawerItem("Class Diary", Icons.Filled.MenuBook, com.example.core.navigation.AppRoutes.FACULTY_CLASS_DIARY, currentRoute, onNavigate)
+            DrawerItem("Class Diary", Icons.AutoMirrored.Filled.MenuBook, com.example.core.navigation.AppRoutes.FACULTY_CLASS_DIARY, currentRoute, onNavigate)
             DrawerItem("Diary HOD Review", Icons.Filled.RateReview, com.example.core.navigation.AppRoutes.FACULTY_CLASS_DIARY_HOD, currentRoute, onNavigate)
 
             Spacer(modifier = Modifier.weight(1f))
@@ -92,7 +93,7 @@ fun FacultyDrawer(
             HorizontalDivider(color = Color(0xFFF3F4F6))
             Spacer(modifier = Modifier.height(10.dp))
             
-            DrawerItem("Logout", Icons.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
+            DrawerItem("Logout", Icons.AutoMirrored.Filled.Logout, "LOGOUT", currentRoute, onNavigate, color = Color.Red)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.features.career.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,7 +35,7 @@ fun LexSphereInternshipsScreen(
     viewModel: CareerViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var activeTab by remember { mutableStateOf("Explore") }
@@ -247,7 +248,7 @@ fun ApplicationFunnel(currentStatus: String) {
                         text = stepName,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = if (isCompleted) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isCompleted) Color.Black else Color(0xFF64748B)
+                            color = if (isCompleted) MaterialTheme.colorScheme.onSurface else Color(0xFF64748B)
                         )
                     )
                 }

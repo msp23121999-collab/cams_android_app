@@ -1,5 +1,6 @@
 package com.example.features.leave.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -37,7 +39,7 @@ fun LeaveApplicationScreen(
     onNavigate: (String) -> Unit = {},
     viewModel: LeavesViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -93,7 +95,7 @@ fun LeaveApplicationScreen(
                             Icon(Icons.Filled.Info, contentDescription = "Policy", tint = LexNovaPurple)
                         }
                         IconButton(onClick = { onNavigate("LOGOUT") }) {
-                            Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.Gray)
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.Gray)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -279,7 +281,7 @@ private fun LeaveContent(uiState: com.example.features.student.providers.LeavesS
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = LexNovaPurple)
                 ) {
-                    Icon(Icons.Filled.Send, null)
+                    Icon(Icons.AutoMirrored.Filled.Send, null)
                     Spacer(Modifier.width(8.dp))
                     Text("Submit Application", fontWeight = FontWeight.Black)
                 }

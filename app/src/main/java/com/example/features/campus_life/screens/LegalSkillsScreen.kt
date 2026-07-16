@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +41,7 @@ fun LegalSkillsScreen(
     onNavigate: (String) -> Unit,
     viewModel: LegalSkillsViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -160,7 +162,7 @@ fun LegalSkillsHero(certifiedCount: Int, activeCount: Int) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     HeroStatCard(Icons.Filled.EmojiEvents, certifiedCount.toString(), "Certified")
-                    HeroStatCard(Icons.Filled.MenuBook, activeCount.toString(), "Active")
+                    HeroStatCard(Icons.AutoMirrored.Filled.MenuBook, activeCount.toString(), "Active")
                 }
             }
         }
@@ -335,7 +337,7 @@ fun MyLearningView(
             modifier = Modifier.fillMaxWidth().padding(40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(64.dp), tint = Purple100)
+            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(64.dp), tint = Purple100)
             Spacer(modifier = Modifier.height(16.dp))
             Text("Your Portfolio is Empty", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             Text("Register for specialized legal courses to build your portfolio.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(color = Slate500))

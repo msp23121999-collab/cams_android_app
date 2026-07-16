@@ -1,5 +1,6 @@
 package com.example.features.academics.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -48,7 +49,7 @@ fun InternalMarksScreen(
     viewModel: MarksViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     CamsScreen(scrollable = false,
@@ -84,7 +85,7 @@ fun InternalMarksScreen(
                 InternalMarksSummary(uiState.marks)
                 if (uiState.marks.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No internal marks available yet.", color = CamsTextSecondary)
+                        Text("No internal marks available yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     MarksTable(uiState.marks)
@@ -121,12 +122,12 @@ fun StudentProfileCard() {
                 Text(
                     "John Smith",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "Reg No: 2024LAW001 • Sem IV",
                     style = MaterialTheme.typography.labelMedium,
-                    color = CamsTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Box(
@@ -193,11 +194,11 @@ fun SummaryStatCard(modifier: Modifier, label: String, value: String, icon: Imag
                 Text(
                     value,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -215,12 +216,12 @@ fun MarksTable(marks: List<InternalMarkRecord>) {
                     .padding(vertical = 12.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Filled.ListAlt, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.ListAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "Detailed Assessment",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -254,14 +255,14 @@ fun MarksTable(marks: List<InternalMarkRecord>) {
                                 Text(
                                     mark.subjectName,
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                    color = CamsTextPrimary,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     "Semester IV",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = CamsTextSecondary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             TableBodyCell("Final", 100.dp)
@@ -298,7 +299,7 @@ fun TableHeaderCell(text: String, width: androidx.compose.ui.unit.Dp) {
         text,
         modifier = Modifier.width(width),
         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-        color = CamsTextSecondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center
     )
 }
@@ -309,7 +310,7 @@ fun TableBodyCell(text: String, width: androidx.compose.ui.unit.Dp) {
         text,
         modifier = Modifier.width(width),
         style = MaterialTheme.typography.bodySmall,
-        color = CamsTextPrimary,
+        color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center
     )
 }

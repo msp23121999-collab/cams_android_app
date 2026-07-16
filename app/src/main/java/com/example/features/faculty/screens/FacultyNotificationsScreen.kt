@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,7 +34,7 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyNotificationsViewModelFactory(repository) }
     val viewModel: FacultyNotificationsViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FacultyBaseScreen(scrollable = false, 
         title = "Notifications",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_NOTIFICATIONS,
@@ -50,7 +51,7 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
                 }
             } else if (uiState.notifications.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No new notifications", color = CamsTextSecondary)
+                    Text("No new notifications", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -82,7 +83,7 @@ private fun NotificationItem(notification: com.example.core.network.Notification
                     .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(if (notification.isRead) Icons.Filled.Notifications else Icons.Filled.NotificationsActive, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                Icon(if (notification.isRead) Icons.Filled.Notifications else Icons.Filled.NotificationsActive, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -90,11 +91,11 @@ private fun NotificationItem(notification: com.example.core.network.Notification
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(notification.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, fontSize = 15.sp)
+                    Text(notification.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp)
                     Text(notification.date.take(10), fontSize = 13.sp, color = Color(0xFF64748B))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(notification.message, fontSize = 13.sp, color = CamsTextSecondary, lineHeight = 18.sp)
+                Text(notification.message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
             }
         }
     }

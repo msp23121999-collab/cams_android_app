@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,9 +9,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,7 +43,7 @@ fun ActivityPointsScreen(
     onNavigate: (String) -> Unit,
     viewModel: ActivityPointsViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSubmitModal by remember { mutableStateOf(false) }
     var selectedApp by remember { mutableStateOf<ActivityPointApplication?>(null) }
 
@@ -59,14 +62,14 @@ fun ActivityPointsScreen(
             ActivityStatCard(Modifier.weight(1f), "Pending", pendingCount.toString(), Icons.Filled.History, Color(0xFFF59E0B))
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ActivityStatCard(Modifier.weight(1f), "Verified", uiState.applications.count { it.status == "Approved" }.toString(), Icons.Filled.FactCheck, CamsNavy)
+            ActivityStatCard(Modifier.weight(1f), "Verified", uiState.applications.count { it.status == "Approved" }.toString(), Icons.AutoMirrored.Filled.FactCheck, CamsNavy)
             ActivityStatCard(Modifier.weight(1f), "Total", uiState.applications.size.toString(), Icons.Filled.Description, Color(0xFF6366F1))
         }
 
         // Applications Log
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("SUBMISSIONS LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 1.sp))
+                Text("SUBMISSIONS LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
                 Button(
                     onClick = { showSubmitModal = true },
                     colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
@@ -121,8 +124,8 @@ fun ActivityStatCard(modifier: Modifier = Modifier, label: String, value: String
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, letterSpacing = 0.5.sp))
-                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.5.sp))
+                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
             }
             Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp).size(20.dp))
@@ -172,15 +175,15 @@ fun ActivityApplicationItem(
             }
             
             Spacer(modifier = Modifier.height(12.dp))
-            Text(app.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+            Text(app.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
             Text(app.category.replace("_", " ").uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = CamsNavy, fontSize = 13.sp))
             
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column {
-                        Text("CLAIMED", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp))
-                        Text("${app.claimedPoints} PTS", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                        Text("CLAIMED", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 12.sp))
+                        Text("${app.claimedPoints} PTS", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                     }
                     if (app.approvedPoints != null) {
                         Column {
@@ -189,7 +192,7 @@ fun ActivityApplicationItem(
                         }
                     }
                 }
-                Text(app.date, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold))
+                Text(app.date, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
             }
         }
     }
@@ -202,10 +205,10 @@ fun EmptyApplicationsView() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-                Icon(Icons.Filled.Stars, contentDescription = null, modifier = Modifier.size(64.dp), tint = CamsNavy.copy(alpha = 0.1f))
+                Icon(Icons.Filled.Stars, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("No Applications Found", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
-                Text("Submit your achievements to earn activity points.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+                Text("No Applications Found", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
+                Text("Submit your achievements to earn activity points.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
     }
 }
 
@@ -228,14 +231,14 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
         ) {
             Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Filled.AddCircle, contentDescription = null, tint = CamsNavy)
+                    Icon(Icons.Filled.AddCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Text("Apply for Credits", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
                 }
                 
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Activity Title") }, modifier = Modifier.fillMaxWidth())
                 
                 Column {
-                    Text("Category", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+                    Text("Category", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         categories.forEach { c ->
                             FilterChip(
@@ -267,14 +270,14 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = CamsTextSecondary)
-                            Text("Upload Support Document", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                            Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Upload Support Document", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                     }
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = CamsTextSecondary) }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Button(
                         onClick = {
                             onAdd(ActivityPointApplication("AP-${System.currentTimeMillis().toString().takeLast(4)}", title, category, date, points.toIntOrNull() ?: 5, null, "Pending Review", description, "Document.pdf"))
@@ -305,19 +308,19 @@ fun ActivityAppDetailDialog(app: ActivityPointApplication, onDismiss: () -> Unit
                         Text(app.status.uppercase(), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy))
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = CamsTextSecondary)
+                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 
-                Text(app.title, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                Text(app.title, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                 Text(app.category.replace("_", " ").uppercase(), style = MaterialTheme.typography.titleMedium.copy(color = CamsNavy, fontWeight = FontWeight.Bold))
                 
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                 
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column {
-                        Text("CLAIMED POINTS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary))
-                        Text("${app.claimedPoints} PTS", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = CamsTextPrimary))
+                        Text("CLAIMED POINTS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                        Text("${app.claimedPoints} PTS", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface))
                     }
                     if (app.approvedPoints != null) {
                         Column(horizontalAlignment = Alignment.End) {
@@ -329,24 +332,24 @@ fun ActivityAppDetailDialog(app: ActivityPointApplication, onDismiss: () -> Unit
 
                 Surface(color = CamsBackground, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("DESCRIPTION", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary, fontSize = 12.sp))
+                        Text("DESCRIPTION", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp))
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(app.description, style = MaterialTheme.typography.bodySmall.copy(color = CamsTextPrimary))
+                        Text(app.description, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface))
                     }
                 }
 
                 if (app.reviewedBy != null) {
                     Column(modifier = Modifier.padding(top = 8.dp)) {
-                        Text("REVIEWS & REMARKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsTextSecondary))
+                        Text("REVIEWS & REMARKS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant))
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Surface(modifier = Modifier.size(24.dp), color = CamsNavy.copy(alpha = 0.1f), shape = CircleShape) {}
-                            Text(app.reviewedBy, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = CamsTextPrimary))
+                            Text(app.reviewedBy, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface))
                             Spacer(modifier = Modifier.weight(1f))
-                            Text(app.reviewedAt ?: "", style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary))
+                            Text(app.reviewedAt ?: "", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                         if (app.facultyRemarks != null) {
-                            Text(app.facultyRemarks, modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodySmall.copy(color = CamsTextSecondary))
+                            Text(app.facultyRemarks, modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                     }
                 }

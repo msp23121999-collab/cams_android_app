@@ -1,5 +1,6 @@
 package com.example.features.admin.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.admin.providers.AdminLogsViewModel
+import com.example.features.admin.providers.AdminLogsViewModelFactory
+import com.example.core.repository.AdminRepositoryImpl
+import com.example.CamsApplication
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,7 +30,12 @@ import com.example.core.ui.CamsCard
 import com.example.features.admin.widgets.AdminBaseScreen
 
 @Composable
-fun AdminLogsScreen(onNavigate: (String) -> Unit) {
+fun AdminLogsScreen(
+    onNavigate: (String) -> Unit,
+    viewModel: AdminLogsViewModel = viewModel(factory = AdminLogsViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     var searchQuery by remember { mutableStateOf("") }
 
     AdminBaseScreen(
@@ -44,12 +58,8 @@ fun AdminLogsScreen(onNavigate: (String) -> Unit) {
                 leadingIcon = { Icon(Icons.Filled.Search, null) }
             )
 
-            val logs = listOf(
-                AccessLog("Failed Login Attempt", "IP: 192.168.1.45", "10 Oct, 10:30 AM", "Error"),
-                AccessLog("User Data Export", "User: admin@cams.edu", "10 Oct, 09:15 AM", "Info"),
-                AccessLog("Settings Updated", "Maintenance Mode: ON", "09 Oct, 11:00 PM", "Warning"),
-                AccessLog("Successful Login", "User: principal@cams.edu", "09 Oct, 08:30 AM", "Success")
-            )
+            // List replaced by ViewModel
+            val logs = uiState.logs as? List<AccessLog> ?: emptyList()
 
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(logs) { log ->
@@ -100,8 +110,8 @@ private fun LogCard(log: AccessLog) {
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(log.action, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
-                Text(log.details, fontSize = 12.sp, color = CamsTextSecondary)
+                Text(log.action, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(log.details, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(log.time, fontSize = 12.sp, color = Color(0xFF64748B))
         }

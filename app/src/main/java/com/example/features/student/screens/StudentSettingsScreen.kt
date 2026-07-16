@@ -1,12 +1,15 @@
 package com.example.features.student.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +32,7 @@ fun StudentSettingsScreen(
     viewModel: StudentProfileViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showChangePasswordDialog by rememberSaveable { mutableStateOf(false) }
     var currentPassword by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
@@ -86,7 +89,7 @@ fun StudentSettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            SettingsSectionHeader(icon = Icons.Filled.Help, title = "Support")
+            SettingsSectionHeader(icon = Icons.AutoMirrored.Filled.Help, title = "Support")
 
             StudentSettingsCard(
                 icon = Icons.Filled.Info,
@@ -110,7 +113,7 @@ fun StudentSettingsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Filled.Logout, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Sign Out", fontWeight = FontWeight.Bold)
             }
@@ -127,9 +130,9 @@ fun StudentSettingsScreen(
             },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Change Password", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Change Password", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             },
             text = {
@@ -190,7 +193,7 @@ fun StudentSettingsScreen(
                         shape = RoundedCornerShape(10.dp)
                     )
                     Text("Password must be at least 8 characters with uppercase, lowercase, number, and special character.",
-                        style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             confirmButton = {
@@ -236,7 +239,7 @@ private fun SettingsSectionHeader(icon: ImageVector, title: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = CamsNavy)
+        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
         Text(title.uppercase(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black, letterSpacing = 1.5.sp), color = CamsNavy)
     }
 }
@@ -257,15 +260,15 @@ private fun StudentSettingsCard(icon: ImageVector, title: String, subtitle: Stri
         ) {
             Surface(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(10.dp), color = CamsNavy.copy(alpha = 0.08f)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = CamsNavy)
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = CamsTextPrimary)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = CamsTextSecondary)
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.Filled.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp), tint = CamsTextSecondary)
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

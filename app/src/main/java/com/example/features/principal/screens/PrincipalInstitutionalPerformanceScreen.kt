@@ -25,45 +25,11 @@ fun PrincipalInstitutionalPerformanceScreen(onNavigate: (String) -> Unit) {
         currentRoute = "/principal/performance",
         onNavigate = onNavigate
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text("Institutional Metrics", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
-
-            val metrics = listOf(
-                Metric("Admission Rate", "88%", 0.88f, Color(0xFF3B82F6)),
-                Metric("Graduation Rate", "92%", 0.92f, Color(0xFF10B981)),
-                Metric("Placement Success", "75%", 0.75f, Color(0xFFF59E0B)),
-                Metric("Research Output", "65%", 0.65f, Color(0xFF8B5CF6))
-            )
-
-            metrics.forEach { metric ->
-                MetricCard(metric)
-            }
-        }
-    }
-}
-
-@Composable
-private fun MetricCard(metric: Metric) {
-    CamsCard {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(metric.label, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                Text(metric.value, fontWeight = FontWeight.Black, fontSize = 18.sp, color = metric.color)
-            }
-            LinearProgressIndicator(
-                progress = metric.progress,
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = metric.color,
-                trackColor = metric.color.copy(alpha = 0.1f),
-                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+        Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+            com.example.core.ui.EnterpriseEmptyState(
+                title = "Data Not Available",
+                message = "Institutional performance metrics are not configured in the current deployment."
             )
         }
     }
 }
-
-data class Metric(val label: String, val value: String, val progress: Float, val color: Color)

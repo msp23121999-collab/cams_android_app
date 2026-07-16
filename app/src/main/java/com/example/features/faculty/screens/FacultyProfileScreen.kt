@@ -1,11 +1,13 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -33,7 +35,7 @@ fun FacultyProfileScreen(
     onNavigate: (String) -> Unit,
     viewModel: FacultyProfileViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val profile = uiState.profile
     val research = uiState.researchList
     // Mock activity and subjects if not in ProfileState yet, or better, add them to ProfileState if needed.
@@ -72,7 +74,7 @@ fun FacultyProfileScreen(
 
 @Composable
 private fun SubjectExpertiseSection(subjects: List<FacultySubject>) {
-    SectionTitle("Subject Expertise", Icons.Filled.MenuBook)
+    SectionTitle("Subject Expertise", Icons.AutoMirrored.Filled.MenuBook)
     CamsCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             subjects.forEach { subject ->
@@ -82,7 +84,7 @@ private fun SubjectExpertiseSection(subjects: List<FacultySubject>) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(subject.subjectName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                        Text(subject.subjectName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("${subject.degreeCode} | ${subject.batch}", fontSize = 13.sp, color = Color(0xFF64748B))
                     }
                     Surface(color = Color(0xFFEEF2FF), shape = RoundedCornerShape(4.dp)) {
@@ -128,12 +130,12 @@ private fun ProfileHeader(profile: FacultyProfile) {
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Icon(Icons.Filled.Person, null, tint = CamsNavy, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
                 }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(profile.fullName, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = CamsTextPrimary)
+                Text(profile.fullName, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(profile.designation, fontSize = 12.sp, color = CamsNavy, fontWeight = FontWeight.Bold)
                 Surface(color = Color(0xFFF3F4F6), shape = RoundedCornerShape(8.dp)) {
                     Text(
@@ -179,7 +181,7 @@ private fun ActivitySummarySection(activity: ActivitySummary) {
 
 @Composable
 private fun ResearchSection(researchList: List<ResearchEntry>) {
-    SectionTitle("Research & Publications", Icons.Filled.LibraryBooks)
+    SectionTitle("Research & Publications", Icons.AutoMirrored.Filled.LibraryBooks)
     researchList.forEach { research ->
         CamsCard(modifier = Modifier.padding(bottom = 8.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -201,7 +203,7 @@ private fun ResearchSection(researchList: List<ResearchEntry>) {
                         Text(it, fontSize = 12.sp, color = Color(0xFF64748B))
                     }
                 }
-                Text(research.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(research.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 research.publication?.let {
                     Text(it, fontSize = 13.sp, color = Color(0xFF64748B))
                 }
@@ -216,7 +218,7 @@ private fun ProfessionalSection(profile: FacultyProfile) {
     CamsCard {
         profile.educationalQualifications.forEachIndexed { index, qual ->
             Column {
-                Text(qual.degree, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(qual.degree, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text("${qual.specialization} | ${qual.university}", fontSize = 13.sp, color = Color(0xFF64748B))
                 if (index < profile.educationalQualifications.size - 1) {
                     HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color(0xFFF3F4F6))
@@ -233,8 +235,8 @@ private fun SectionTitle(title: String, icon: ImageVector) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(top = 10.dp)
     ) {
-        Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(18.dp))
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -242,7 +244,7 @@ private fun SectionTitle(title: String, icon: ImageVector) {
 private fun DetailRow(label: String, value: String) {
     Column {
         Text(label.uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
-        Text(value, fontSize = 13.sp, color = CamsTextPrimary)
+        Text(value, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -252,7 +254,7 @@ private fun ExperienceDetailsSection(profile: FacultyProfile) {
     CamsCard {
         profile.experienceDetails.forEachIndexed { index, exp ->
             Column {
-                Text(exp.designation, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary)
+                Text(exp.designation, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(exp.institutionName, fontSize = 12.sp, color = CamsNavy, fontWeight = FontWeight.Bold)
                 Text("${exp.fromDate} - ${exp.toDate} (${exp.totalYears} Years)", fontSize = 13.sp, color = Color(0xFF64748B))
                 

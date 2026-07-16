@@ -1,13 +1,16 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,7 +39,7 @@ fun ParentNoticesScreen(
     viewModel: ParentNoticesViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     
@@ -78,7 +81,7 @@ fun ParentNoticesScreen(
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -90,7 +93,7 @@ fun ParentNoticesScreen(
             } else {
                 // Filters Card
                 CamsCard {
-                    Text("Filter Circulars", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+                    Text("Filter Circulars", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = searchQuery,
@@ -139,7 +142,7 @@ fun ParentNoticesScreen(
 
                 if (filteredNotices.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                        Text("No notices found for selected filters", color = CamsTextSecondary)
+                        Text("No notices found for selected filters", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     filteredNotices.forEach { notice ->
@@ -170,11 +173,11 @@ fun ParentNoticesScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(notice.title, fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(notice.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(notice.body, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 2)
+                            Text(notice.body, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(notice.publishDate, fontSize = 13.sp, color = CamsTextSecondary.copy(alpha = 0.7f))
+                            Text(notice.publishDate, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                         }
                     }
                 }

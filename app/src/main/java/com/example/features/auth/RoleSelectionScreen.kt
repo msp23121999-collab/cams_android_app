@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,7 @@ fun RoleSelectionScreen(
     )
 
     Scaffold(
-        containerColor = CamsBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -192,14 +193,14 @@ private fun PortalCard(
                     text = role.name,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = CamsTextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 16.sp
                     )
                 )
                 Text(
                     text = role.description,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = CamsTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 15.sp,
                         fontSize = 11.sp
                     ),

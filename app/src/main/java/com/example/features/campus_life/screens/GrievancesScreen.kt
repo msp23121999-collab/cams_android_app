@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
@@ -46,7 +48,7 @@ fun GrievancesScreen(
     viewModel: GrievancesViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showForm by remember { mutableStateOf(false) }
     var selectedGrievance by remember { mutableStateOf<Grievance?>(null) }
 
@@ -77,7 +79,7 @@ fun GrievancesScreen(
             ) {
                 // KPI Cards
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GrievanceKPICard(Modifier.weight(1f), "Total", uiState.grievances.size.toString(), Icons.Filled.Message, CamsNavy)
+                    GrievanceKPICard(Modifier.weight(1f), "Total", uiState.grievances.size.toString(), Icons.AutoMirrored.Filled.Message, CamsNavy)
                     GrievanceKPICard(
                         Modifier.weight(1f), 
                         "Pending", 
@@ -145,8 +147,8 @@ private fun GrievanceKPICard(modifier: Modifier, label: String, value: String, i
                 }
             }
             Column {
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = CamsTextSecondary)
-                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 20.sp), color = CamsTextPrimary)
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black, fontSize = 20.sp), color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -219,10 +221,10 @@ private fun GrievanceItem(grievance: Grievance, onClick: () -> Unit) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(grievance.id, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black), color = CamsNavy)
-                Text(grievance.date, style = MaterialTheme.typography.labelSmall, color = CamsTextSecondary)
+                Text(grievance.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(grievance.category, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+            Text(grievance.category, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Surface(
@@ -244,7 +246,7 @@ private fun GrievanceItem(grievance: Grievance, onClick: () -> Unit) {
                         }
                     )
                 }
-                Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = CamsNavy)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -287,7 +289,7 @@ private fun GrievanceDetailsDialog(grievance: Grievance, onDismiss: () -> Unit) 
                     Column {
                         Text("AUDIT LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp), color = Slate400)
                         Spacer(modifier = Modifier.height(12.dp))
-                        AuditRow("Current Status", grievance.status, Icons.Filled.Assignment)
+                        AuditRow("Current Status", grievance.status, Icons.AutoMirrored.Filled.Assignment)
                     }
                 }
 
@@ -315,7 +317,7 @@ fun EmptyGrievances() {
     ) {
         Icon(Icons.Filled.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("No grievances found", style = MaterialTheme.typography.titleMedium, color = CamsTextSecondary)
+        Text("No grievances found", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,9 +8,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,7 +34,7 @@ fun ParentChildProfileScreen(
     viewModel: ParentProfileViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -58,7 +61,7 @@ fun ParentChildProfileScreen(
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -96,14 +99,14 @@ fun ParentChildProfileScreen(
                                     profile.fullName,
                                     fontWeight = FontWeight.Black,
                                     fontSize = 22.sp,
-                                    color = CamsTextPrimary,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                                 Text(
                                     "Roll No: ${profile.rollNo}",
                                     fontSize = 14.sp,
-                                    color = CamsTextSecondary,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -124,21 +127,21 @@ fun ParentChildProfileScreen(
                 CamsCard {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.SupportAgent, null, tint = CamsNavy)
+                            Icon(Icons.Filled.SupportAgent, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Faculty Mentor", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
-                        Text(profile.mentorName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                        Text(profile.mentorName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Email, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Filled.Email, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(profile.mentorEmail, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(profile.mentorEmail, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Phone, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Filled.Phone, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(profile.mentorPhone, fontSize = 13.sp, color = CamsTextSecondary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(profile.mentorPhone, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -147,7 +150,7 @@ fun ParentChildProfileScreen(
                 CamsCard {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Badge, null, tint = CamsNavy)
+                            Icon(Icons.Filled.Badge, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Personal Details", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
@@ -165,7 +168,7 @@ fun ParentChildProfileScreen(
                 CamsCard {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.ContactPhone, null, tint = CamsNavy)
+                            Icon(Icons.Filled.ContactPhone, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Contact Details", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
@@ -182,7 +185,7 @@ fun ParentChildProfileScreen(
                 CamsCard {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.People, null, tint = CamsNavy)
+                            Icon(Icons.Filled.People, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Parent / Guardian Information", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
@@ -212,14 +215,14 @@ fun ParentChildProfileScreen(
                 CamsCard {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.MilitaryTech, null, tint = CamsNavy)
+                            Icon(Icons.Filled.MilitaryTech, null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Child Certifications & Achievements", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
                         if (profile.certifications.isEmpty()) {
-                            Text("No certifications uploaded yet.", color = CamsTextSecondary, fontSize = 13.sp)
+                            Text("No certifications uploaded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         } else {
                             profile.certifications.forEach { cert ->
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -228,7 +231,7 @@ fun ParentChildProfileScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text(cert.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, modifier = Modifier.weight(1f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        Text(cert.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                         Surface(
                                             color = Color(0xFFECFDF5),
                                             shape = RoundedCornerShape(6.dp)
@@ -242,8 +245,8 @@ fun ParentChildProfileScreen(
                                             )
                                         }
                                     }
-                                    Text("${cert.authority} • ${cert.category}", fontSize = 12.sp, color = CamsTextSecondary)
-                                    Text("Issued on: ${cert.date}", fontSize = 13.sp, color = CamsTextSecondary.copy(alpha = 0.8f))
+                                    Text("${cert.authority} • ${cert.category}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Issued on: ${cert.date}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
@@ -277,7 +280,7 @@ private fun DetailRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = CamsTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        Text(value, color = CamsTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
     }
 }

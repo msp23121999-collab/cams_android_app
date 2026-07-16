@@ -1,5 +1,6 @@
 package com.example.features.notifications.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -42,7 +44,7 @@ fun NotificationsScreen(
     viewModel: NotificationViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -215,7 +217,7 @@ private fun NotificationHeader(
                         Icon(Icons.Filled.Refresh, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = onLogout, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f), RoundedCornerShape(12.dp))) {
-                        Icon(Icons.Filled.Logout, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.Logout, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -417,12 +419,12 @@ private fun EmptyState(tab: String, isFiltered: Boolean, onRetry: (() -> Unit)? 
 private fun getTypeMeta(type: String): NotificationTypeMeta {
     return when (type) {
         "marks_submission" -> NotificationTypeMeta("Marks Submitted", Icons.Filled.Description, Color(0xFF4338CA), Color(0xFFEEF2FF), Color(0xFFC7D2FE))
-        "marks_approval" -> NotificationTypeMeta("Marks Approved", Icons.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Color(0xFFA7F3D0))
+        "marks_approval" -> NotificationTypeMeta("Marks Approved", Icons.AutoMirrored.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Color(0xFFA7F3D0))
         "attendance_lock" -> NotificationTypeMeta("Attendance", Icons.Filled.CalendarMonth, Color(0xFFB45309), Color(0xFFFFFBEB), Color(0xFFFDE68A))
         "leave_approval" -> NotificationTypeMeta("Leave Approved", Icons.Filled.CheckCircle, Color(0xFF059669), Color(0xFFECFDF5), Color(0xFFA7F3D0))
         "grievance_update" -> NotificationTypeMeta("Grievance", Icons.Filled.ErrorOutline, Color(0xFFD97706), Color(0xFFFFF7ED), Color(0xFFFFEDD5))
-        "material_upload" -> NotificationTypeMeta("Study Material", Icons.Filled.LibraryBooks, Color(0xFF7C3AED), Color(0xFFF5F3FF), Color(0xFFDDD6FE))
-        "new_assignment" -> NotificationTypeMeta("Assignment", Icons.Filled.Assignment, Color(0xFF2563EB), Color(0xFFEFF6FF), Color(0xFFDBEAFE))
+        "material_upload" -> NotificationTypeMeta("Study Material", Icons.AutoMirrored.Filled.LibraryBooks, Color(0xFF7C3AED), Color(0xFFF5F3FF), Color(0xFFDDD6FE))
+        "new_assignment" -> NotificationTypeMeta("Assignment", Icons.AutoMirrored.Filled.Assignment, Color(0xFF2563EB), Color(0xFFEFF6FF), Color(0xFFDBEAFE))
         else -> NotificationTypeMeta("Notification", Icons.Filled.Notifications, Color(0xFF52525B), Color(0xFFF8FAFC), Color(0xFFE2E8F0))
     }
 }

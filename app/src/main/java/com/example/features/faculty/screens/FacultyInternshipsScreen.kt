@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +33,7 @@ fun FacultyInternshipsScreen(onNavigate: (String) -> Unit) {
     val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
     val factory = remember { FacultyInternshipsViewModelFactory(repository) }
     val viewModel: FacultyInternshipsViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Applications", "Opportunities", "Partners")
 
@@ -130,8 +131,8 @@ private fun InternshipStatsCard(
         ) {
             Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-            Text(label, fontSize = 12.sp, color = CamsTextSecondary)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -158,8 +159,8 @@ private fun StudentApplicationsList() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(app.studentName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
-                        Text("${app.role} @ ${app.company}", fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(app.studentName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("${app.role} @ ${app.company}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
                         Surface(
                             color = when(app.status) {
@@ -183,7 +184,7 @@ private fun StudentApplicationsList() {
                         }
                     }
                     IconButton(onClick = { /* Review */ }) {
-                        Icon(Icons.Filled.ChevronRight, null, tint = CamsTextSecondary)
+                        Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -207,16 +208,16 @@ private fun InternshipOpportunitiesList(opportunities: List<com.example.core.net
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(opp.role, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CamsTextPrimary)
+                            Text(opp.role, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text(opp.company, fontSize = 13.sp, color = CamsNavy)
                         }
-                        Text(opp.deadline ?: "No deadline", fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(opp.deadline ?: "No deadline", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.LocationOn, null, tint = CamsTextSecondary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(opp.location ?: "Remote", fontSize = 13.sp, color = CamsTextSecondary)
+                        Text(opp.location ?: "Remote", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -255,8 +256,8 @@ private fun PartnerCompaniesList() {
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(partner.name, fontWeight = FontWeight.Bold, color = CamsTextPrimary)
-                        Text(partner.industry, fontSize = 12.sp, color = CamsTextSecondary)
+                        Text(partner.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(partner.industry, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Surface(
                         color = if(partner.status == "Active") Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFF59E0B).copy(alpha = 0.1f),

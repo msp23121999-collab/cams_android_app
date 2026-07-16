@@ -18,7 +18,9 @@ interface PrincipalRepository {
     suspend fun getAcademicCalendar(): List<CalendarEventDto>
     suspend fun getGrievances(): List<com.example.core.network.GrievanceDto>
     suspend fun getCirculars(): List<com.example.core.network.NoticeDto>
-    suspend fun publishCircular(title: String, body: String, targetAudience: String)
+        suspend fun publishCircular(title: String, body: String, targetAudience: String)
+    suspend fun getResearchCompliance(): com.example.core.network.PrincipalComplianceResponseDto?
+    suspend fun getInfrastructureDetails(): com.example.core.network.InfrastructureResponseDto?
 }
 
 class PrincipalRepositoryImpl(private val apiService: CamsApiService) : PrincipalRepository {
@@ -27,10 +29,10 @@ class PrincipalRepositoryImpl(private val apiService: CamsApiService) : Principa
         if (response.isSuccessful) {
             val dto = response.body()!!
             return PrincipalDashboardMetrics(
-                totalDepartments = "8", // Can be calculated from other data if available
-                totalFaculty = dto.totalFaculty.toString(),
-                totalStudents = dto.totalStudents.toString(),
-                averageAttendance = "85%" // Fetch from actual attendance reports if available
+                totalDepartments = dto.totalDepartments?.toString() ?: "0",
+                totalFaculty = dto.totalStaff?.toString() ?: "0",
+                totalStudents = dto.totalStudents?.toString() ?: "0",
+                averageAttendance = "N/A"
             )
         }
         throw IOException("Failed to fetch Principal dashboard stats")
@@ -39,7 +41,7 @@ class PrincipalRepositoryImpl(private val apiService: CamsApiService) : Principa
     override suspend fun getAcademicCalendar(): List<CalendarEventDto> {
         val response = apiService.getAcademicCalendar()
         if (response.isSuccessful) {
-            return response.body()!!
+            return response.body() ?: emptyList()
         }
         return emptyList()
     }
@@ -125,5 +127,21 @@ class PrincipalRepositoryImpl(private val apiService: CamsApiService) : Principa
     override suspend fun publishCircular(title: String, body: String, targetAudience: String) {
         val audienceType = if (targetAudience.lowercase() == "all") null else targetAudience
         apiService.publishPrincipalCircular(com.example.core.network.NoticeCreateRequest(title, body, audienceType))
+    }
+
+    override suspend fun getResearchCompliance(): com.example.core.network.PrincipalComplianceResponseDto? {
+        val response = apiService.getResearchCompliance()
+        if (response.isSuccessful) {
+            return response.body()
+        }
+        return null
+    }
+
+    override suspend fun getInfrastructureDetails(): com.example.core.network.InfrastructureResponseDto? {
+        val response = apiService.getInfrastructureDetails()
+        if (response.isSuccessful) {
+            return response.body()
+        }
+        return null
     }
 }

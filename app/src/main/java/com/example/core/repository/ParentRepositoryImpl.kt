@@ -53,30 +53,30 @@ class ParentRepositoryImpl(
                 id = dto.id,
                 fullName = dto.fullName,
                 rollNo = dto.rollNo,
-                semester = dto.semester,
-                batch = dto.batch,
-                cgpa = dto.cgpa,
-                mentorName = dto.mentorName,
-                mentorEmail = dto.mentorEmail,
-                mentorPhone = dto.mentorPhone,
-                dob = dto.dob,
-                gender = dto.gender,
-                bloodGroup = dto.bloodGroup,
-                nationality = dto.nationality,
-                aadhaarNo = dto.aadhaarNo,
-                contactMobile = dto.contactMobile,
-                contactEmail = dto.contactEmail,
-                emergencyContact = dto.emergencyContact,
-                emergencyPhone = dto.emergencyPhone,
-                fatherName = dto.fatherName,
-                fatherOccupation = dto.fatherOccupation,
-                fatherMobile = dto.fatherMobile,
-                fatherEmail = dto.fatherEmail,
-                motherName = dto.motherName,
-                motherOccupation = dto.motherOccupation,
-                motherMobile = dto.motherMobile,
-                motherEmail = dto.motherEmail,
-                certifications = dto.certifications.map { 
+                semester = dto.semester.toString(),
+                batch = dto.batch ?: dto.batchYear.toString(),
+                cgpa = dto.cgpa ?: 0.0,
+                mentorName = dto.mentorName ?: "N/A",
+                mentorEmail = dto.mentorEmail ?: "",
+                mentorPhone = dto.mentorPhone ?: "",
+                dob = dto.dob ?: "",
+                gender = dto.gender ?: "",
+                bloodGroup = dto.bloodGroup ?: "",
+                nationality = dto.nationality ?: "",
+                aadhaarNo = dto.aadhaarNo ?: "",
+                contactMobile = dto.contactMobile ?: "",
+                contactEmail = dto.email ?: "",
+                emergencyContact = dto.emergencyContact ?: "",
+                emergencyPhone = dto.emergencyPhone ?: "",
+                fatherName = dto.fatherName ?: "",
+                fatherOccupation = dto.fatherOccupation ?: "",
+                fatherMobile = dto.fatherMobile ?: "",
+                fatherEmail = dto.fatherEmail ?: "",
+                motherName = dto.motherName ?: "",
+                motherOccupation = dto.motherOccupation ?: "",
+                motherMobile = dto.motherMobile ?: "",
+                motherEmail = dto.motherEmail ?: "",
+                certifications = (dto.certifications ?: emptyList()).map { 
                     ChildCertification(it.title, it.issuer, it.category, it.date, it.status)
                 }
             )
@@ -89,7 +89,16 @@ class ParentRepositoryImpl(
         val response = apiService.getParentChildMarks(idToUse)
         if (response.isSuccessful && response.body() != null) {
             return response.body()!!.map { 
-                ChildInternalMark(it.subject, it.academicYear, it.internal1, it.internal2, it.model, it.assignments, it.attendance, it.total)
+                ChildInternalMark(
+                    subjectName = it.subjectName,
+                    academicYear = it.academicYear,
+                    internalExamMark = it.internalExamMark.toString(),
+                    assignmentMark = it.assignmentMark.toString(),
+                    presentationMark = it.presentationMark.toString(),
+                    vivaVoiceMark = it.vivaVoiceMark.toString(),
+                    attendanceMark = it.attendanceMark.toString(),
+                    totalMark = it.totalMark.toString()
+                )
             }
         }
         return emptyList()
@@ -137,15 +146,23 @@ class ParentRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getAttendance(childId: String?): List<AttendanceRecord> {
+    override suspend fun getAttendance(childId: String?): AttendanceSummary? {
         val idToUse = childId ?: currentChildId
         val response = apiService.getParentChildAttendance(idToUse)
         if (response.isSuccessful && response.body() != null) {
-            return response.body()!!.map { 
-                AttendanceRecord(it.date, it.status)
-            }
+            val body = response.body()!!
+            return AttendanceSummary(
+                percentage = body.percentage.toDouble(),
+                total = body.total,
+                present = body.present,
+                absent = body.absent,
+                od = body.od,
+                records = body.records.map { 
+                    AttendanceRecord(it.date, it.status.replaceFirstChar { char -> char.uppercase() })
+                }
+            )
         }
-        return emptyList()
+        return null
     }
 
     override suspend fun getSubjectAttendance(childId: String?): List<SubjectAttendance> {
@@ -163,10 +180,21 @@ class ParentRepositoryImpl(
         val idToUse = childId ?: currentChildId
         val response = apiService.getParentChildTimetable(idToUse)
         if (response.isSuccessful && response.body() != null) {
-            return response.body()!!.map { dayDto ->
-                TimetableDay(dayDto.day, dayDto.periods.map { pDto ->
-                    TimetablePeriod(pDto.periodNo, pDto.time, pDto.subject, pDto.code, pDto.room, pDto.faculty)
-                })
+            val slots = response.body()!!
+            return slots.groupBy { it.dayOfWeek }.map { (day, slotsForDay) ->
+                TimetableDay(
+                    dayName = day,
+                    periods = slotsForDay.mapIndexed { index, slot ->
+                        TimetablePeriod(
+                            periodNo = index + 1,
+                            time = "${slot.startTime} - ${slot.endTime}",
+                            subjectName = slot.subjectName,
+                            subjectCode = slot.subjectCode,
+                            room = slot.roomNo,
+                            instructor = slot.facultyName
+                        )
+                    }
+                )
             }
         }
         return emptyList()

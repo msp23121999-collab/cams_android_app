@@ -1,5 +1,6 @@
 package com.example.features.campus_life.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
@@ -44,7 +46,7 @@ fun StudentCouncilScreen(
     viewModel: CouncilViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     CamsScreen(scrollable = true,
         title = "Student Council",
@@ -61,7 +63,7 @@ fun StudentCouncilScreen(
                 Text(
                     "Your voice on campus. Meet your elected representatives, track ongoing initiatives, submit feedback, and view the council's transparency reports.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CamsTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
             }
@@ -124,9 +126,9 @@ private fun MetricCard(modifier: Modifier, label: String, value: String, icon: I
                 Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                     Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp).padding(2.dp))
                 }
-                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 12.sp), color = CamsTextSecondary)
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black), color = CamsTextPrimary)
+            Text(value, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -136,7 +138,7 @@ private fun InitiativesCard(initiatives: List<CouncilInitiative>) {
     CamsCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Filled.Flag, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Flag, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Text("Council Initiatives Tracker", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -145,8 +147,8 @@ private fun InitiativesCard(initiatives: List<CouncilInitiative>) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                             Column {
-                                Text(init.title, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
-                                Text("${init.category} • ${init.status}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = CamsTextSecondary)
+                                Text(init.title, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                                Text("${init.category} • ${init.status}", style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Text("${(init.progress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
                         }
@@ -170,10 +172,10 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Message, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                    Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Text("Top Student Feedback", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
                 }
-                Text("View All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsTextSecondary)
+                Text("View All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.height(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -191,7 +193,7 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
                             Text("${item.votes}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.topic, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                            Text(item.topic, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                             Surface(
                                 color = when(item.status) {
                                     "Implemented" -> Color(0xFFECFDF5)
@@ -212,7 +214,7 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
                                 )
                             }
                         }
-                        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -225,7 +227,7 @@ private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
     CamsCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Filled.People, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.People, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Text("Elected Representatives", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -239,7 +241,7 @@ private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
                             contentScale = ContentScale.Crop
                         )
                         Column {
-                            Text(rep.name, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = CamsTextPrimary)
+                            Text(rep.name, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                             Text(rep.role, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = CamsNavy)
                         }
                     }
@@ -250,7 +252,7 @@ private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CamsBackground, contentColor = CamsTextSecondary),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = CamsTextSecondary),
                 border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.1f))
             ) {
                 Text("View Full Committee", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))

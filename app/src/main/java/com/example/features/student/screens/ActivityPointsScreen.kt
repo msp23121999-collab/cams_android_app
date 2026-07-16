@@ -1,5 +1,6 @@
 package com.example.features.student.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +41,7 @@ fun ActivityPointsScreen(
     onNavigate: (String) -> Unit,
     viewModel: ActivityPointsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     
     var showNewAppModal by remember { mutableStateOf(false) }
@@ -157,7 +158,7 @@ fun ActivityPointsScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Cancel", color = CamsTextSecondary)
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Button(
                             onClick = { 
@@ -200,13 +201,13 @@ fun ActivityPointsScreen(
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("Application Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                     
-                    Text("Title", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Title", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(selectedApp!!.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     
-                    Text("Status", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Status", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(selectedApp!!.status, fontWeight = FontWeight.Bold, color = if(selectedApp!!.status == "Approved") Color(0xFF10B981) else Color(0xFFF59E0B))
                     
-                    Text("Description", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Description", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(selectedApp!!.description ?: "No description", fontSize = 14.sp)
 
                     Button(
@@ -233,7 +234,7 @@ private fun StatCard(title: String, value: String, icon: androidx.compose.ui.gra
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(title, style = MaterialTheme.typography.labelSmall.copy(color = CamsTextSecondary, fontWeight = FontWeight.Bold))
+                Text(title, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
             }
             Spacer(Modifier.height(8.dp))
@@ -260,7 +261,7 @@ private fun ActivityLogCard(app: ActivityPointApplication, onClick: () -> Unit) 
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(app.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontWeight = FontWeight.Bold, color = CamsTextSecondary))
+                Text(app.id, style = MaterialTheme.typography.labelSmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant))
                 Surface(color = statusColor.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp), border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))) {
                     Text(app.status, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = statusColor, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                 }
@@ -268,15 +269,15 @@ private fun ActivityLogCard(app: ActivityPointApplication, onClick: () -> Unit) 
             Text(app.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    Text("Claimed", fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Claimed", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${app.claimedPoints} pts", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LexNovaPurple)
                 }
                 Column {
-                    Text("Approved", fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Approved", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(app.approvedPoints?.let { "$it pts" } ?: "-", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                 }
                 Column {
-                    Text("Date", fontSize = 12.sp, color = CamsTextSecondary)
+                    Text("Date", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(app.date, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }

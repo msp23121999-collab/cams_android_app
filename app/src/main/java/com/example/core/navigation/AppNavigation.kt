@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.Logout
 import com.example.core.theme.CamsNavy
 import com.example.core.theme.CamsTextPrimary
@@ -157,6 +158,13 @@ object AppRoutes {
     const val ADMIN_COLLECT_FEE = "/admin/collect-fee"
     const val ADMIN_ACADEMIC_CATALOG = "/admin/academic-catalog"
     
+    // Missing Admin Modules (Empty States)
+    const val ADMIN_HOSTEL = "/admin/hostel"
+    const val ADMIN_TRANSPORT = "/admin/transport"
+    const val ADMIN_LIBRARY = "/admin/library"
+    const val ADMIN_INVENTORY = "/admin/inventory"
+
+    
     const val PRINCIPAL_DASHBOARD = "/principal/dashboard"
     const val PRINCIPAL_PERFORMANCE = "/principal/performance"
     const val PRINCIPAL_FACULTY_OVERVIEW = "/principal/faculty-overview"
@@ -219,7 +227,7 @@ fun AppNavigation(
             onDismissRequest = { showLogoutDialog = false },
             icon = {
                 Icon(
-                    imageVector = Icons.Filled.Logout,
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
                     contentDescription = "Logout Icon",
                     tint = CamsNavy
                 )
@@ -1418,9 +1426,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODAcademicMonitoringScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                })
+                val viewModel: com.example.features.hod.providers.HODAcademicMonitoringViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODAcademicMonitoringViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODAcademicMonitoringScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
 
@@ -1460,9 +1472,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODResearchOverviewScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                })
+                val viewModel: com.example.features.hod.providers.HODResearchMonitoringViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODResearchMonitoringViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODResearchOverviewScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
 
@@ -1550,7 +1566,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODSyllabusManagementScreen(onNavigate = navigateToRoute)
+                val viewModel: com.example.features.hod.providers.HODSyllabusManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODSyllabusManagementViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODSyllabusManagementScreen(
+                    viewModel = viewModel,
+                    onNavigate = navigateToRoute
+                )
             }
         }
         composable(AppRoutes.HOD_CLASS_ADVISOR) {
@@ -1570,7 +1592,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODAttendanceMonitoringScreen(onNavigate = navigateToRoute)
+                val viewModel: com.example.features.hod.providers.HODAttendanceMonitoringViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODAttendanceMonitoringViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODAttendanceMonitoringScreen(
+                    viewModel = viewModel,
+                    onNavigate = navigateToRoute
+                )
             }
         }
         composable(AppRoutes.HOD_LEAVE_APPROVALS) {
@@ -1640,7 +1668,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODReportsAnalyticsScreen(onNavigate = { route -> navigateToRoute(route) })
+                val viewModel: com.example.features.hod.providers.HODDepartmentAnalyticsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODDepartmentAnalyticsViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODReportsAnalyticsScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
         
@@ -1651,7 +1685,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.hod.screens.HODResearchMonitoringScreen(onNavigate = { route -> navigateToRoute(route) })
+                val viewModel: com.example.features.hod.providers.HODResearchMonitoringViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.features.hod.providers.HODResearchMonitoringViewModelFactory(container.hodRepository)
+                )
+                com.example.features.hod.screens.HODResearchMonitoringScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route -> navigateToRoute(route) }
+                )
             }
         }
         
@@ -2016,7 +2056,9 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.principal.screens.PrincipalInfrastructureScreen(onNavigate = { route -> navigateToRoute(route) })
+                val factory = com.example.features.principal.providers.PrincipalViewModelFactory(container.principalRepository)
+                val viewModel: com.example.features.principal.providers.PrincipalInfrastructureViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                com.example.features.principal.screens.PrincipalInfrastructureScreen(onNavigate = { route -> navigateToRoute(route) }, viewModel = viewModel)
             }
         }
         
@@ -2027,7 +2069,9 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.principal.screens.PrincipalResearchComplianceScreen(onNavigate = { route -> navigateToRoute(route) })
+                val factory = com.example.features.principal.providers.PrincipalViewModelFactory(container.principalRepository)
+                val viewModel: com.example.features.principal.providers.PrincipalResearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                com.example.features.principal.screens.PrincipalResearchComplianceScreen(onNavigate = { route -> navigateToRoute(route) }, viewModel = viewModel)
             }
         }
         

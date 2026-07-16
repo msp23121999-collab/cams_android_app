@@ -45,7 +45,7 @@ fun FacultyLeaveApplyScreen(onNavigate: (String) -> Unit) {
                 BalanceCard("EL", "15", Color(0xFFF59E0B), Modifier.weight(1f))
             }
 
-            Text("Request New Leave", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CamsTextPrimary)
+            Text("Request New Leave", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
 
             Card(
                 modifier = Modifier.fillMaxWidth(),

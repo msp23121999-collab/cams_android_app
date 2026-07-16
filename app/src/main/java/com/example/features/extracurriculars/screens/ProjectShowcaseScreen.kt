@@ -1,5 +1,6 @@
 package com.example.features.extracurriculars.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -35,7 +36,7 @@ fun ProjectShowcaseScreen(
     viewModel: ExtracurricularsViewModel = viewModel(),
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSubmissionModal by remember { mutableStateOf(false) }
@@ -267,7 +268,7 @@ fun SubmissionModal(onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
                 ) {
-                    Text("Upload PDF", color = Color.Black)
+                    Text("Upload PDF", color = Color(0xFF1E293B))
                 }
             }
         },

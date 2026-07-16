@@ -59,6 +59,7 @@ class NotificationViewModel(private val repository: StudentRepository) : ViewMod
                 )
             }
         }
+        .cachedIn(viewModelScope)
         .combine(_uiState) { pagingData, state ->
             pagingData.filter { notif ->
                 val matchesTab = when (state.activeTab) {
@@ -71,7 +72,6 @@ class NotificationViewModel(private val repository: StudentRepository) : ViewMod
                 matchesTab && matchesType && matchesSearch
             }
         }
-        .cachedIn(viewModelScope)
 
     init {
         fetchNotifications()

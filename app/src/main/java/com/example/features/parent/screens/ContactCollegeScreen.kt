@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,12 +55,12 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
             },
             actions = {
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             },
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Text("Emergency Contacts", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+            Text("Emergency Contacts", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             
             BoxWithConstraints {
                 val isTablet = maxWidth > 600.dp
@@ -83,7 +85,7 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
                 }
             }
 
-            Text("Submit an Inquiry", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+            Text("Submit an Inquiry", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             
             CamsCard {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -127,17 +129,17 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
                 }
             }
 
-            Text("College Location", fontWeight = FontWeight.Bold, color = CamsTextPrimary)
+            Text("College Location", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             CamsCard {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Surface(color = CamsNavy.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.LocationOn, null, tint = CamsNavy)
+                            Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("LexNova University Campus", fontWeight = FontWeight.Bold, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        Text("Sector 44, Academic District, New Delhi - 110001", fontSize = 12.sp, color = CamsTextSecondary, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text("LexNova University Campus", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text("Sector 44, Academic District, New Delhi - 110001", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -161,10 +163,10 @@ private fun ContactSmallCard(role: String, phone: String, icon: ImageVector, mod
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Box(Modifier.size(40.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.height(8.dp))
-            Text(role, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CamsTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(role, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(phone, fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }

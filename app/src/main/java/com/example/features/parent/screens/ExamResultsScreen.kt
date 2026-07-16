@@ -1,5 +1,6 @@
 package com.example.features.parent.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,7 +39,7 @@ fun ExamResultsScreen(
     viewModel: ParentMarksViewModel,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     ParentBaseScreen(
@@ -57,7 +59,7 @@ fun ExamResultsScreen(
             }
         } else if (uiState.performance.isEmpty() && uiState.internalMarks.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Text("No exam results available.", color = CamsTextSecondary)
+                Text("No exam results available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             PerformanceAnalytics(uiState.performance) {
@@ -71,7 +73,7 @@ fun ExamResultsScreen(
                 "Internal Examination Marks",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = CamsTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
             

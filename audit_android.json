@@ -1,0 +1,187 @@
+{
+  "admin_screens": [
+    {
+      "file": "AdminAcademicCalendarScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminAcademicCalendarViewModel"
+    },
+    {
+      "file": "AdminAcademicCatalogScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminAcademicCatalogViewModel"
+    },
+    {
+      "file": "AdminAcademicYearConfigScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminAttendanceDefaultersScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminAttendanceViewModel"
+    },
+    {
+      "file": "AdminBackupsScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminBackupsViewModel"
+    },
+    {
+      "file": "AdminBatchSetupScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminBatchSetupViewModel"
+    },
+    {
+      "file": "AdminCircularsScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminNoticesViewModel"
+    },
+    {
+      "file": "AdminCollectFeeScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminFeesViewModel"
+    },
+    {
+      "file": "AdminCourseSetupScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminDashboardScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminViewModel"
+    },
+    {
+      "file": "AdminExamMgmtScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminFacultyAssignmentScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminTimetableViewModel"
+    },
+    {
+      "file": "AdminFeeMgmtScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminFeesViewModel"
+    },
+    {
+      "file": "AdminHostelScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminInventoryScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminLibraryScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminLogsScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminLogsViewModel"
+    },
+    {
+      "file": "AdminNotificationsScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminNoticesViewModel"
+    },
+    {
+      "file": "AdminReportsScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminReportsViewModel"
+    },
+    {
+      "file": "AdminSalaryMgmtScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminPayrollViewModel"
+    },
+    {
+      "file": "AdminSystemConfigScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminSystemConfigViewModel"
+    },
+    {
+      "file": "AdminTransportScreen.kt",
+      "has_composable": true,
+      "collects_state": false,
+      "viewmodel": "Unknown"
+    },
+    {
+      "file": "AdminUserMgmtScreen.kt",
+      "has_composable": true,
+      "collects_state": true,
+      "viewmodel": "AdminUserViewModel"
+    }
+  ],
+  "admin_viewmodels": [
+    "AdminAcademicCalendarViewModel.kt",
+    "AdminAttendanceViewModel.kt",
+    "AdminBackupsViewModel.kt",
+    "AdminBatchSetupViewModel.kt",
+    "AdminFeesViewModel.kt",
+    "AdminLogsViewModel.kt",
+    "AdminNoticesViewModel.kt",
+    "AdminPayrollViewModel.kt",
+    "AdminReportsViewModel.kt",
+    "AdminSystemConfigViewModel.kt",
+    "AdminTimetableViewModel.kt",
+    "AdminUserViewModel.kt",
+    "AdminUserViewModelFactory.kt",
+    "AdminViewModel.kt"
+  ],
+  "admin_repositories": [],
+  "admin_dtos": [
+    "AdminUser",
+    "AdminMetric",
+    "AdminDashboardMetrics",
+    "SystemStatus",
+    "AdminDepartment",
+    "AdminDegree",
+    "AdminBatch",
+    "AdminCourse",
+    "AdminBackup"
+  ],
+  "admin_api_endpoints": [
+    "admins/dashboard/metrics",
+    "fees/admin/fee-structures",
+    "fees/admin/fee-structures",
+    "fees/admin/fee-structures/{id}",
+    "fees/admin/scholarship-types/list",
+    "fees/admin/scholarship-types",
+    "fees/admin/search-students",
+    "fees/admin/collect",
+    "admins/faculty/payroll",
+    "admin/courses",
+    "admin/users",
+    "admin/departments",
+    "admin/batches"
+  ],
+  "admin_drawer_items": [],
+  "admin_routes": []
+}

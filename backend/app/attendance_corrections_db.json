@@ -1,0 +1,74 @@
+[
+    {
+        "id": "corr_1781355210",
+        "studentRegNo": "76",
+        "studentName": "Harini",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-13",
+        "previousStatus": "Present",
+        "updatedStatus": "On Duty",
+        "reason": "i don't know",
+        "requestedAt": "2026-06-13 11:53 PM",
+        "status": "APPROVED"
+    },
+    {
+        "id": "corr_1781352190",
+        "studentRegNo": "761",
+        "studentName": "Nishanth",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-13",
+        "previousStatus": "Present",
+        "updatedStatus": "Absent",
+        "reason": "not informed",
+        "requestedAt": "2026-06-13 11:03 PM",
+        "status": "APPROVED"
+    },
+    {
+        "id": "corr_1781352190",
+        "studentRegNo": "761",
+        "studentName": "Nishanth",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-13",
+        "previousStatus": "Present",
+        "updatedStatus": "Absent",
+        "reason": "not informed",
+        "requestedAt": "2026-06-13 11:03 PM",
+        "status": "APPROVED"
+    },
+    {
+        "id": "corr_1781352189",
+        "studentRegNo": "761",
+        "studentName": "Nishanth",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-13",
+        "previousStatus": "Present",
+        "updatedStatus": "Absent",
+        "reason": "not informed",
+        "requestedAt": "2026-06-13 11:03 PM",
+        "status": "APPROVED"
+    },
+    {
+        "id": "corr_1781352188",
+        "studentRegNo": "761",
+        "studentName": "Nishanth",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-13",
+        "previousStatus": "Present",
+        "updatedStatus": "Absent",
+        "reason": "not informed",
+        "requestedAt": "2026-06-13 11:03 PM",
+        "status": "APPROVED"
+    },
+    {
+        "id": "corr_1",
+        "studentRegNo": "8873",
+        "studentName": "Arunkumar L",
+        "subject": "Introduction to Constitutional Law",
+        "date": "2026-06-10",
+        "previousStatus": "Absent",
+        "updatedStatus": "Present",
+        "reason": "Marked absent incorrectly due to a technical glitch during initial scanning.",
+        "requestedAt": "2026-06-11 10:30 AM",
+        "status": "APPROVED"
+    }
+]

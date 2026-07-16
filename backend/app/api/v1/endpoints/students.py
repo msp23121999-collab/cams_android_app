@@ -1626,3 +1626,12 @@ async def temp_debug_users(db: AsyncSession = Depends(get_db_session)):
 
 
 
+
+
+@router.get("/hall-tickets/")
+async def get_hall_tickets(
+    current_user: User = Depends(role_required([UserRole.STUDENT])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    # Dummy implementation for now to prevent 404 errors
+    return []

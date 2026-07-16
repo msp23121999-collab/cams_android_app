@@ -110,7 +110,7 @@ interface CamsApiService {
     @GET("students/marks")
     suspend fun getInternalMarks(): Response<List<InternalMarkDto>>
 
-    @GET("fees/")
+    @GET("students/fees")
     suspend fun getFees(): Response<StudentFeeSummaryResponse>
 
     @GET("students/timetable")
@@ -137,7 +137,7 @@ interface CamsApiService {
     @GET("leave/history")
     suspend fun getLeaves(): Response<List<LeaveRequestDto>>
 
-    @GET("hall-tickets/")
+    @GET("students/hall-tickets/")
     suspend fun getHallTickets(): Response<List<HallTicketDto>>
 
     @POST("leave/apply")
@@ -161,7 +161,7 @@ interface CamsApiService {
     @GET("online-meetings")
     suspend fun getStudentMeetings(): Response<List<OnlineMeetingDto>>
 
-    @GET("legal-events")
+    @GET("legal-events/")
     suspend fun getStudentLegalEvents(
         @Query("skip") skip: Int = 0,
         @Query("limit") limit: Int = 20
@@ -174,7 +174,7 @@ interface CamsApiService {
     ): Response<List<ClubDto>>
 
     @GET("academic-calendar/published")
-    suspend fun getAcademicCalendar(): Response<List<CalendarEventDto>>
+    suspend fun getAcademicCalendar(): Response<AcademicCalendarResponse>
 
     @GET("study-materials/student/approved")
     suspend fun getSyllabus(): Response<List<SyllabusDto>>
@@ -185,22 +185,22 @@ interface CamsApiService {
         @Query("limit") limit: Int = 20
     ): Response<List<NotificationDto>>
 
-    @GET("parents/children")
+    @GET("users/students/search")
     suspend fun getParentChildren(): Response<List<ChildSummaryDto>>
 
-    @GET("parents/child/profile")
+    @GET("students/parent/child/profile")
     suspend fun getParentChildProfile(@Query("child_id") childId: String?): Response<ParentChildProfileDto>
 
-    @GET("parents/child/marks")
+    @GET("students/parent/child/marks")
     suspend fun getParentChildMarks(@Query("child_id") childId: String?): Response<List<ParentChildMarkDto>>
 
-    @GET("parents/child/attendance")
+    @GET("students/parent/child/attendance")
     suspend fun getParentChildAttendance(@Query("child_id") childId: String?): Response<ParentChildAttendanceOverviewDto>
 
-    @GET("parents/child/fees")
+    @GET("students/parent/child/fees")
     suspend fun getParentChildFees(@Query("child_id") childId: String?): Response<ParentChildFeeDto>
 
-    @GET("parents/child/timetable")
+    @GET("students/parent/child/timetable")
     suspend fun getParentChildTimetable(@Query("child_id") childId: String?): Response<List<ParentChildTimetableDayDto>>
 
     // Faculty Portal Endpoints
@@ -223,10 +223,10 @@ interface CamsApiService {
     suspend fun getFacultyTimetable(): Response<List<FacultyTimetableItemDto>>
 
     // HOD Portal Endpoints
-    @GET("hods/dashboard/metrics")
+    @GET("faculty/hod/dashboard")
     suspend fun getHODDashboardMetrics(): Response<HODDashboardMetricsDto>
 
-    @GET("hods/activities")
+    @GET("faculty/hod/dashboard")
     suspend fun getHODActivities(): Response<List<HODActivityDto>>
 
     @GET("leave/hod/pending")
@@ -235,20 +235,20 @@ interface CamsApiService {
     @POST("leave/hod/approve/{id}")
     suspend fun approveHODLeave(@Path("id") id: String, @Body request: ApprovalRequest): Response<LeaveRequestDto>
 
-    @GET("hod/timetable/metadata")
+    @GET("faculty/hod/timetable/metadata")
     suspend fun getHODTimetableMetadata(): Response<HODTimetableMetadataDto>
 
-    @GET("hod/timetable/section/{section_id}")
+    @GET("faculty/hod/timetable/section/{section_id}")
     suspend fun getHODTimetableSection(@Path("section_id") sectionId: String): Response<List<TimetableSlotDto>>
 
     // Principal Portal Endpoints
-    @GET("principals/dashboard/stats")
+    @GET("users/principal/dashboard")
     suspend fun getPrincipalDashboardStats(): Response<PrincipalDashboardStatsDto>
 
-    @GET("principals/approvals/timetable")
+    @GET("users/principal/timetable/approvals")
     suspend fun getPendingTimetableApprovals(): Response<List<TimetableApprovalDto>>
 
-    @POST("principals/approvals/timetable/{id}")
+    @POST("users/principal/timetable/approve/{id}")
     suspend fun approveTimetable(@Path("id") id: String, @Body request: ApprovalRequest): Response<Unit>
 
     @GET("users/principal/leaves")
@@ -257,13 +257,13 @@ interface CamsApiService {
     @POST("users/principal/leaves/approve/{id}")
     suspend fun approveLeave(@Path("id") id: String, @Body request: ApprovalRequest): Response<LeaveRequestDto>
 
-    @GET("users/principal/faculty/pending")
+    @GET("users/faculty")
     suspend fun getPrincipalPendingFaculty(): Response<List<PrincipalPendingFacultyDto>>
 
-    @POST("users/principal/faculty/approve/{user_id}")
+    @POST("users/status/{user_id}")
     suspend fun approvePrincipalFaculty(@Path("user_id") userId: String): Response<Unit>
 
-    @POST("users/principal/faculty/reject/{user_id}")
+    @POST("faculty/hod/faculty/reject/{user_id}")
     suspend fun rejectPrincipalFaculty(@Path("user_id") userId: String): Response<Unit>
 
     @GET("users/principal/circulars")
@@ -272,39 +272,39 @@ interface CamsApiService {
     @POST("users/principal/circulars")
     suspend fun publishPrincipalCircular(@Body request: NoticeCreateRequest): Response<NoticeDto>
 
-    @GET("principals/grievances")
+    @GET("users/principal/grievances")
     suspend fun getGrievancesForApproval(): Response<List<GrievanceDto>>
 
-    @GET("principals/research-compliance")
+    @GET("research-plan/principal/compliance")
     suspend fun getResearchCompliance(): Response<PrincipalComplianceResponseDto>
 
-    @GET("principals/infrastructure")
+    @GET("users/principal/infrastructure")
     suspend fun getInfrastructureDetails(): Response<InfrastructureResponseDto>
 
     // Admin Portal Endpoints
-    @GET("admins/dashboard/metrics")
+    @GET("users/dashboard")
     suspend fun getAdminDashboardMetrics(): Response<AdminDashboardMetricsDto>
 
     @GET("users/backups/history")
     suspend fun getBackups(): Response<List<BackupDto>>
 
     // Admin Academic Catalog APIs
-    @GET("degrees/list")
+    @GET("users/degrees/list")
     suspend fun getDegreesList(): Response<List<DegreeDto>>
 
     @GET("faculty/courses/list")
     suspend fun getAllCourses(): Response<List<CourseDto>>
 
-    @GET("admins/batches")
+    @GET("users/academic-years/list")
     suspend fun getBatches(): Response<List<BatchDto>>
 
-    @GET("admins/fees/tracker")
+    @GET("users/fees/tracker-data")
     suspend fun getFeeTracker(): Response<List<FeeTrackerDto>>
 
-    @GET("admins/faculty/payroll")
+    @GET("faculty/payroll")
     suspend fun getPayrollDetails(): Response<List<PayrollDto>>
 
-    @GET("admins/attendance/defaulters")
+    @GET("faculty/hod/management/students")
     suspend fun getAttendanceDefaulters(): Response<List<AttendanceDefaulterDto>>
 
     @POST("faculty/notifications/read/{notif_id}")
@@ -322,13 +322,13 @@ interface CamsApiService {
     @GET("students/council")
     suspend fun getCouncilData(): Response<CouncilDataDto>
 
-    @POST("students/grievances")
+    @POST("students/grievances/raise")
     suspend fun submitGrievance(@Body grievance: GrievanceRaiseRequest): Response<Unit>
 
     @GET("students/lexnova/stats")
     suspend fun getLexNovaStats(): Response<List<LexNovaKpiDto>>
 
-    @GET("lexsphere/alumni")
+    @GET("students/alumni")
     suspend fun getAlumniNetwork(): Response<List<AlumniMentorDto>>
 
     @GET("internship-drives")
@@ -343,7 +343,7 @@ interface CamsApiService {
     @GET("students/certifications")
     suspend fun getCertifications(): Response<List<CertificationRecordDto>>
 
-    @GET("students/activity-points")
+    @GET("activity-points/my")
     suspend fun getActivityPoints(): Response<List<ActivityPointDto>>
 
     @POST("activity-points/claim")
@@ -355,10 +355,10 @@ interface CamsApiService {
     @GET("students/innovation-projects")
     suspend fun getInnovationProjects(): Response<List<InnovationProjectDto>>
 
-    @GET("parents/child/performance")
+    @GET("students/parent/child/performance")
     suspend fun getParentChildPerformance(@Query("child_id") childId: String?): Response<List<PerformanceDataDto>>
 
-    @GET("parents/child/subject-attendance")
+    @GET("students/parent/child/subject-attendance")
     suspend fun getParentChildSubjectAttendance(@Query("child_id") childId: String?): Response<List<SubjectAttendanceDto>>
 
     @GET("assignments/my-assignments")
@@ -367,7 +367,7 @@ interface CamsApiService {
     @GET("faculty/students/list")
     suspend fun getFacultyStudents(): Response<List<FacultyStudentDto>>
 
-    @GET("study-materials/my-materials")
+    @GET("study-materials/faculty/my-materials")
     suspend fun getFacultyMaterials(): Response<List<FacultyMaterialDto>>
 
     @Multipart
@@ -396,7 +396,7 @@ interface CamsApiService {
     @GET("internship-drives")
     suspend fun getFacultyInternshipDrives(): Response<List<FacultyInternshipDriveDto>>
 
-    @GET("legal-events")
+    @GET("legal-events/")
     suspend fun getLegalEvents(): Response<List<FacultyLegalEventDto>>
 
     @GET("online-meetings/recordings")
@@ -406,86 +406,86 @@ interface CamsApiService {
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
 
     // Additional HOD Endpoints
-    @GET("hods/teaching-logs")
+    @GET("faculty/hod/teaching-logs")
     suspend fun getHODTeachingLogsDashboard(): Response<HODTeachingLogsDashboardDto>
 
-    @GET("hods/syllabus-metadata")
+    @GET("faculty/hod/syllabus-metadata")
     suspend fun getHODSyllabusMetadata(): Response<HODSyllabusMetadataDto>
 
-    @GET("hods/syllabus-courses")
+    @GET("faculty/hod/syllabus-courses")
     suspend fun getHODSyllabusCourses(): Response<List<HODCourseDto>>
 
-    @GET("hods/attendance-monitoring")
+    @GET("faculty/hod/attendance/monitoring")
     suspend fun getHODAttendanceMonitoring(): Response<List<HODAttendanceMonitoringDto>>
 
-    @GET("hods/department-reports")
+    @GET("faculty/hod/reports/department")
     suspend fun getHODDepartmentReports(): Response<HODDepartmentReportDto>
 
-    @GET("hods/research-monitoring")
+    @GET("faculty/hod/research/monitoring")
     suspend fun getHODResearchMonitoring(): Response<List<HODResearchMonitoringDto>>
 
-    @GET("hods/pending-proofs")
+    @GET("faculty/hod/research/pending-proofs")
     suspend fun getHODPendingProofs(): Response<List<HODPendingProofDto>>
 
-    @POST("hods/research-proofs/{id}/verify")
+    @POST("faculty/hod/research/proofs/{id}/verify")
     suspend fun verifyResearchProof(@Path("id") proofId: String, @Body request: VerificationRequestDto): Response<Map<String, String>>
 
-    @GET("hods/workloads")
+    @GET("faculty/hod/workload")
     suspend fun getHODWorkloads(): Response<List<HODWorkloadDto>>
 
-    @GET("hods/mentors")
+    @GET("faculty/hod/mentors")
     suspend fun getHODMentors(): Response<List<HODMentorDto>>
 
-    @POST("hods/mentors/assign")
+    @POST("faculty/hod/mentor/assign")
     suspend fun assignHODMentor(@Body request: MentorAssignmentRequestDto): Response<Unit>
 
-    @GET("hods/academic-setup")
+    @GET("faculty/hod/academic-setup")
     suspend fun getAcademicSetup(): Response<AcademicSetupDto>
 
-    @GET("hods/subject-allocations")
+    @GET("subject-allocations/hod")
     suspend fun getSubjectAllocations(): Response<List<SubjectAllocationDto>>
 
-    @GET("hods/substitutions")
+    @GET("faculty/hod/substitutions")
     suspend fun getSubstitutions(): Response<List<HODSubstitutionDto>>
 
-    @GET("admins/payroll")
+    @GET("faculty/payroll")
     suspend fun getFacultyPayrollAdmin(): Response<List<AdminPayrollDto>>
 
-    @GET("admins/backups")
+    @GET("users/backups/history")
     suspend fun getBackupHistoryAdmin(): Response<List<AdminBackupDto>>
 
-    @GET("admins/system-settings")
+    @GET("users/system-settings")
     suspend fun getSystemSettingsAdmin(): Response<AdminSystemSettingsDto>
 
-    @GET("admins/audit-logs")
+    @GET("users/audit-logs")
     suspend fun getAuditLogsAdmin(): Response<List<AdminAuditLogDto>>
 
 
-    @GET("admins/users")
+    @GET("users/list")
     suspend fun getAllUsers(): Response<List<AdminUserDto>>
 
-    @GET("admins/departments")
+    @GET("users/departments/list")
     suspend fun getDepartmentsList(): Response<List<AdminDepartmentDto>>
 
-    @GET("admins/degrees-list")
+    @GET("users/degrees/list")
     suspend fun getDegreesListAdmin(): Response<List<AdminDegreeDto>>
 
-    @GET("admins/courses-list")
+    @GET("users/courses/by-degree/all")
     suspend fun getAllCoursesAdmin(): Response<List<AdminCourseDto>>
 
-    @GET("admins/backups-list")
+    @GET("users/backups/history")
     suspend fun getBackupsAdmin(): Response<List<AdminBackupDto>>
 
-    @GET("admins/attendance-defaulters-admin")
+    @GET("faculty/hod/management/students")
     suspend fun getAttendanceDefaultersAdmin(): Response<List<AdminAttendanceDefaulterDto>>
 
-    @GET("admins/fee-structures")
+    @GET("fees/admin/fee-structures")
     suspend fun getAdminFeeStructures(): Response<List<AdminFeeStructureDto>>
 
-    @GET("admins/scholarship-types")
+    @GET("fees/admin/scholarships")
     suspend fun getAdminScholarshipTypes(): Response<List<AdminScholarshipTypeDto>>
 
-    @GET("admins/search-fees")
+    @GET("fees/admin/search-students")
     suspend fun searchStudentsForFees(@Query("query") query: String): Response<List<AdminFeeStudentDto>>
 
 }
@@ -1279,6 +1279,12 @@ data class NoticeCreateRequest(
 )
 
 @JsonClass(generateAdapter = true)
+
+@JsonClass(generateAdapter = true)
+data class AcademicCalendarResponse(
+    val events: List<CalendarEventDto>
+)
+
 data class CalendarEventDto(
     val id: String,
     val date: String,

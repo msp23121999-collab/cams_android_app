@@ -233,7 +233,7 @@ class StudentRepositoryImpl(
 
     override suspend fun getAcademicCalendar(): List<CalendarEventDto> {
         val response = apiService.getAcademicCalendar()
-        return if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        return if (response.isSuccessful) response.body()?.events ?: emptyList() else emptyList()
     }
 
     override suspend fun getGrievances(): List<GrievanceDto> {

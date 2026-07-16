@@ -42,11 +42,11 @@ class AcademicCalendarViewModel(
                 val dtos = studentRepository.getAcademicCalendar()
                 val events = dtos.map { dto ->
                     CalendarEventModel(
-                        id = dto.id,
-                        title = dto.eventName,
-                        date = dto.date,
-                        category = if (dto.isHoliday) "Holiday" else "Academic",
-                        color = if (dto.isHoliday) Color(0xFFEF4444) else Color(0xFF3B82F6)
+                        id = dto.id ?: "",
+                        title = dto.eventName ?: dto.title ?: "",
+                        date = dto.date ?: "",
+                        category = if (dto.isHoliday == true) "Holiday" else "Academic",
+                        color = if (dto.isHoliday == true) Color(0xFFEF4444) else Color(0xFF3B82F6)
                     )
                 }
                 _uiState.update { it.copy(events = events, isLoading = false) }

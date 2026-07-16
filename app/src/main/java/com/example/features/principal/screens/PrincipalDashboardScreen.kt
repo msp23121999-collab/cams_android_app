@@ -78,7 +78,7 @@ fun PrincipalDashboardScreen(
                         Text("No upcoming events", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     } else {
                         uiState.calendarEvents.take(3).forEach { event ->
-                            CalendarItem(event.eventName, event.date)
+                            CalendarItem(event.eventName ?: event.title ?: "", event.date ?: "")
                         }
                     }
                     Spacer(Modifier.height(8.dp))

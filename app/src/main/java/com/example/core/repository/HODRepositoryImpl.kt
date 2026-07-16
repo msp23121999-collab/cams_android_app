@@ -6,141 +6,221 @@ import java.io.IOException
 
 class HODRepositoryImpl(private val apiService: CamsApiService) : HODRepository {
     override suspend fun getDashboardMetrics(): HODDashboardMetrics {
-        val response = apiService.getHODDashboardMetrics()
-        if (response.isSuccessful) {
-            val dto = response.body()!!
-            return HODDashboardMetrics(
-                totalFaculty = dto.totalFaculty,
-                totalStudents = dto.totalStudents,
-                pendingApprovals = dto.pendingApprovals,
-                activeSubjects = dto.activeSubjects
-            )
+        return try {
+            val response = apiService.getHODDashboardMetrics()
+            if (response.isSuccessful) {
+                val dto = response.body() ?: throw IOException("Empty response body")
+                HODDashboardMetrics(
+                    totalFaculty = dto.totalFaculty,
+                    totalStudents = dto.totalStudents,
+                    pendingApprovals = dto.pendingApprovals,
+                    activeSubjects = dto.activeSubjects
+                )
+            } else {
+                throw IOException("Failed to fetch HOD dashboard metrics: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch HOD dashboard metrics: ${e.message}")
         }
-        throw IOException("Failed to fetch HOD dashboard metrics")
     }
 
     override suspend fun getRecentActivities(): List<HODActivity> {
-        val response = apiService.getHODActivities()
-        if (response.isSuccessful) {
-            return response.body()!!.map { dto ->
-                HODActivity(
-                    title = dto.title,
-                    time = dto.time,
-                    type = dto.type
-                )
+        return try {
+            val response = apiService.getHODActivities()
+            if (response.isSuccessful) {
+                (response.body() ?: emptyList()).map { dto ->
+                    HODActivity(
+                        title = dto.title,
+                        time = dto.time,
+                        type = dto.type
+                    )
+                }
+            } else {
+                emptyList()
             }
+        } catch (e: Exception) {
+            emptyList()
         }
-        throw IOException("Failed to fetch HOD activities")
     }
 
     override suspend fun getFacultyManagementData(): List<com.example.core.network.FacultyStudentDto> {
-        val response = apiService.getFacultyStudents()
-        if (response.isSuccessful) return response.body()!!
-        throw IOException("Failed to fetch faculty management data")
+        return try {
+            val response = apiService.getFacultyStudents()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getStudentManagementData(): List<com.example.core.network.FacultyStudentDto> {
-        val response = apiService.getFacultyStudents()
-        if (response.isSuccessful) return response.body()!!
-        throw IOException("Failed to fetch student management data")
+        return try {
+            val response = apiService.getFacultyStudents()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getPendingLeaveApprovals(): List<com.example.core.network.LeaveRequestDto> {
-        val response = apiService.getHODPendingLeaves()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw IOException("Failed to fetch pending leave approvals")
+        return try {
+            val response = apiService.getHODPendingLeaves()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun approveLeave(id: String, status: String, remarks: String?) {
-        val request = com.example.core.network.ApprovalRequest(status = status, remarks = remarks ?: "")
-        val response = apiService.approveHODLeave(id, request)
-        if (!response.isSuccessful) {
-            throw IOException("Failed to approve leave: ${response.message()}")
+        try {
+            val request = com.example.core.network.ApprovalRequest(status = status, remarks = remarks ?: "")
+            val response = apiService.approveHODLeave(id, request)
+            if (!response.isSuccessful) {
+                throw IOException("Failed to approve leave: ${response.message()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to approve leave: ${e.message}")
         }
     }
 
     override suspend fun getTimetableMetadata(): com.example.core.network.HODTimetableMetadataDto {
-        val response = apiService.getHODTimetableMetadata()
-        if (response.isSuccessful) return response.body()!!
-        throw IOException("Failed to fetch timetable metadata")
+        return try {
+            val response = apiService.getHODTimetableMetadata()
+            if (response.isSuccessful) {
+                response.body() ?: throw IOException("Empty response body")
+            } else {
+                throw IOException("Failed to fetch timetable metadata: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch timetable metadata: ${e.message}")
+        }
     }
 
     override suspend fun getTimetableSection(sectionId: String): List<com.example.core.network.TimetableSlotDto> {
-        val response = apiService.getHODTimetableSection(sectionId)
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw IOException("Failed to fetch timetable slots")
+        return try {
+            val response = apiService.getHODTimetableSection(sectionId)
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getTeachingLogsDashboard(): com.example.core.network.HODTeachingLogsDashboardDto {
-        val response = apiService.getHODTeachingLogsDashboard()
-        if (response.isSuccessful) return response.body()!!
-        throw java.io.IOException("Failed to fetch teaching logs dashboard")
+        return try {
+            val response = apiService.getHODTeachingLogsDashboard()
+            if (response.isSuccessful) {
+                response.body() ?: throw IOException("Empty response body")
+            } else {
+                throw IOException("Failed to fetch teaching logs dashboard: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch teaching logs dashboard: ${e.message}")
+        }
     }
 
     override suspend fun getSyllabusMetadata(): com.example.core.network.HODSyllabusMetadataDto {
-        val response = apiService.getHODSyllabusMetadata()
-        if (response.isSuccessful) return response.body()!!
-        throw java.io.IOException("Failed to fetch syllabus metadata")
+        return try {
+            val response = apiService.getHODSyllabusMetadata()
+            if (response.isSuccessful) {
+                response.body() ?: throw IOException("Empty response body")
+            } else {
+                throw IOException("Failed to fetch syllabus metadata: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch syllabus metadata: ${e.message}")
+        }
     }
 
     override suspend fun getSyllabusCourses(): List<com.example.core.network.HODCourseDto> {
-        val response = apiService.getHODSyllabusCourses()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch syllabus courses")
+        return try {
+            val response = apiService.getHODSyllabusCourses()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getAttendanceMonitoring(): List<com.example.core.network.HODAttendanceMonitoringDto> {
-        val response = apiService.getHODAttendanceMonitoring()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch attendance monitoring data")
+        return try {
+            val response = apiService.getHODAttendanceMonitoring()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getDepartmentReports(): com.example.core.network.HODDepartmentReportDto {
-        val response = apiService.getHODDepartmentReports()
-        if (response.isSuccessful) return response.body()!!
-        throw java.io.IOException("Failed to fetch department reports")
+        return try {
+            val response = apiService.getHODDepartmentReports()
+            if (response.isSuccessful) {
+                response.body() ?: throw IOException("Empty response body")
+            } else {
+                throw IOException("Failed to fetch department reports: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch department reports: ${e.message}")
+        }
     }
 
     override suspend fun getResearchMonitoring(): List<com.example.core.network.HODResearchMonitoringDto> {
-        val response = apiService.getHODResearchMonitoring()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch research monitoring data")
+        return try {
+            val response = apiService.getHODResearchMonitoring()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getPendingProofs(): List<com.example.core.network.HODPendingProofDto> {
-        val response = apiService.getHODPendingProofs()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch pending proofs")
+        return try {
+            val response = apiService.getHODPendingProofs()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun verifyResearchProof(proofId: String, request: com.example.core.network.VerificationRequestDto): Map<String, String> {
-        val response = apiService.verifyResearchProof(proofId, request)
-        if (response.isSuccessful) return response.body()!!
-        throw java.io.IOException("Failed to verify research proof")
+        return try {
+            val response = apiService.verifyResearchProof(proofId, request)
+            if (response.isSuccessful) {
+                response.body() ?: emptyMap()
+            } else {
+                throw IOException("Failed to verify research proof: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to verify research proof: ${e.message}")
+        }
     }
 
     override suspend fun getHODWorkloads(): List<com.example.core.network.HODWorkloadDto> {
-        val response = apiService.getHODWorkloads()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch workloads")
+        return try {
+            val response = apiService.getHODWorkloads()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getHODMentors(): List<com.example.core.network.HODMentorDto> {
-        val response = apiService.getHODMentors()
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw java.io.IOException("Failed to fetch mentors")
+        return try {
+            val response = apiService.getHODMentors()
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun assignHODMentor(studentId: String, facultyId: String) {
-        val response = apiService.assignHODMentor(com.example.core.network.MentorAssignmentRequestDto(studentId, facultyId))
-        if (!response.isSuccessful) throw java.io.IOException("Failed to assign mentor")
+        try {
+            val response = apiService.assignHODMentor(com.example.core.network.MentorAssignmentRequestDto(studentId, facultyId))
+            if (!response.isSuccessful) throw IOException("Failed to assign mentor: ${response.code()}")
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to assign mentor: ${e.message}")
+        }
     }
 
     override suspend fun getAcademicSetup(): Result<com.example.core.network.AcademicSetupDto> {
         return try {
             val response = apiService.getAcademicSetup()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed or empty"))
             }
@@ -152,8 +232,9 @@ class HODRepositoryImpl(private val apiService: CamsApiService) : HODRepository 
     override suspend fun getSubjectAllocations(): Result<List<com.example.core.network.SubjectAllocationDto>> {
         return try {
             val response = apiService.getSubjectAllocations()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
             } else {
                 Result.failure(Exception("Failed or empty"))
             }

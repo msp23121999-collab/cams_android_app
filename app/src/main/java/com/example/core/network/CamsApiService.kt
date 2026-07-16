@@ -1279,17 +1279,16 @@ data class NoticeCreateRequest(
 )
 
 @JsonClass(generateAdapter = true)
-
-@JsonClass(generateAdapter = true)
 data class AcademicCalendarResponse(
     val events: List<CalendarEventDto>
 )
 
+@JsonClass(generateAdapter = true)
 data class CalendarEventDto(
-    val id: String,
-    val date: String,
-    @Json(name = "event_name") val eventName: String,
-    @Json(name = "is_holiday") val isHoliday: Boolean,
+    val id: String? = null,
+    val date: String? = null,
+    @Json(name = "event_name") val eventName: String? = null,
+    @Json(name = "is_holiday") val isHoliday: Boolean = false,
     val title: String? = null
 )
 
@@ -1311,7 +1310,14 @@ data class NotificationDto(
     @Json(name = "is_read") val isRead: Boolean
 )
 // End of CamsApiService.kt
-data class MentorshipRecordDto(val meetingLog: String?, val academicReview: String?, val improvementPlan: String?, val remarks: String?, val followUp: String?)
+@JsonClass(generateAdapter = true)
+data class MentorshipRecordDto(
+    @Json(name = "meeting_log") val meetingLog: String? = null,
+    @Json(name = "academic_review") val academicReview: String? = null,
+    @Json(name = "improvement_plan") val improvementPlan: String? = null,
+    val remarks: String? = null,
+    @Json(name = "follow_up") val followUp: String? = null
+)
 
 @JsonClass(generateAdapter = true)
 data class FacultyMentorshipStudentDto(

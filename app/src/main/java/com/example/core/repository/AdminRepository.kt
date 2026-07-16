@@ -27,109 +27,134 @@ interface AdminRepository {
 
 class AdminRepositoryImpl(private val apiService: CamsApiService) : AdminRepository {
     override suspend fun getUsers(): List<com.example.features.admin.models.AdminUser> {
-        val response = apiService.getAllUsers()
-        if (response.isSuccessful) {
-            return response.body()?.map {
-                com.example.features.admin.models.AdminUser(
-                    id = it.id,
-                    email = it.email,
-                    phone = it.phone,
-                    fullName = it.fullName,
-                    role = it.role,
-                    isActive = it.isActive,
-                    departmentId = it.departmentId
-                )
-            } ?: emptyList()
-        }
-        throw java.io.IOException("Failed to fetch users")
+        return try {
+            val response = apiService.getAllUsers()
+            if (response.isSuccessful) {
+                response.body()?.map {
+                    com.example.features.admin.models.AdminUser(
+                        id = it.id,
+                        email = it.email,
+                        phone = it.phone,
+                        fullName = it.fullName,
+                        role = it.role,
+                        isActive = it.isActive,
+                        departmentId = it.departmentId
+                    )
+                } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getDepartments(): List<AdminDepartment> {
-        val response = apiService.getDepartmentsList()
-        if (response.isSuccessful) {
-            return response.body()?.map {
-                AdminDepartment(it.id, it.code, it.name, it.hodId)
-            } ?: emptyList()
-        }
-        throw java.io.IOException("Failed to fetch departments")
+        return try {
+            val response = apiService.getDepartmentsList()
+            if (response.isSuccessful) {
+                response.body()?.map {
+                    AdminDepartment(it.id, it.code, it.name, it.hodId)
+                } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getDashboardMetrics(): AdminDashboardMetrics {
-        val response = apiService.getAdminDashboardMetrics()
-        if (response.isSuccessful) {
-            val dto = response.body()!!
-            return AdminDashboardMetrics(
-                metrics = listOf(
-                    AdminMetric("total_users", "Total Users", dto.totalUsers.toString()),
-                    AdminMetric("online_now", "Online Now", dto.onlineNow.toString()),
-                    AdminMetric("storage_used", "Storage Used", dto.storageUsed),
-                    AdminMetric("system_health", "System Health", dto.systemHealth)
-                ),
-                totalUsers = dto.totalUsers,
-                totalStudents = 0,
-                totalStaff = 0,
-                totalDepartments = 0
-            )
+        return try {
+            val response = apiService.getAdminDashboardMetrics()
+            if (response.isSuccessful) {
+                val dto = response.body() ?: throw IOException("Empty response body")
+                AdminDashboardMetrics(
+                    metrics = listOf(
+                        AdminMetric("total_users", "Total Users", dto.totalUsers.toString()),
+                        AdminMetric("online_now", "Online Now", dto.onlineNow.toString()),
+                        AdminMetric("storage_used", "Storage Used", dto.storageUsed),
+                        AdminMetric("system_health", "System Health", dto.systemHealth)
+                    ),
+                    totalUsers = dto.totalUsers,
+                    totalStudents = 0,
+                    totalStaff = 0,
+                    totalDepartments = 0
+                )
+            } else {
+                throw IOException("Failed to fetch Admin dashboard metrics: ${response.code()}")
+            }
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to fetch Admin dashboard metrics: ${e.message}")
         }
-        throw java.io.IOException("Failed to fetch Admin dashboard metrics")
     }
 
     override suspend fun getDegrees(): List<AdminDegree> {
-        val response = apiService.getDegreesListAdmin()
-        if (response.isSuccessful) {
-            return response.body()!!.map { dto ->
-                AdminDegree(
-                    id = dto.id,
-                    name = dto.name,
-                    code = dto.code,
-                    durationYears = dto.durationYears,
-                    programLevel = dto.programLevel
-                )
+        return try {
+            val response = apiService.getDegreesListAdmin()
+            if (response.isSuccessful) {
+                (response.body() ?: emptyList()).map { dto ->
+                    AdminDegree(
+                        id = dto.id,
+                        name = dto.name,
+                        code = dto.code,
+                        durationYears = dto.durationYears,
+                        programLevel = dto.programLevel
+                    )
+                }
+            } else {
+                emptyList()
             }
-        }
-        return emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getBatches(): List<AdminBatch> {
-        val response = apiService.getBatches()
-        if (response.isSuccessful) {
-            return response.body()!!.map { dto ->
-                AdminBatch(dto.id, dto.year, dto.status, dto.status == "Active")
+        return try {
+            val response = apiService.getBatches()
+            if (response.isSuccessful) {
+                (response.body() ?: emptyList()).map { dto ->
+                    AdminBatch(dto.id, dto.year, dto.status, dto.status == "Active")
+                }
+            } else {
+                emptyList()
             }
-        }
-        return emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getCourses(): List<AdminCourse> {
-        val response = apiService.getAllCoursesAdmin()
-        if (response.isSuccessful) {
-            return response.body()!!.map { dto ->
-                AdminCourse(
-                    id = dto.id,
-                    code = dto.code,
-                    name = dto.name,
-                    semester = dto.semester,
-                    credits = dto.credits
-                )
+        return try {
+            val response = apiService.getAllCoursesAdmin()
+            if (response.isSuccessful) {
+                (response.body() ?: emptyList()).map { dto ->
+                    AdminCourse(
+                        id = dto.id,
+                        code = dto.code,
+                        name = dto.name,
+                        semester = dto.semester,
+                        credits = dto.credits
+                    )
+                }
+            } else {
+                emptyList()
             }
-        }
-        return emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getBackupsHistory(): List<AdminBackup> {
-        val response = apiService.getBackupsAdmin()
-        if (response.isSuccessful) {
-            return response.body()!!.map { dto ->
-                AdminBackup(
-                    id = dto.id,
-                    filename = dto.filename ?: "",
-                    sizeBytes = dto.sizeBytes ?: 0,
-                    status = dto.status ?: "",
-                    createdAt = dto.createdAt ?: ""
-                )
+        return try {
+            val response = apiService.getBackupsAdmin()
+            if (response.isSuccessful) {
+                (response.body() ?: emptyList()).map { dto ->
+                    AdminBackup(
+                        id = dto.id,
+                        filename = dto.filename ?: "",
+                        sizeBytes = dto.sizeBytes ?: 0,
+                        status = dto.status ?: "",
+                        createdAt = dto.createdAt ?: ""
+                    )
+                }
+            } else {
+                emptyList()
             }
-        }
-        return emptyList()
+        } catch (e: Exception) { emptyList() }
     }
 
     override suspend fun getAttendanceDefaultersAdmin(): List<AdminAttendanceDefaulter> {

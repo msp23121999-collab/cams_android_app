@@ -68,9 +68,22 @@ fun LoginScreen(
         }
     }
 
-    // Start with empty credentials per Enterprise standard
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    // Pre-fill credentials based on role for easy testing
+    val defaultEmail = remember(currentRole) {
+        val prefix = when(currentRole.lowercase()) {
+            "student" -> "student"
+            "parent" -> "parent"
+            "faculty" -> "faculty"
+            "hod" -> "hod"
+            "principal" -> "principal"
+            "admin" -> "admin"
+            else -> "student"
+        }
+        "$prefix@cams.local"
+    }
+    
+    var email by remember(defaultEmail) { mutableStateOf(defaultEmail) }
+    var password by remember { mutableStateOf("Password@123") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     // Focus states for input fields

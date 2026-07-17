@@ -47,13 +47,7 @@ fun CamsScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (networkError != null) {
-                NetworkErrorView(
-                    message = networkError!!,
-                    onRetry = onRetry,
-                    modifier = Modifier.padding(top = padding.calculateTopPadding())
-                )
-            }
+
             if (isOfflineMode) {
                 Box(
                     modifier = Modifier

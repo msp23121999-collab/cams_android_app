@@ -328,7 +328,7 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 email = "${currentRole.lowercase()}@cams.local"
-                                password = "Password@1"
+                                password = "Password@123"
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),

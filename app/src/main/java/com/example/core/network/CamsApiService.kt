@@ -204,10 +204,10 @@ interface CamsApiService {
     suspend fun getParentChildTimetable(@Query("child_id") childId: String?): Response<List<ParentChildTimetableDayDto>>
 
     // Faculty Portal Endpoints
-    @GET("faculty/dashboard/metrics")
+    @GET("faculty/dashboard")
     suspend fun getFacultyDashboardMetrics(): Response<FacultyDashboardMetricsDto>
 
-    @GET("faculty/subjects")
+    @GET("subject-allocations/my-subjects")
     suspend fun getFacultySubjects(): Response<List<FacultySubjectDto>>
 
     @GET("faculty/profile")

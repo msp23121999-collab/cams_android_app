@@ -6384,3 +6384,177 @@ async def get_faculty_subjects(
             "batch": "2025"
         }
     ]
+
+
+from app.db.models.substitution import SubstitutionAllocation, FacultyAbsence, SubstitutionStatus
+from app.db.models.research import ResearchPlan, PublicationProof, ResearchVerification, ResearchPlanStatus
+from app.db.models.user import User
+
+class HODSubstitutionDto(BaseModel):
+    id: str
+    faculty_id: str
+    substitute_id: str
+    date: str
+    period: int
+    status: str = ""
+    subject: str = ""
+    absent_faculty: str = ""
+    substitute_faculty: str = ""
+
+@router.get("/hod/substitutions", response_model=list[HODSubstitutionDto])
+async def get_hod_substitutions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> list[HODSubstitutionDto]:
+    # HOD only
+    query = (
+        select(SubstitutionAllocation, FacultyAbsence, User, User)
+        .join(FacultyAbsence, SubstitutionAllocation.absence_id == FacultyAbsence.id)
+        .join(User, FacultyAbsence.faculty_id == User.id)
+        .outerjoin(User, SubstitutionAllocation.substitute_id == User.id)
+    )
+    result = await db.execute(query)
+    
+    response = []
+    for alloc, absence, absent_user, sub_user in result:
+        response.append(HODSubstitutionDto(
+            id=alloc.id,
+            faculty_id=absence.faculty_id,
+            substitute_id=alloc.substitute_id,
+            date=str(absence.date),
+            period=alloc.period,
+            status=alloc.status.name if hasattr(alloc.status, "name") else alloc.status,
+            subject="",
+            absent_faculty=absent_user.full_name if absent_user else "",
+            substitute_faculty=sub_user.full_name if sub_user else ""
+        ))
+    return response
+
+class HODResearchMonitoringDto(BaseModel):
+    id: str
+    title: str
+    faculty_name: str = ""
+    type: str = ""
+    status: str = ""
+    latest_progress_percentage: int = 0
+    area: str = ""
+
+@router.get("/hod/research/monitoring", response_model=list[HODResearchMonitoringDto])
+async def get_hod_research_monitoring(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> list[HODResearchMonitoringDto]:
+    query = select(ResearchPlan, User).join(User, ResearchPlan.faculty_id == User.id)
+    result = await db.execute(query)
+    
+    response = []
+    for plan, user in result:
+        response.append(HODResearchMonitoringDto(
+            id=plan.id,
+            title=plan.title,
+            faculty_name=user.full_name if user else "",
+            type=plan.research_type or "",
+            status=plan.status.name if hasattr(plan.status, "name") else plan.status,
+            latest_progress_percentage=0,
+            area=plan.research_area or ""
+        ))
+    return response
+
+class HODPendingProofDto(BaseModel):
+    id: str
+    title: str
+    faculty_name: str = ""
+    journal_name: str = ""
+    issn_isbn: str = ""
+
+@router.get("/hod/research/pending-proofs", response_model=list[HODPendingProofDto])
+async def get_hod_pending_proofs(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> list[HODPendingProofDto]:
+    query = (
+        select(PublicationProof, ResearchPlan, User)
+        .join(ResearchPlan, PublicationProof.plan_id == ResearchPlan.id)
+        .join(User, ResearchPlan.faculty_id == User.id)
+        .where(PublicationProof.status == "PENDING")
+    )
+    result = await db.execute(query)
+    
+    response = []
+    for proof, plan, user in result:
+        response.append(HODPendingProofDto(
+            id=proof.id,
+            title=plan.title,
+            faculty_name=user.full_name if user else "",
+            journal_name=proof.publication_name or "",
+            issn_isbn=proof.issn_isbn or ""
+        ))
+    return response
+
+class VerificationRequestDto(BaseModel):
+    status: str
+    remarks: str = ""
+
+@router.post("/hod/research/proofs/{id}/verify")
+async def verify_research_proof(
+    id: str,
+    request: VerificationRequestDto,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> dict:
+    proof = await db.get(PublicationProof, id)
+    if not proof:
+        raise HTTPException(status_code=404, detail="Proof not found")
+    
+    proof.status = request.status
+    proof.verifier_id = current_user.id
+    proof.verifier_remarks = request.remarks
+    
+    await db.commit()
+    return {"message": "Verification saved"}
+
+
+
+class AcademicSetupDto(BaseModel):
+    activeYear: str
+    currentSemester: str
+    status: str
+
+@router.get("/hod/academic-setup", response_model=AcademicSetupDto)
+async def get_hod_academic_setup(current_user: User = Depends(get_current_user)) -> AcademicSetupDto:
+    return AcademicSetupDto(activeYear="2026-2027", currentSemester="Fall", status="Active")
+
+class HODTeachingLogsDashboardDto(BaseModel):
+    expectedLogs: int
+    submittedLogs: int
+    verifiedLogs: int
+    completionRate: int
+
+@router.get("/hod/teaching-logs", response_model=HODTeachingLogsDashboardDto)
+async def get_hod_teaching_logs(current_user: User = Depends(get_current_user)) -> HODTeachingLogsDashboardDto:
+    return HODTeachingLogsDashboardDto(expectedLogs=150, submittedLogs=120, verifiedLogs=100, completionRate=80)
+
+class HODSyllabusMetadataDto(BaseModel):
+    totalCourses: int
+    mappedCourses: int
+    pendingMapping: int
+    overallProgress: int
+
+@router.get("/hod/syllabus-metadata", response_model=HODSyllabusMetadataDto)
+async def get_hod_syllabus_metadata(current_user: User = Depends(get_current_user)) -> HODSyllabusMetadataDto:
+    return HODSyllabusMetadataDto(totalCourses=50, mappedCourses=45, pendingMapping=5, overallProgress=90)
+
+class HODCourseDto(BaseModel):
+    courseCode: str
+    title: str
+    credits: int
+    department: str
+    mapped: bool = True
+
+@router.get("/hod/syllabus-courses", response_model=list[HODCourseDto])
+async def get_hod_syllabus_courses(current_user: User = Depends(get_current_user)) -> list[HODCourseDto]:
+    return [
+        HODCourseDto(courseCode="CS101", title="Intro to CS", credits=3, department="Computer Science", mapped=True),
+        HODCourseDto(courseCode="CS102", title="Data Structures", credits=4, department="Computer Science", mapped=False)
+    ]
+

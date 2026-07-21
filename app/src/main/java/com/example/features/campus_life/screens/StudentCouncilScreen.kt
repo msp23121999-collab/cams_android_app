@@ -36,6 +36,8 @@ import com.example.features.campus_life.models.*
 import com.example.features.campus_life.providers.CouncilViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 private val Rose600 = Color(0xFFE11D48)
 private val Rose50 = Color(0xFFFFF1F2)
@@ -47,6 +49,10 @@ fun StudentCouncilScreen(
     onNavigate: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showContactDialog by remember { mutableStateOf(false) }
+    var showProposalDialog by remember { mutableStateOf(false) }
+    var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showAllReps by remember { mutableStateOf(false) }
 
     CamsScreen(scrollable = true,
         title = "Student Council",
@@ -74,7 +80,7 @@ fun StudentCouncilScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { },
+                    onClick = { showContactDialog = true },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
@@ -83,7 +89,7 @@ fun StudentCouncilScreen(
                     Text("Contact Council", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 14.sp))
                 }
                 Button(
-                    onClick = { },
+                    onClick = { showProposalDialog = true },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
@@ -97,23 +103,127 @@ fun StudentCouncilScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    MetricCard(Modifier.weight(1f), "Proposals", "12", Icons.Filled.Adjust, CamsNavy)
-                    MetricCard(Modifier.weight(1f), "Resolved", "45", Icons.Filled.CheckCircle, Color(0xFF10B981))
-                    MetricCard(Modifier.weight(1f), "Fund", "68%", Icons.Filled.AttachMoney, Color(0xFFD97706))
+                    MetricCard(Modifier.weight(1f), "Proposals", "${uiState.proposalsCount}", Icons.Filled.Adjust, CamsNavy)
+                    MetricCard(Modifier.weight(1f), "Resolved", "${uiState.resolvedCount}", Icons.Filled.CheckCircle, Color(0xFF10B981))
+                    MetricCard(Modifier.weight(1f), "Fund", "${uiState.fundUtilizationPercent}%", Icons.Filled.AttachMoney, Color(0xFFD97706))
                 }
 
                 // Initiatives
                 InitiativesCard(uiState.initiatives)
 
                 // Feedback
-                FeedbackBoard(uiState.feedback)
+                FeedbackBoard(
+                    uiState.feedback,
+                    onUpvote = { viewModel.upvoteFeedback(it) },
+                    onAddFeedback = { showFeedbackDialog = true }
+                )
 
                 // Representatives
-                RepresentativesCard(uiState.representatives)
+                RepresentativesCard(
+                    if (showAllReps) uiState.representatives else uiState.representatives.take(3),
+                    hasMore = uiState.representatives.size > 3,
+                    showingAll = showAllReps,
+                    onToggle = { showAllReps = !showAllReps }
+                )
 
                 // Next Meeting removed due to lack of ViewModel state
 
                 Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+
+    if (showContactDialog) {
+        Dialog(onDismissRequest = { showContactDialog = false }) {
+            Surface(shape = RoundedCornerShape(24.dp), color = Color.White) {
+                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Contact Student Council", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
+                    Text("Email: studentcouncil@cams.edu", style = MaterialTheme.typography.bodyMedium)
+                    Text("Office: Student Activity Center, Room 204", style = MaterialTheme.typography.bodyMedium)
+                    Text("Office Hours: Mon-Fri, 2 PM - 4 PM", style = MaterialTheme.typography.bodyMedium)
+                    Button(onClick = { showContactDialog = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)) {
+                        Text("Close")
+                    }
+                }
+            }
+        }
+    }
+
+    if (showProposalDialog) {
+        ProposalDialog(
+            onDismiss = { showProposalDialog = false },
+            onSubmit = { title, description ->
+                viewModel.submitProposal(title, description)
+                showProposalDialog = false
+            }
+        )
+    }
+
+    if (showFeedbackDialog) {
+        FeedbackDialog(
+            onDismiss = { showFeedbackDialog = false },
+            onSubmit = { title ->
+                viewModel.submitFeedback(title)
+                showFeedbackDialog = false
+            }
+        )
+    }
+
+    if (uiState.errorMsg != null || uiState.successMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessages() },
+            title = { Text(if (uiState.errorMsg != null) "Error" else "Success") },
+            text = { Text(uiState.errorMsg ?: uiState.successMsg ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessages() }) { Text("OK") }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProposalDialog(onDismiss: () -> Unit, onSubmit: (String, String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), shape = RoundedCornerShape(28.dp), color = Color.White) {
+            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Submit Proposal", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Proposal Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    Button(
+                        onClick = { onSubmit(title, description) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("Submit") }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedbackDialog(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(modifier = Modifier.fillMaxWidth().padding(16.dp), shape = RoundedCornerShape(24.dp), color = Color.White) {
+            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Submit Feedback", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Your feedback") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    Button(
+                        onClick = { if (title.isNotBlank()) onSubmit(title) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("Post") }
+                }
+            }
         }
     }
 }
@@ -167,7 +277,7 @@ private fun InitiativesCard(initiatives: List<CouncilInitiative>) {
 }
 
 @Composable
-private fun FeedbackBoard(feedback: List<StudentFeedback>) {
+private fun FeedbackBoard(feedback: List<StudentFeedback>, onUpvote: (Int) -> Unit, onAddFeedback: () -> Unit) {
     CamsCard {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -175,7 +285,12 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
                     Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Text("Top Student Feedback", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
                 }
-                Text("View All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "+ Add",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { onAddFeedback() }
+                )
             }
             Spacer(modifier = Modifier.height(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -186,7 +301,11 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Column(
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, Color.LightGray.copy(alpha = 0.1f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.LightGray.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                .clickable { onUpvote(item.id) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(Icons.Filled.TrendingUp, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(12.dp))
@@ -223,7 +342,7 @@ private fun FeedbackBoard(feedback: List<StudentFeedback>) {
 }
 
 @Composable
-private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
+private fun RepresentativesCard(reps: List<CouncilRepresentative>, hasMore: Boolean, showingAll: Boolean, onToggle: () -> Unit) {
     CamsCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -247,15 +366,17 @@ private fun RepresentativesCard(reps: List<CouncilRepresentative>) {
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
-            Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = CamsTextSecondary),
-                border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.1f))
-            ) {
-                Text("View Full Committee", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            if (hasMore) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = onToggle,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = CamsTextSecondary),
+                    border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.1f))
+                ) {
+                    Text(if (showingAll) "Show Less" else "View Full Committee", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                }
             }
         }
     }

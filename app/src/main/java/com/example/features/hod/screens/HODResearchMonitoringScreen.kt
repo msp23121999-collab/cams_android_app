@@ -32,6 +32,14 @@ fun HODResearchMonitoringScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf("monitoring") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(uiState.verifyError) {
+        uiState.verifyError?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.resetVerificationStatus()
+        }
+    }
 
     HODBaseScreen(
         title = "Research Monitoring & Compliance",
@@ -40,7 +48,7 @@ fun HODResearchMonitoringScreen(
         onNavigate = onNavigate
     ) {
         ScrollableTabRow(
-            selectedTabIndex = listOf("monitoring", "verification", "tracker").indexOf(activeTab).coerceAtLeast(0),
+            selectedTabIndex = listOf("monitoring", "verification").indexOf(activeTab).coerceAtLeast(0),
             containerColor = Color.Transparent,
             contentColor = CamsNavy,
             edgePadding = 0.dp,
@@ -48,8 +56,7 @@ fun HODResearchMonitoringScreen(
         ) {
             val tabs = listOf(
                 "monitoring" to "Progress Monitoring",
-                "verification" to "Pending Verifications",
-                "tracker" to "Compliance Tracker"
+                "verification" to "Pending Verifications"
             )
             tabs.forEach { (id, label) ->
                 Tab(
@@ -72,12 +79,7 @@ fun HODResearchMonitoringScreen(
             }
         } else if (activeTab == "monitoring") {
             CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Faculty Research Progress Logs", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
-                        Text("Execute Compliance Scan", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Text("Faculty Research Progress Logs", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(16.dp))
                 
                 val monitoringData = uiState.monitoringData
@@ -99,16 +101,16 @@ fun HODResearchMonitoringScreen(
                                     Text("Area: ${item.area}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    val isOverdue = item.status == "OVERDUE"
+                                    val isOverdue = item.daysOverdue > 0
                                     Text(
-                                        item.status.uppercase(), 
-                                        fontSize = 12.sp, 
-                                        fontWeight = FontWeight.Bold, 
-                                        color = if(isOverdue) Color(0xFFE11D48) else Color(0xFF1D4ED8), 
-                                        modifier = Modifier.background(if(isOverdue) Color(0xFFFFE4E6) else Color(0xFFDBEAFE), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                        item.status.uppercase(),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isOverdue) Color(0xFFE11D48) else Color(0xFF1D4ED8),
+                                        modifier = Modifier.background(if (isOverdue) Color(0xFFFFE4E6) else Color(0xFFDBEAFE), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                     Spacer(Modifier.height(4.dp))
-                                    Text("Progress: ${item.latest_progress_percentage ?: 0.0}%", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                    Text(if (isOverdue) "${item.daysOverdue} days overdue" else "On track", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -138,6 +140,7 @@ fun HODResearchMonitoringScreen(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                     Button(
                                         onClick = { viewModel.verifyProof(proof.id, "VERIFIED", "Approved by HOD") },
+                                        enabled = !uiState.isVerifying,
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
                                         shape = RoundedCornerShape(8.dp)
@@ -146,6 +149,7 @@ fun HODResearchMonitoringScreen(
                                     }
                                     Button(
                                         onClick = { viewModel.verifyProof(proof.id, "REJECTED", "Rejected by HOD") },
+                                        enabled = !uiState.isVerifying,
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                                         shape = RoundedCornerShape(8.dp)
@@ -156,12 +160,6 @@ fun HODResearchMonitoringScreen(
                             }
                         }
                     }
-                }
-            }
-        } else {
-            CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("$activeTab content is currently handled via Monitoring tab.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

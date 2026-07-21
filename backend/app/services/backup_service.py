@@ -3,6 +3,7 @@ import json
 import csv
 import shutil
 import zipfile
+import logging
 from datetime import datetime, date, timezone, time
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
@@ -16,8 +17,10 @@ from app.db.base import Base
 from app.db.models.backup import BackupConfiguration, BackupHistory
 from app.db.models.audit import AuditLog
 from app.db.models.user import User, UserRole
+logger = logging.getLogger("app.backup_service")
+
 from app.db.models import (
-    Student, Department, Degree, Attendance, Section, Course, 
+    Student, Department, Degree, Attendance, Section, Course,
     Payment, FeeRecord, FeeStructure, Grievance, FacultyProfile,
     StudyMaterial, Assignment
 )
@@ -139,7 +142,7 @@ class BackupService:
                         rows_res = await self.db.execute(select(pk_col, label_col))
                         fk_mappings[t.name] = {row[0]: row[1] for row in rows_res.all()}
             except Exception as e:
-                print("Error building FK mappings:", e)
+                logger.error(f"Error building FK mappings: {e}")
 
             # Retrieve tables in topological order
             sorted_tables = Base.metadata.sorted_tables
@@ -358,9 +361,7 @@ class BackupService:
             with open(dest_path, "wb") as f:
                 pisa.CreatePDF(html, dest=f)
         except Exception as e:
-            import traceback
-            print("PDF GENERATION EXCEPTION FOR", table_name)
-            traceback.print_exc()
+            logger.error(f"PDF generation failed for table {table_name}: {e}", exc_info=True)
 
     async def generate_excel_backup(self, dest_path: str):
         import openpyxl

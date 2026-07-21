@@ -144,20 +144,123 @@ fun HODAcademicMonitoringScreen(
                         }
                     }
                 }
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Icon(Icons.Filled.Description, contentDescription = null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(48.dp))
-                            Text("Select a tab to view specific monitoring data.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+            } else if (activeTab == "faculty" || activeTab == "subjects") {
+                val data = uiState.dashboardData
+                val statuses = data?.syllabus_status ?: emptyList()
+                if (statuses.isEmpty()) {
+                    EmptyStateCard("No ${if (activeTab == "faculty") "faculty progress" else "subject tracking"} data available.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(statuses) { status ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(status.subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(status.faculty, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("${status.completion}%", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4338CA))
+                            }
                         }
                     }
                 }
+            } else if (activeTab == "attendance") {
+                val attendance = uiState.attendanceData
+                if (attendance.isEmpty()) {
+                    EmptyStateCard("No attendance monitoring data available.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(attendance) { a ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(a.subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${a.subjectCode} • Sem ${a.semester}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (activeTab == "materials") {
+                val materials = uiState.materials
+                if (materials.isEmpty()) {
+                    EmptyStateCard("No study materials pending review.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(materials, key = { it.id }) { m ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(m.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${m.facultyName} • ${m.subject}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (activeTab == "today") {
+                val today = uiState.pendingEntries.filter { it.date == java.time.LocalDate.now().toString() }
+                if (today.isEmpty()) {
+                    EmptyStateCard("No pending classes for today.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(today) { entry ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(entry.subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Section ${entry.section} • ${entry.hour} • ${entry.facultyName}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("PENDING DIARY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB45309), modifier = Modifier.background(Color(0xFFFEF3C7), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+                            }
+                        }
+                    }
+                }
+            } else {
+                val alerts = uiState.pendingEntries
+                if (alerts.isEmpty()) {
+                    EmptyStateCard("No academic alerts. All class diaries are up to date.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(alerts) { entry ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFF43F5E), RoundedCornerShape(12.dp)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Filled.Warning, null, tint = Color(0xFFB45309), modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Missing diary: ${entry.subject}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${entry.facultyName} • Section ${entry.section} • ${entry.date}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateCard(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Filled.Description, contentDescription = null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(48.dp))
+                Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             }
         }
     }

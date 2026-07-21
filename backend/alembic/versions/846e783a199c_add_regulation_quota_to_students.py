@@ -26,26 +26,27 @@ def upgrade() -> None:
     fkeys = inspector.get_foreign_keys('students')
     fkey_names = [fk['name'] for fk in fkeys]
 
-    if 'regulation_id' not in columns:
-        op.add_column('students', sa.Column('regulation_id', sa.String(length=36), nullable=True))
-    if 'quota' not in columns:
-        op.add_column('students', sa.Column('quota', sa.String(length=64), nullable=True))
-    
-    if 'fk_students_mentor_id_users' in fkey_names or 'students_mentor_id_fkey' in fkey_names:
-        fk_name = 'students_mentor_id_fkey' if 'students_mentor_id_fkey' in fkey_names else 'fk_students_mentor_id_users'
-        op.drop_constraint(fk_name, 'students', type_='foreignkey')
-        
-    if 'fk_students_regulation_id_regulations' not in fkey_names:
-        op.create_foreign_key(op.f('fk_students_regulation_id_regulations'), 'students', 'regulations', ['regulation_id'], ['id'])
-        
-    if 'cgpa' in columns:
-        op.drop_column('students', 'cgpa')
-    if 'mentor_id' in columns:
-        op.drop_column('students', 'mentor_id')
-    if 'skills' in columns:
-        op.drop_column('students', 'skills')
-    if 'placement_readiness_score' in columns:
-        op.drop_column('students', 'placement_readiness_score')
+    with op.batch_alter_table('students') as batch_op:
+        if 'regulation_id' not in columns:
+            batch_op.add_column(sa.Column('regulation_id', sa.String(length=36), nullable=True))
+        if 'quota' not in columns:
+            batch_op.add_column(sa.Column('quota', sa.String(length=64), nullable=True))
+
+        if 'fk_students_mentor_id_users' in fkey_names or 'students_mentor_id_fkey' in fkey_names:
+            fk_name = 'students_mentor_id_fkey' if 'students_mentor_id_fkey' in fkey_names else 'fk_students_mentor_id_users'
+            batch_op.drop_constraint(fk_name, type_='foreignkey')
+
+        if 'fk_students_regulation_id_regulations' not in fkey_names:
+            batch_op.create_foreign_key(op.f('fk_students_regulation_id_regulations'), 'regulations', ['regulation_id'], ['id'])
+
+        if 'cgpa' in columns:
+            batch_op.drop_column('cgpa')
+        if 'mentor_id' in columns:
+            batch_op.drop_column('mentor_id')
+        if 'skills' in columns:
+            batch_op.drop_column('skills')
+        if 'placement_readiness_score' in columns:
+            batch_op.drop_column('placement_readiness_score')
     # ### end Alembic commands ###
 
 

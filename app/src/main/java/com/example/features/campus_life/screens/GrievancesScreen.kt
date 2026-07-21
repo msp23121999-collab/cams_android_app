@@ -77,6 +77,22 @@ fun GrievancesScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+                if (uiState.submitError != null) {
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().clickable { viewModel.clearSubmitError() }
+                    ) {
+                        Text(
+                            uiState.submitError ?: "",
+                            modifier = Modifier.padding(12.dp),
+                            color = Color(0xFFB91C1C),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
                 // KPI Cards
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     GrievanceKPICard(Modifier.weight(1f), "Total", uiState.grievances.size.toString(), Icons.AutoMirrored.Filled.Message, CamsNavy)
@@ -267,7 +283,7 @@ private fun GrievanceDetailsDialog(grievance: Grievance, onDismiss: () -> Unit) 
                         Text(grievance.category, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = Slate900)
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.background(Zinc50, CircleShape)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = Slate600)
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Slate600)
                     }
                 }
                 

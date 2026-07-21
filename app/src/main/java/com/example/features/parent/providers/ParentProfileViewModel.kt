@@ -50,14 +50,8 @@ class ParentProfileViewModel(private val repository: ParentRepository) : ViewMod
         }
     }
 
-    fun changePassword(currentPassword: String, newPassword: String) {
-        viewModelScope.launch {
-            try {
-                repository.changePassword(currentPassword, newPassword)
-            } catch (e: Exception) {
-                throw e
-            }
-        }
+    suspend fun changePassword(currentPassword: String, newPassword: String) {
+        repository.changePassword(currentPassword, newPassword)
     }
 }
 

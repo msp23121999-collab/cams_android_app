@@ -83,8 +83,8 @@ class AcademicService:
     async def get_all_grievances(self) -> list[Grievance]:
         return await self.comm_repo.get_all_grievances()
 
-    async def raise_grievance(self, raised_by: str, category: str, description: str) -> Grievance:
-        return await self.comm_repo.create_grievance(raised_by, category, description)
+    async def raise_grievance(self, raised_by: str, category: str, description: str, subject: str = "General", priority: str = "Medium") -> Grievance:
+        return await self.comm_repo.create_grievance(raised_by, category, description, subject=subject, priority=priority)
 
     async def update_grievance(self, grievance_id: str, status: str) -> None:
         await self.comm_repo.update_grievance_status(grievance_id, status)

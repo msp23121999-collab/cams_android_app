@@ -11,11 +11,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminFeesViewModelState(
-    
     val isLoading: Boolean = false,
     val error: String? = null,
     val feeStructures: List<com.example.features.admin.models.AdminFeeStructure> = emptyList(),
-    val scholarshipTypes: List<com.example.features.admin.models.AdminScholarshipType> = emptyList()
+    val scholarshipTypes: List<com.example.features.admin.models.AdminScholarshipType> = emptyList(),
+    // Collect-fee flow
+    val searchResults: List<com.example.features.admin.models.AdminFeeStudent> = emptyList(),
+    val isSearching: Boolean = false,
+    val selectedStudent: com.example.features.admin.models.AdminFeeStudent? = null,
+    val studentFeeRecords: List<com.example.features.admin.models.AdminStudentFeeRecord> = emptyList(),
+    val isLoadingRecords: Boolean = false,
+    val isCollecting: Boolean = false,
+    val collectError: String? = null,
+    val collectSuccess: Boolean = false
 )
 
 class AdminFeesViewModel(private val repository: AdminRepository) : ViewModel() {
@@ -28,8 +36,8 @@ class AdminFeesViewModel(private val repository: AdminRepository) : ViewModel() 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val structs = repository.getAdminFeeStructures() 
-                val scholarships = repository.getAdminScholarshipTypes() 
+                val structs = repository.getAdminFeeStructures()
+                val scholarships = repository.getAdminScholarshipTypes()
                 _uiState.update { it.copy(feeStructures = structs, scholarshipTypes = scholarships, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -37,6 +45,56 @@ class AdminFeesViewModel(private val repository: AdminRepository) : ViewModel() 
         }
     }
 
+    fun searchStudents(query: String) {
+        if (query.isBlank()) {
+            _uiState.update { it.copy(searchResults = emptyList()) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true) }
+            try {
+                val results = repository.searchStudentsForFees(query) ?: emptyList()
+                _uiState.update { it.copy(searchResults = results, isSearching = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSearching = false, error = e.message) }
+            }
+        }
+    }
+
+    fun selectStudent(student: com.example.features.admin.models.AdminFeeStudent) {
+        _uiState.update { it.copy(selectedStudent = student, searchResults = emptyList(), isLoadingRecords = true, studentFeeRecords = emptyList()) }
+        viewModelScope.launch {
+            try {
+                val records = repository.getAdminStudentFees(student.studentId)
+                _uiState.update { it.copy(studentFeeRecords = records, isLoadingRecords = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingRecords = false, error = e.message) }
+            }
+        }
+    }
+
+    fun clearSelectedStudent() {
+        _uiState.update { it.copy(selectedStudent = null, studentFeeRecords = emptyList()) }
+    }
+
+    fun collectFee(recordId: String, amount: Double, mode: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCollecting = true, collectError = null, collectSuccess = false) }
+            try {
+                repository.adminCollectFee(recordId, amount, mode)
+                // Refresh the selected student's records
+                val student = _uiState.value.selectedStudent
+                val records = if (student != null) repository.getAdminStudentFees(student.studentId) else emptyList()
+                _uiState.update { it.copy(isCollecting = false, collectSuccess = true, studentFeeRecords = records) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isCollecting = false, collectError = e.message ?: "Failed to collect fee") }
+            }
+        }
+    }
+
+    fun clearCollectStatus() {
+        _uiState.update { it.copy(collectError = null, collectSuccess = false) }
+    }
 }
 
 class AdminFeesViewModelFactory(private val repository: AdminRepository) : ViewModelProvider.Factory {

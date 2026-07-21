@@ -147,6 +147,17 @@ fun LexSphereScreen(
                 }
             )
         }
+
+        if (uiState.errorMsg != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.clearError() },
+                title = { Text("Application Failed") },
+                text = { Text(uiState.errorMsg!!) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearError() }) { Text("OK") }
+                }
+            )
+        }
     }
 }
 
@@ -245,7 +256,7 @@ fun DriveItemCard(drive: InternshipDrive, onApply: (InternshipDrive) -> Unit) {
                 Text(drive.date, style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, color = Slate400))
             }
             IconButton(onClick = { onApply(drive) }) {
-                Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = Slate400)
+                Icon(Icons.Filled.ChevronRight, contentDescription = "Open", tint = Slate400)
             }
         }
     }

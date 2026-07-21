@@ -5,13 +5,15 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class TimetablePeriod(
-    @Json(name = "subject_code") val subjectCode: String,
-    @Json(name = "subject_name") val subjectName: String,
+    // Subject/faculty/room are nullable: the backend returns null when the underlying
+    // course or faculty reference cannot be resolved, instead of placeholder data.
+    @Json(name = "subject_code") val subjectCode: String? = null,
+    @Json(name = "subject_name") val subjectName: String? = null,
     @Json(name = "weekday") val weekday: String,
     @Json(name = "start_time") val startTime: String,
     @Json(name = "end_time") val endTime: String,
-    @Json(name = "faculty_name") val facultyName: String,
-    val room: String = "Main Hall"
+    @Json(name = "faculty_name") val facultyName: String? = null,
+    val room: String? = null
 )
 
 @JsonClass(generateAdapter = true)

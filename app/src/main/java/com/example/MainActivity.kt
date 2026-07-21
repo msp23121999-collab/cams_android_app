@@ -18,8 +18,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import com.example.core.payments.RazorpayBridge
+import com.razorpay.PaymentData
+import com.razorpay.PaymentResultWithDataListener
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
+
+    override fun onPaymentSuccess(razorpayPaymentId: String?, paymentData: PaymentData?) {
+        RazorpayBridge.emitSuccess(razorpayPaymentId, paymentData?.orderId, paymentData?.signature)
+    }
+
+    override fun onPaymentError(code: Int, description: String?, paymentData: PaymentData?) {
+        RazorpayBridge.emitFailure(code, description)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        RazorpayBridge.attach(this)
+    }
+
+    override fun onPause() {
+        RazorpayBridge.detach(this)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val container = (application as CamsApplication).container

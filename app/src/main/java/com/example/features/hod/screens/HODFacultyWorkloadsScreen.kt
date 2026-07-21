@@ -40,9 +40,9 @@ fun HODFacultyWorkloadsScreen(
         onNavigate = onNavigate
     ) {
         val totalFaculty = uiState.workloads.size
-        val overloaded = uiState.workloads.count { it.teaching_hours > 16 }
-        val balanced = uiState.workloads.count { it.teaching_hours in 12..16 }
-        val underloaded = uiState.workloads.count { it.teaching_hours < 12 }
+        val overloaded = uiState.workloads.count { it.teachingHours > 16 }
+        val balanced = uiState.workloads.count { it.teachingHours in 12..16 }
+        val underloaded = uiState.workloads.count { it.teachingHours < 12 }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             KpiCard("Total Faculty", "$totalFaculty", Icons.Filled.Groups, Color(0xFF64748B), Modifier.weight(1f))
@@ -56,6 +56,10 @@ fun HODFacultyWorkloadsScreen(
             Text("Workload Distribution", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(12.dp))
             
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
             if (uiState.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -67,7 +71,7 @@ fun HODFacultyWorkloadsScreen(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(uiState.workloads) { workload ->
-                        val periods = workload.teaching_hours
+                        val periods = workload.teachingHours
                         val status = if (periods > 16) "OVERLOADED" else if (periods >= 12) "BALANCED" else "UNDERLOADED"
                         val color = if (periods > 16) Color(0xFFEF4444) else if (periods >= 12) Color(0xFF10B981) else Color(0xFFF59E0B)
                         
@@ -85,7 +89,7 @@ fun HODFacultyWorkloadsScreen(
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(workload.name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                                Text(workload.email, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Semester ${workload.semester}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("$periods Periods", fontWeight = FontWeight.Black, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)

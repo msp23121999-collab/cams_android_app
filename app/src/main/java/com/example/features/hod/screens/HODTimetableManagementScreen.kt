@@ -51,14 +51,20 @@ fun HODTimetableManagementScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // KPI Cards
+            // KPI Cards — derived from the currently selected section's real slots
+            val totalSlots = uiState.timetableSlots.size
+            val pendingSlots = uiState.timetableSlots.count { it.status == "PENDING" }
+            val sectionCount = uiState.metadata?.sections?.size ?: 0
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                KpiCard("Active Timetables", "8", Icons.Filled.CalendarMonth, Color(0xFF7C3AED), MaterialTheme.colorScheme.secondaryContainer, Modifier.weight(1f))
-                KpiCard("Total Slots/Week", "160", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                KpiCard("Sections", "$sectionCount", Icons.Filled.CalendarMonth, Color(0xFF7C3AED), MaterialTheme.colorScheme.secondaryContainer, Modifier.weight(1f))
+                KpiCard("Slots (Selected Section)", "$totalSlots", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                KpiCard("Unassigned Slots", "12", Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
-                KpiCard("Lab Sessions", "24", Icons.Filled.Science, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
+                KpiCard("Pending Approval", "$pendingSlots", Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
+            }
+
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp)
             }
 
             Card(
@@ -177,7 +183,7 @@ fun HODTimetableManagementScreen(
                                                         Text("${slot.startTime} - ${slot.endTime}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                     Column(horizontalAlignment = Alignment.End) {
-                                                        Text(slot.facultyName, fontSize = 13.sp, color = Color(0xFF4F46E5), fontWeight = FontWeight.Medium)
+                                                        Text(slot.facultyName ?: "Not assigned", fontSize = 13.sp, color = Color(0xFF4F46E5), fontWeight = FontWeight.Medium)
                                                         Text("Room: ${slot.roomNo}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     }
                                                 }

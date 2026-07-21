@@ -65,7 +65,8 @@ fun ExamResultsScreen(
             PerformanceAnalytics(uiState.performance) {
                 val currentChildId = viewModel.currentChildId ?: ""
                 val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
-                val url = "${com.example.core.config.AppConfig.BASE_URL}/api/v1/parents/child/marks/download?child_id=$currentChildId"
+                val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                val url = "$base/students/parent/child/marks/export-pdf?child_id=$currentChildId"
                 com.example.core.utils.DownloadHelper.downloadPdf(context, url, "Exam_Results_$currentChildId", token)
             }
             

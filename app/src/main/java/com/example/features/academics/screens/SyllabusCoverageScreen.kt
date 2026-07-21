@@ -152,7 +152,7 @@ private fun SubjectCard(
     isExpanded: Boolean,
     onToggle: () -> Unit
 ) {
-    val completedCount = tracking.count { it.status == "Covered" }
+    val completedCount = tracking.count { it.status == "On Schedule" }
     val pendingCount = tracking.count { it.status == "Pending" }
 
     CamsCard(
@@ -200,7 +200,7 @@ private fun SubjectCard(
                 // Progress Bar
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     LinearProgressIndicator(
-                        progress = progress.overallCompletion / 100f,
+                        progress = (progress.overallCompletion / 100.0).toFloat(),
                         modifier = Modifier
                             .weight(1f)
                             .height(8.dp)
@@ -275,8 +275,8 @@ private fun TrackingItem(item: LessonPlanItem) {
             }
             StatusBadge(
                 label = item.status,
-                color = if (item.status == "Covered") Color(0xFF047857) else Color(0xFFB45309),
-                bgColor = if (item.status == "Covered") Color(0xFFECFDF5) else Color(0xFFFFFBEB)
+                color = if (item.status == "On Schedule") Color(0xFF047857) else Color(0xFFB45309),
+                bgColor = if (item.status == "On Schedule") Color(0xFFECFDF5) else Color(0xFFFFFBEB)
             )
         }
     }

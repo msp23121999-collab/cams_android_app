@@ -157,6 +157,7 @@ class LeaveService:
 
         stmt = (
             select(LeaveRequest)
+            .where(LeaveRequest.status.in_([LeaveStatus.PENDING, LeaveStatus.PENDING_HOD]))
             .options(selectinload(LeaveRequest.user))
             .where(
                 and_(
@@ -200,8 +201,29 @@ class LeaveService:
         if not request:
             raise HTTPException(status_code=404, detail="Leave request not found")
 
-        if request.status != LeaveStatus.PENDING:
+        if request.status not in (LeaveStatus.PENDING, LeaveStatus.PENDING_HOD):
             raise HTTPException(status_code=400, detail="This leave request has already been processed")
+
+        # Ownership check: HOD may only approve leaves for faculty who report to
+        # them (FacultyProfile.reporting_hod_id) or belong to their own department.
+        approver_stmt = select(User).where(User.id == approver_id)
+        approver_res = await self.db.execute(approver_stmt)
+        approver = approver_res.scalar_one_or_none()
+        if approver and approver.role == UserRole.HOD:
+            applicant_stmt = select(User).where(User.id == request.user_id)
+            applicant_res = await self.db.execute(applicant_stmt)
+            applicant = applicant_res.scalar_one_or_none()
+
+            profile_stmt = select(FacultyProfile.reporting_hod_id).where(FacultyProfile.user_id == request.user_id)
+            profile_res = await self.db.execute(profile_stmt)
+            reporting_hod_id = profile_res.scalar_one_or_none()
+
+            is_authorized = (
+                reporting_hod_id == approver_id
+                or (applicant is not None and applicant.department_id == approver.department_id)
+            )
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="You can only approve leaves for faculty in your own department")
 
         # 2. Create approval entry
         approval = LeaveApproval(

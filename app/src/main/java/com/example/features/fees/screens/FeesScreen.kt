@@ -97,9 +97,9 @@ private fun Content(
                 "ledger" -> LedgerTab(uiState)
                 "payment" -> PaymentTab(uiState, viewModel)
                 "receipts" -> ReceiptsTab(uiState)
-                "scholarship" -> ScholarshipTab(uiState)
-                "loans" -> LoansTab(uiState)
-                "assistance" -> AssistanceTab(uiState)
+                "scholarship" -> ScholarshipTab(uiState, viewModel)
+                "loans" -> LoansTab(uiState, viewModel)
+                "assistance" -> AssistanceTab(uiState, viewModel)
             }
         }
     }
@@ -229,7 +229,7 @@ private fun OverviewTab(uiState: FeesUiState) {
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 LinearProgressIndicator(
-                    progress = if (summary.netFees > 0) (summary.amountPaid / summary.netFees).toFloat() else 1f,
+                    progress = { if (summary.netFees > 0) (summary.amountPaid / summary.netFees).toFloat() else 1f },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                     color = CamsNavy,
                     trackColor = CamsBackground
@@ -379,6 +379,8 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
                         label = { Text("Payment Amount (₹)") },
                         shape = RoundedCornerShape(16.dp),
                         prefix = { Text("₹") },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CamsNavy, focusedLabelColor = CamsNavy)
                     )
 
@@ -386,11 +388,32 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
                         onClick = { viewModel.payFee(selectedRecordId, amount.toDoubleOrNull() ?: 0.0, "UPI") },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
+                        enabled = !uiState.paymentInProgress,
                         colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
                     ) {
-                        Icon(Icons.Filled.Shield, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Pay ₹$amount Securely", fontWeight = FontWeight.Black)
+                        if (uiState.paymentInProgress) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Filled.Shield, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Pay ₹$amount Securely", fontWeight = FontWeight.Black)
+                        }
+                    }
+
+                    if (uiState.paymentMessage != null) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = if (uiState.paymentSuccess) Color(0xFFECFDF5) else Color(0xFFFFF7ED),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                uiState.paymentMessage ?: "",
+                                modifier = Modifier.padding(12.dp),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (uiState.paymentSuccess) Color(0xFF065F46) else Color(0xFF9A3412)
+                            )
+                        }
                     }
                 }
             }
@@ -401,8 +424,14 @@ private fun PaymentTab(uiState: FeesUiState, viewModel: FeesViewModel) {
 @Composable
 private fun ReceiptsTab(uiState: FeesUiState) {
     val receipts = uiState.receipts
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader(icon = { Icon(Icons.Filled.Download, null) }, title = "Receipt Center", subtitle = "View and download past invoices")
+        if (receipts.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                Text("No payment receipts yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            }
+        }
         receipts.forEach { r ->
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -417,8 +446,16 @@ private fun ReceiptsTab(uiState: FeesUiState) {
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text("₹${r.amount.toInt()}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        IconButton(onClick = { /* Download */ }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Filled.Download, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                        IconButton(
+                            onClick = {
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                                val url = "$base/students/fees/receipts/${r.id}/download"
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "receipt_${r.id}", token)
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(Icons.Filled.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -428,12 +465,12 @@ private fun ReceiptsTab(uiState: FeesUiState) {
 }
 
 @Composable
-private fun ScholarshipTab(uiState: FeesUiState) {
-    val scholarships = uiState.scholarships
+private fun ScholarshipTab(uiState: FeesUiState, viewModel: FeesViewModel) {
     val summary = uiState.summary ?: return
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SectionHeader(icon = { Icon(Icons.Filled.EmojiEvents, null) }, title = "Scholarship Management", subtitle = "Your active benefits and status")
-        
+
         if (summary.scholarshipDeduction > 0) {
             CamsCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -461,20 +498,41 @@ private fun ScholarshipTab(uiState: FeesUiState) {
         ) {
             Column {
                 Text("Supporting Documents", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp), color = MaterialTheme.colorScheme.onSurface)
-                listOf("Income Certificate", "Caste Certificate", "Aadhaar Card").forEach { doc ->
+                val docs = listOf(
+                    Triple("Income Certificate", "other", uiState.documentOtherUrl),
+                    Triple("Caste Certificate", "community", uiState.documentCommunityUrl),
+                    Triple("Aadhaar Card", "aadhaar", uiState.documentAadhaarUrl)
+                )
+                docs.forEachIndexed { index, (label, docType, url) ->
+                    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        if (uri != null) {
+                            val filePart = com.example.core.network.MultipartUploadHelper.prepareFilePart("file", uri, context)
+                            if (filePart != null) viewModel.uploadScholarshipDocument(docType, filePart)
+                        }
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(doc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        TextButton(onClick = { /* Upload */ }) {
-                            Icon(Icons.Filled.Upload, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Upload", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsNavy)
+                        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (url != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(14.dp), tint = Color(0xFF10B981))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Uploaded", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                            }
+                        } else {
+                            TextButton(onClick = { launcher.launch("*/*") }, enabled = !uiState.isDocUploading) {
+                                Icon(Icons.Filled.Upload, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Upload", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CamsNavy)
+                            }
                         }
                     }
-                    if (doc != "Aadhaar Card") {
+                    if (index != docs.lastIndex) {
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                     }
                 }
@@ -484,11 +542,26 @@ private fun ScholarshipTab(uiState: FeesUiState) {
 }
 
 @Composable
-private fun LoansTab(uiState: FeesUiState) {
-    val loan = uiState.loanDetails ?: return
+private fun LoansTab(uiState: FeesUiState, viewModel: FeesViewModel) {
+    var showForm by remember { mutableStateOf(false) }
+    val loan = uiState.loanDetails
+
+    if (showForm || loan == null) {
+        LoanFormCard(
+            existing = loan,
+            isSaving = uiState.isLoanSaving,
+            onSave = { bank, branch, sanctioned, rate, emi, outstanding ->
+                viewModel.saveLoan(bank, branch, sanctioned, rate, emi, outstanding)
+                showForm = false
+            },
+            onCancel = { showForm = false }
+        )
+        return
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader(icon = { Icon(Icons.Filled.AccountBalance, null) }, title = "Education Loan", subtitle = "Bank details and repayment info")
-        
+
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -497,11 +570,10 @@ private fun LoansTab(uiState: FeesUiState) {
                     Box(Modifier.size(40.dp).background(CamsBackground, CircleShape), contentAlignment = Alignment.Center) {
                          Icon(Icons.Filled.Business, null, tint = MaterialTheme.colorScheme.primary)
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(loan.bank, fontWeight = FontWeight.Black, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text(loan.branch, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Spacer(Modifier.weight(1f))
                     StatusBadge(loan.status)
                 }
                 Spacer(Modifier.height(20.dp))
@@ -515,6 +587,62 @@ private fun LoansTab(uiState: FeesUiState) {
                     Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Outstanding Balance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("₹${loan.outstanding.toInt()}", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = { showForm = true }) {
+                    Icon(Icons.Filled.Edit, null, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Update Loan Details", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoanFormCard(
+    existing: LoanDetails?,
+    isSaving: Boolean,
+    onSave: (String, String, Double, Double, Double, Double) -> Unit,
+    onCancel: () -> Unit
+) {
+    var bank by remember { mutableStateOf(existing?.bank ?: "") }
+    var branch by remember { mutableStateOf(existing?.branch ?: "") }
+    var sanctioned by remember { mutableStateOf(existing?.sanctioned?.toString() ?: "") }
+    var rate by remember { mutableStateOf(existing?.interestRate?.toString() ?: "") }
+    var emi by remember { mutableStateOf(existing?.emi?.toString() ?: "") }
+    var outstanding by remember { mutableStateOf(existing?.outstanding?.toString() ?: "") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        SectionHeader(icon = { Icon(Icons.Filled.AccountBalance, null) }, title = "Education Loan", subtitle = "Record your bank loan details on file")
+        CamsCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = bank, onValueChange = { bank = it }, label = { Text("Bank Name") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = branch, onValueChange = { branch = it }, label = { Text("Branch") }, modifier = Modifier.fillMaxWidth())
+                val numericKeyboard = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
+                OutlinedTextField(value = sanctioned, onValueChange = { sanctioned = it }, label = { Text("Sanctioned Amount") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = numericKeyboard)
+                OutlinedTextField(value = rate, onValueChange = { rate = it }, label = { Text("Interest Rate (%)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = numericKeyboard)
+                OutlinedTextField(value = emi, onValueChange = { emi = it }, label = { Text("EMI") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = numericKeyboard)
+                OutlinedTextField(value = outstanding, onValueChange = { outstanding = it }, label = { Text("Outstanding Balance") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = numericKeyboard)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (existing != null) {
+                        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    }
+                    Button(
+                        onClick = {
+                            onSave(
+                                bank, branch,
+                                sanctioned.toDoubleOrNull() ?: 0.0,
+                                rate.toDoubleOrNull() ?: 0.0,
+                                emi.toDoubleOrNull() ?: 0.0,
+                                outstanding.toDoubleOrNull() ?: 0.0
+                            )
+                        },
+                        enabled = !isSaving && bank.isNotBlank() && branch.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (isSaving) "Saving..." else "Save")
                     }
                 }
             }
@@ -531,11 +659,24 @@ private fun LoanInfoItem(label: String, value: String, modifier: Modifier = Modi
 }
 
 @Composable
-private fun AssistanceTab(uiState: FeesUiState) {
+private fun AssistanceTab(uiState: FeesUiState, viewModel: FeesViewModel) {
     val requests = uiState.requests
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        AssistanceRequestDialog(
+            isSubmitting = uiState.isRequestSubmitting,
+            onDismiss = { showDialog = false },
+            onSubmit = { type, reason ->
+                viewModel.submitAssistanceRequest(type, reason)
+                showDialog = false
+            }
+        )
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SectionHeader(icon = { Icon(Icons.Filled.SupportAgent, null) }, title = "Financial Assistance", subtitle = "Apply for concessions and aid")
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -549,7 +690,7 @@ private fun AssistanceTab(uiState: FeesUiState) {
                 Text("Submit your academic or socio-economic credentials for administrative review.", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                 Spacer(Modifier.height(20.dp))
                 Button(
-                    onClick = { /* Apply */ },
+                    onClick = { showDialog = true },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = CamsNavy)
@@ -562,21 +703,61 @@ private fun AssistanceTab(uiState: FeesUiState) {
         // History
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Request History", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            if (requests.isEmpty()) {
+                Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
+                    Text("No requests submitted yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                }
+            }
             requests.forEach { r ->
                 CamsCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(r.type, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text(r.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(r.type, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text(r.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            StatusBadge(r.status)
                         }
-                        StatusBadge(r.status)
+                        if (r.reason.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(r.reason, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun AssistanceRequestDialog(
+    isSubmitting: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (String, String) -> Unit
+) {
+    var type by remember { mutableStateOf("Fee Concession") }
+    var reason by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Apply for Fee Concession") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text("Assistance Type") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("Reason / Justification") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(type, reason) }, enabled = !isSubmitting && reason.isNotBlank()) {
+                Text(if (isSubmitting) "Submitting..." else "Submit")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable

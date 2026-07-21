@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,14 +10,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,7 +26,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.core.repository.FacultyRepositoryImpl
 import com.example.features.faculty.providers.FacultyNotificationsViewModel
 import com.example.features.faculty.providers.FacultyNotificationsViewModelFactory
-import com.example.core.network.ApiClient
 
 @Composable
 fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
@@ -35,7 +33,9 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
     val factory = remember { FacultyNotificationsViewModelFactory(repository) }
     val viewModel: FacultyNotificationsViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    FacultyBaseScreen(scrollable = false, 
+    val hasUnread = uiState.notifications.any { !it.isRead }
+
+    FacultyBaseScreen(scrollable = false,
         title = "Notifications",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_NOTIFICATIONS,
         onNavigate = onNavigate
@@ -45,6 +45,18 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            if (hasUnread) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = { viewModel.markAllAsRead() }) {
+                        Text("Mark all as read")
+                    }
+                }
+            }
+
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
             if (uiState.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = CamsNavy)
@@ -55,8 +67,10 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(uiState.notifications) { notification ->
-                        NotificationItem(notification)
+                    items(uiState.notifications, key = { it.id }) { notification ->
+                        NotificationItem(notification, onClick = {
+                            if (!notification.isRead) viewModel.markAsRead(notification.id)
+                        })
                     }
                 }
             }
@@ -65,9 +79,11 @@ fun FacultyNotificationsScreen(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun NotificationItem(notification: com.example.core.network.NotificationDto) {
+private fun NotificationItem(notification: com.example.core.network.NotificationDto, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
@@ -91,8 +107,13 @@ private fun NotificationItem(notification: com.example.core.network.Notification
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(notification.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp)
-                    Text(notification.date.take(10), fontSize = 13.sp, color = Color(0xFF64748B))
+                    Text(
+                        notification.title ?: notification.type?.replace('_', ' ')?.replaceFirstChar { it.uppercase() } ?: "Notification",
+                        fontWeight = if (notification.isRead) FontWeight.Medium else FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp
+                    )
+                    Text((notification.date ?: notification.createdAt)?.take(10) ?: "", fontSize = 13.sp, color = Color(0xFF64748B))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(notification.message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)

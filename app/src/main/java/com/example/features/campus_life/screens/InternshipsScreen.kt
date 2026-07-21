@@ -39,6 +39,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.LoadState
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,6 +170,17 @@ fun InternshipsScreen(
             onDismiss = { selectedInternship = null }
         )
     }
+
+    if (uiState.errorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Error") },
+            text = { Text(uiState.errorMsg!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) { Text("OK") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -229,8 +243,8 @@ fun InternshipListItem(
                     }
                 }
                 
-                IconButton(onClick = { onDelete(intern.id) }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
+                IconButton(onClick = { onDelete(intern.id) }, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
                 }
             }
             
@@ -341,6 +355,7 @@ fun AddInternshipDialog(onDismiss: () -> Unit, onAdd: (InternshipRecord) -> Unit
 
 @Composable
 fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -352,8 +367,8 @@ fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
                     Surface(color = CamsNavy.copy(alpha = 0.1f), shape = CircleShape) {
                         Text(intern.status.uppercase(), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy))
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 
@@ -378,7 +393,10 @@ fun InternshipDetailDialog(intern: InternshipRecord, onDismiss: () -> Unit) {
 
                 if (intern.certificateUrl != null) {
                     Button(
-                        onClick = {},
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(intern.certificateUrl))
+                            context.startActivity(intent)
+                        },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                         shape = RoundedCornerShape(12.dp)

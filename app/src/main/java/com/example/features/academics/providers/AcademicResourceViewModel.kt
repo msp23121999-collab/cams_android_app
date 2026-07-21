@@ -54,10 +54,10 @@ class AcademicResourceViewModel : ViewModel() {
                             Submission(
                                 id = sub.id,
                                 assignmentId = dto.id,
-                                submissionDate = sub.submissionDate,
+                                submissionDate = sub.submittedAt,
                                 status = sub.status,
-                                submittedFileName = sub.submittedFile ?: "",
-                                submittedFileUrl = sub.submittedFile ?: "",
+                                submittedFileName = sub.submittedFileUrl?.substringAfterLast('/') ?: "",
+                                submittedFileUrl = sub.submittedFileUrl ?: "",
                                 submittedFileSize = "0 KB"
                             )
                         }
@@ -68,41 +68,28 @@ class AcademicResourceViewModel : ViewModel() {
                     StudyMaterial(
                         id = dto.id,
                         title = dto.title,
-                        subject = dto.subjectName,
+                        subject = dto.subjectName ?: "",
                         category = "Material",
-                        uploadDate = dto.uploadDate,
+                        uploadDate = dto.uploadDate ?: "",
                         fileUrl = dto.fileUrl
                     )
                 }
 
-                // Group marks by subject code/name
-                val groupedMarks = marksDto.groupBy { it.subjectName }
-                val internalMarks = groupedMarks.map { (subject, dtos) ->
-                    var exam = 0.0
-                    var assignment = 0.0
-                    var presentation = 0.0
-                    var viva = 0.0
-                    var attendance = 0.0
-                    var total = 0.0
-                    dtos.forEach { dto ->
-                        when(dto.component.lowercase()) {
-                            "exam" -> exam += dto.markObtained
-                            "assignment" -> assignment += dto.markObtained
-                            "presentation" -> presentation += dto.markObtained
-                            "viva" -> viva += dto.markObtained
-                            "attendance" -> attendance += dto.markObtained
-                        }
-                        total += dto.markObtained
-                    }
+                val internalMarks = marksDto.map { dto ->
                     InternalMarkRecord(
-                        id = subject, // Using subject name as ID
-                        subjectName = subject,
-                        examScore = exam,
-                        assignmentScore = assignment,
-                        presentationScore = presentation,
-                        vivaScore = viva,
-                        attendanceScore = attendance,
-                        totalScore = total
+                        id = dto.subjectId,
+                        subjectName = dto.subjectName,
+                        examScore = dto.internalExamMark,
+                        assignmentScore = dto.assignmentMark,
+                        presentationScore = dto.presentationMark,
+                        vivaScore = dto.vivaVoiceMark,
+                        attendanceScore = dto.attendanceMark,
+                        totalScore = dto.totalMark,
+                        isApproved = dto.isApproved,
+                        hodMessage = dto.hodMessage,
+                        facultyReply = dto.facultyReply,
+                        component = "Final",
+                        maxMark = 100.0
                     )
                 }
 

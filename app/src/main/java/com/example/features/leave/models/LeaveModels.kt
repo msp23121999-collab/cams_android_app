@@ -48,3 +48,30 @@ data class GeoPoint(
     val lat: Double,
     val lon: Double
 )
+
+/**
+ * Canonical leave-status strings exchanged with the backend.
+ *
+ * These were previously duplicated as bare literals across the HOD approval screens,
+ * which is how two screens ended up sending different statuses for the same action —
+ * one escalated to the Principal, the other terminated the request and deducted the
+ * leave balance. Keep every status literal here so the screens cannot diverge again.
+ */
+object LeaveStatuses {
+    const val PENDING = "PENDING"
+    const val APPROVED_BY_HOD = "APPROVED_BY_HOD"
+    const val REJECTED_BY_HOD = "REJECTED_BY_HOD"
+    const val PENDING_PRINCIPAL = "PENDING_PRINCIPAL"
+    const val APPROVED = "APPROVED"
+    const val REJECTED = "REJECTED"
+
+    /** Default remarks sent with an HOD decision; the backend requires non-empty remarks. */
+    const val REMARK_HOD_APPROVED = "Approved by HOD"
+    const val REMARK_HOD_REJECTED = "Rejected by HOD"
+
+    /** Statuses that mean "an HOD has approved", for read-side counting/filtering. */
+    val HOD_APPROVED_SET = setOf(APPROVED, APPROVED_BY_HOD)
+
+    /** Statuses that mean "an HOD has rejected", for read-side counting/filtering. */
+    val HOD_REJECTED_SET = setOf(REJECTED, REJECTED_BY_HOD)
+}

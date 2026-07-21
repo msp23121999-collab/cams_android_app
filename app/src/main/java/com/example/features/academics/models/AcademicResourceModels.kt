@@ -98,5 +98,7 @@ data class InternalMarkRecord(
     val isApproved: Boolean = true,
     val hodMessage: String? = null,
     val facultyReply: String? = null,
-    val facultyComments: String? = null
+    val facultyComments: String? = null,
+    val component: String = "Final",
+    val maxMark: Double = 100.0
 )

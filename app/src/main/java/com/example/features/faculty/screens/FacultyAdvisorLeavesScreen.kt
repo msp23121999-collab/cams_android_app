@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,22 +9,44 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.network.AdvisorLeaveDto
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyAdvisorLeavesViewModel
+import com.example.features.faculty.providers.FacultyAdvisorLeavesViewModelFactory
+
 @Composable
 fun FacultyAdvisorLeavesScreen(onNavigate: (String) -> Unit) {
-    FacultyBaseScreen(scrollable = false, 
+    val context = LocalContext.current
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyAdvisorLeavesViewModelFactory(repository) }
+    val viewModel: FacultyAdvisorLeavesViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.reviewError) {
+        uiState.reviewError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearReviewError()
+        }
+    }
+
+    val pending = uiState.leaves.filter { it.status == "PENDING" }
+
+    FacultyBaseScreen(scrollable = false,
         title = "Advisor Leave Approvals",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_ADVISOR_LEAVES,
         onNavigate = onNavigate
@@ -36,15 +59,27 @@ fun FacultyAdvisorLeavesScreen(onNavigate: (String) -> Unit) {
             Text("Pending Requests", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
-            val studentLeaves = listOf(
-                StudentLeave("Rahul Sharma", "12 Oct - 14 Oct", "Medical Leave", "Fever and cold"),
-                StudentLeave("Priya Verma", "15 Oct", "Casual Leave", "Family function"),
-                StudentLeave("Amit Singh", "12 Oct - 13 Oct", "Sick Leave", "Back pain")
-            )
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            }
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(studentLeaves) { leave ->
-                    AdvisorLeaveItem(leave)
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else if (pending.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No pending leave requests from your students", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(pending, key = { it.id }) { leave ->
+                        AdvisorLeaveItem(
+                            leave = leave,
+                            onApprove = { viewModel.reviewLeave(leave.id, "APPROVED", null) },
+                            onReject = { viewModel.reviewLeave(leave.id, "REJECTED", null) }
+                        )
+                    }
                 }
             }
         }
@@ -52,7 +87,7 @@ fun FacultyAdvisorLeavesScreen(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun AdvisorLeaveItem(leave: StudentLeave) {
+private fun AdvisorLeaveItem(leave: AdvisorLeaveDto, onApprove: () -> Unit, onReject: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -72,21 +107,21 @@ private fun AdvisorLeaveItem(leave: StudentLeave) {
                             .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(leave.studentName.take(1), fontWeight = FontWeight.Bold, color = CamsNavy)
+                        Text((leave.userName ?: "?").take(1), fontWeight = FontWeight.Bold, color = CamsNavy)
                     }
                     Column {
-                        Text(leave.studentName, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(leave.userName ?: "Unknown Student", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text(leave.type, fontSize = 12.sp, color = CamsNavy)
                     }
                 }
-                Text(leave.dates, fontSize = 13.sp, color = Color(0xFF64748B))
+                Text("${leave.fromDate} - ${leave.toDate}", fontSize = 13.sp, color = Color(0xFF64748B))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("Reason: ${leave.reason}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    onClick = { /* Approve */ },
+                    onClick = onApprove,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
                     shape = RoundedCornerShape(12.dp)
@@ -96,7 +131,7 @@ private fun AdvisorLeaveItem(leave: StudentLeave) {
                     Text("Approve")
                 }
                 OutlinedButton(
-                    onClick = { /* Reject */ },
+                    onClick = onReject,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
@@ -110,5 +145,3 @@ private fun AdvisorLeaveItem(leave: StudentLeave) {
         }
     }
 }
-
-data class StudentLeave(val studentName: String, val dates: String, val type: String, val reason: String)

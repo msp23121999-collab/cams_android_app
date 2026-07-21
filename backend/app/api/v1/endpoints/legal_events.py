@@ -4,11 +4,19 @@ Persists events, registrations, and questions to JSON files.
 Both the student portal (read/write) and admin/principal portal (write) hit this endpoint.
 """
 from typing import Any, List
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 import os
 import json
 
+from app.core.dependencies import get_current_user, role_required
+from app.db.models.user import User, UserRole
+
+from app.core.json_db_helper import load_json_store, save_json_store
+
 router = APIRouter()
+
+STAFF_ROLES = [UserRole.FACULTY, UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+APPROVAL_ROLES = [UserRole.PRINCIPAL, UserRole.ADMIN, UserRole.SUPER_ADMIN]
 
 # ─── File Paths ──────────────────────────────────────────────────────────────
 DB_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -372,41 +380,44 @@ DEFAULT_EVENTS = [
 
 # ─── Load & Save Helpers ──────────────────────────────────────────────────────
 def load_data(filepath: str, default: Any) -> Any:
-    if not os.path.exists(filepath):
-        # Save default if file doesn't exist
-        save_data(filepath, default)
-        return default
-    with open(filepath, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except Exception:
-            return default
+    """Read a legal-events document store from the database.
+
+    These were plain files inside the application directory, which does not survive a
+    container redeploy — registrations and submitted questions were lost on each
+    deploy. The row is seeded once from the existing file, then the database is
+    authoritative.
+    """
+    return load_json_store(filepath, lambda: default)
+
 
 def save_data(filepath: str, data: Any):
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    save_json_store(filepath, data)
 
 
 # ─── Events CRUD ──────────────────────────────────────────────────────────────
 @router.get("", summary="Get all legal events")
-def get_events() -> List[Any]:
-    return load_data(EVENTS_FILE, DEFAULT_EVENTS)
+def get_events(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)) -> List[Any]:
+    events = load_data(EVENTS_FILE, DEFAULT_EVENTS)
+    return events[skip: skip + limit]
 
 
 @router.post("", summary="Replace the full events list")
-def save_events(events: List[Any] = Body(...)) -> dict:
+def save_events(events: List[Any] = Body(...), current_user: User = Depends(role_required(APPROVAL_ROLES))) -> dict:
     save_data(EVENTS_FILE, events)
     return {"ok": True, "count": len(events)}
 
 
 # ─── Registrations ────────────────────────────────────────────────────────────
-@router.get("/registrations", summary="Get all event registrations")
-def get_registrations() -> List[Any]:
-    return load_data(REGISTRATIONS_FILE, [])
+@router.get("/registrations", summary="Get event registrations, optionally scoped to one student")
+def get_registrations(student_email: str | None = None, current_user: User = Depends(get_current_user)) -> List[Any]:
+    regs = load_data(REGISTRATIONS_FILE, [])
+    if student_email:
+        regs = [r for r in regs if r.get("studentEmail") == student_email]
+    return regs
 
 
 @router.post("/registrations", summary="Register for an event")
-def register_for_event(registration: Any = Body(...)) -> dict:
+def register_for_event(registration: Any = Body(...), current_user: User = Depends(get_current_user)) -> dict:
     regs = load_data(REGISTRATIONS_FILE, [])
     regs.append(registration)
     save_data(REGISTRATIONS_FILE, regs)
@@ -414,7 +425,7 @@ def register_for_event(registration: Any = Body(...)) -> dict:
 
 
 @router.put("/registrations", summary="Update registration details")
-def update_registration(payload: Any = Body(...)) -> dict:
+def update_registration(payload: Any = Body(...), current_user: User = Depends(get_current_user)) -> dict:
     regs = load_data(REGISTRATIONS_FILE, [])
     updated = False
     for r in regs:
@@ -428,13 +439,16 @@ def update_registration(payload: Any = Body(...)) -> dict:
 
 
 # ─── Ask a Judge — Questions ──────────────────────────────────────────────────
-@router.get("/questions", summary="Get all submitted questions")
-def get_questions() -> List[Any]:
-    return load_data(QUESTIONS_FILE, [])
+@router.get("/questions", summary="Get submitted questions, optionally scoped to one student")
+def get_questions(student_email: str | None = None, current_user: User = Depends(get_current_user)) -> List[Any]:
+    qs = load_data(QUESTIONS_FILE, [])
+    if student_email:
+        qs = [q for q in qs if q.get("studentEmail") == student_email]
+    return qs
 
 
 @router.post("/questions", summary="Submit a question for Ask a Judge")
-def submit_question(question: Any = Body(...)) -> dict:
+def submit_question(question: Any = Body(...), current_user: User = Depends(get_current_user)) -> dict:
     qs = load_data(QUESTIONS_FILE, [])
     qs.append(question)
     save_data(QUESTIONS_FILE, qs)
@@ -444,24 +458,26 @@ def submit_question(question: Any = Body(...)) -> dict:
 from datetime import datetime
 
 @router.post("/faculty", summary="Post a legal event (Pending Review)")
-def faculty_post_event(event: Any = Body(...)) -> dict:
+def faculty_post_event(event: Any = Body(...), current_user: User = Depends(role_required(STAFF_ROLES))) -> dict:
     events = load_data(EVENTS_FILE, DEFAULT_EVENTS)
     if not event.get("id"):
         event["id"] = f"LEH-TEMP-{int(datetime.now().timestamp())}"
     event["status"] = "Pending"
+    event["posted_by"] = current_user.id
+    event["posted_by_name"] = current_user.full_name
     events.append(event)
     save_data(EVENTS_FILE, events)
     return {"ok": True, "event": event}
 
 
 @router.get("/pending", summary="Get all pending events for Principal review")
-def get_pending_events() -> List[Any]:
+def get_pending_events(current_user: User = Depends(role_required(APPROVAL_ROLES))) -> List[Any]:
     events = load_data(EVENTS_FILE, DEFAULT_EVENTS)
     return [e for e in events if e.get("status") == "Pending"]
 
 
 @router.patch("/{event_id}/approve", summary="Approve and publish event")
-def approve_event(event_id: str) -> dict:
+def approve_event(event_id: str, current_user: User = Depends(role_required(APPROVAL_ROLES))) -> dict:
     events = load_data(EVENTS_FILE, DEFAULT_EVENTS)
     updated = False
     for e in events:
@@ -475,7 +491,7 @@ def approve_event(event_id: str) -> dict:
 
 
 @router.patch("/{event_id}/reject", summary="Reject event")
-def reject_event(event_id: str, remarks: str = Body(None)) -> dict:
+def reject_event(event_id: str, remarks: str = Body(None), current_user: User = Depends(role_required(APPROVAL_ROLES))) -> dict:
     events = load_data(EVENTS_FILE, DEFAULT_EVENTS)
     updated = False
     for e in events:

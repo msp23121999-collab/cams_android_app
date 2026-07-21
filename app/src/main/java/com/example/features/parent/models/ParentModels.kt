@@ -41,7 +41,8 @@ data class FeeLedgerRecord(
     val feeType: String,
     val amount: Double,
     val dueDate: String?,
-    val status: String // "paid", "partially_paid", "pending"
+    val status: String, // "paid", "partially_paid", "pending"
+    val remainingAmount: Double = 0.0
 )
 
 @JsonClass(generateAdapter = true)
@@ -67,7 +68,8 @@ data class CollegeNotice(
     val expiryDate: String?,
     val audienceType: String,
     val publisherName: String,
-    val publisherRole: String?
+    val publisherRole: String?,
+    val attachmentUrl: String? = null
 )
 
 @JsonClass(generateAdapter = true)

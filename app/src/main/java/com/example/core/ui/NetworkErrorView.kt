@@ -81,7 +81,7 @@ fun NetworkErrorView(
                 // Close Button to dismiss
                 IconButton(
                     onClick = { GlobalNetworkHandler.clearError() },
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,

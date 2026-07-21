@@ -30,11 +30,21 @@ fun AdminSystemConfigScreen(
     onNavigate: (String) -> Unit,
     viewModel: AdminSystemConfigViewModel = viewModel(factory = AdminSystemConfigViewModelFactory(AdminRepositoryImpl(CamsApplication.instance.container.apiService)))
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showEditDialog by remember { mutableStateOf(false) }
 
-    var maintenanceMode by remember { mutableStateOf(false) }
-    var emailNotifications by remember { mutableStateOf(true) }
-    var smsNotifications by remember { mutableStateOf(true) }
+    LaunchedEffect(uiState.saveSuccess, uiState.saveError) {
+        if (uiState.saveSuccess) {
+            android.widget.Toast.makeText(context, "Settings saved", android.widget.Toast.LENGTH_SHORT).show()
+            showEditDialog = false
+            viewModel.clearSaveStatus()
+        }
+        uiState.saveError?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearSaveStatus()
+        }
+    }
 
     AdminBaseScreen(
         title = "System Configuration",
@@ -49,45 +59,51 @@ fun AdminSystemConfigScreen(
         ) {
             
             item {
-                Text("Backend Settings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Institution Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                    TextButton(onClick = { showEditDialog = true }, enabled = uiState.settings != null) { Text("Edit") }
+                }
             }
             item {
                 CamsCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Institution Name", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Text(uiState.settings?.institutionName ?: "N/A", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        HorizontalDivider(color = Color(0xFFF3F4F6))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Academic Year", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Text(uiState.settings?.academicYear ?: "N/A", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        HorizontalDivider(color = Color(0xFFF3F4F6))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Current Semester", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Text(uiState.settings?.semester?.toString() ?: "N/A", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (uiState.isLoading) {
+                        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    } else if (uiState.error != null) {
+                        // Without this the screen rendered empty on failure — no message,
+                        // no retry — indistinguishable from genuinely having no data.
+                        com.example.core.ui.NetworkErrorView(
+                            message = uiState.error ?: "Failed to load system config",
+                            onRetry = { viewModel.fetchConfig() }
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            SettingRow("College Name", uiState.settings?.collegeName)
+                            HorizontalDivider(color = Color(0xFFF3F4F6))
+                            SettingRow("Address", uiState.settings?.address)
+                            HorizontalDivider(color = Color(0xFFF3F4F6))
+                            SettingRow("Affiliation No.", uiState.settings?.affiliationNumber)
+                            HorizontalDivider(color = Color(0xFFF3F4F6))
+                            SettingRow("AICTE / UGC Code", uiState.settings?.aicteUgcCode)
+                            HorizontalDivider(color = Color(0xFFF3F4F6))
+                            SettingRow("Accreditation", uiState.settings?.accreditationBody)
                         }
                     }
                 }
             }
 
             item {
-                Text("Global Settings", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("Bank Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             }
-
             item {
                 CamsCard {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text("Maintenance Mode", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Disables access for non-admin users", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(
-                            checked = maintenanceMode,
-                            onCheckedChange = { maintenanceMode = it },
-                            colors = SwitchDefaults.colors(checkedThumbColor = CamsNavy, checkedTrackColor = CamsNavy.copy(alpha = 0.5f))
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        SettingRow("Bank Name", uiState.settings?.bankName)
+                        HorizontalDivider(color = Color(0xFFF3F4F6))
+                        SettingRow("Account No.", uiState.settings?.bankAccountNo)
+                        HorizontalDivider(color = Color(0xFFF3F4F6))
+                        SettingRow("IFSC", uiState.settings?.bankIfsc)
+                        HorizontalDivider(color = Color(0xFFF3F4F6))
+                        SettingRow("Branch", uiState.settings?.bankBranch)
                     }
                 }
             }
@@ -98,35 +114,100 @@ fun AdminSystemConfigScreen(
 
             item {
                 CamsCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
                             Text("Email Notifications", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Switch(checked = emailNotifications, onCheckedChange = { emailNotifications = it })
+                            Text("Receive account and approval emails", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        HorizontalDivider(color = Color(0xFFF3F4F6))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("SMS Notifications", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                            Switch(checked = smsNotifications, onCheckedChange = { smsNotifications = it })
-                        }
-                    }
-                }
-            }
-
-            item {
-                Text("Integrations", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-            }
-
-            item {
-                CamsCard(onClick = {}) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.VpnKey, null, tint = MaterialTheme.colorScheme.primary)
-                            Text("Manage API Keys", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                        }
-                        Icon(Icons.Filled.ChevronRight, null, tint = Color(0xFF64748B))
+                        Switch(
+                            checked = uiState.emailNotificationsEnabled,
+                            onCheckedChange = { viewModel.setEmailNotifications(it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = CamsNavy, checkedTrackColor = CamsNavy.copy(alpha = 0.5f))
+                        )
                     }
                 }
             }
         }
     }
+
+    if (showEditDialog) {
+        uiState.settings?.let { current ->
+            EditInstitutionDialog(
+                current = current,
+                isSaving = uiState.isSaving,
+                onDismiss = { showEditDialog = false },
+                onSave = { viewModel.saveSettings(it) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingRow(label: String, value: String?) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Text(label, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        Text(
+            value?.takeIf { it.isNotBlank() } ?: "Not set",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
+    }
+}
+
+@Composable
+private fun EditInstitutionDialog(
+    current: com.example.features.admin.models.AdminSystemSettings,
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (com.example.features.admin.models.AdminSystemSettings) -> Unit
+) {
+    var collegeName by remember { mutableStateOf(current.collegeName) }
+    var address by remember { mutableStateOf(current.address) }
+    var affiliationNumber by remember { mutableStateOf(current.affiliationNumber) }
+    var aicteUgcCode by remember { mutableStateOf(current.aicteUgcCode) }
+    var accreditationBody by remember { mutableStateOf(current.accreditationBody) }
+    var bankName by remember { mutableStateOf(current.bankName) }
+    var bankAccountNo by remember { mutableStateOf(current.bankAccountNo) }
+    var bankIfsc by remember { mutableStateOf(current.bankIfsc) }
+    var bankBranch by remember { mutableStateOf(current.bankBranch) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Institution Details") },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 420.dp)) {
+                item { OutlinedTextField(value = collegeName, onValueChange = { collegeName = it }, label = { Text("College Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Address") }, modifier = Modifier.fillMaxWidth()) }
+                item { OutlinedTextField(value = affiliationNumber, onValueChange = { affiliationNumber = it }, label = { Text("Affiliation Number") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = aicteUgcCode, onValueChange = { aicteUgcCode = it }, label = { Text("AICTE / UGC Code") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = accreditationBody, onValueChange = { accreditationBody = it }, label = { Text("Accreditation Body") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = bankName, onValueChange = { bankName = it }, label = { Text("Bank Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = bankAccountNo, onValueChange = { bankAccountNo = it }, label = { Text("Bank Account No.") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = bankIfsc, onValueChange = { bankIfsc = it }, label = { Text("IFSC") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = bankBranch, onValueChange = { bankBranch = it }, label = { Text("Branch") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = collegeName.isNotBlank() && !isSaving,
+                onClick = {
+                    onSave(
+                        current.copy(
+                            collegeName = collegeName.trim(),
+                            address = address.trim(),
+                            affiliationNumber = affiliationNumber.trim(),
+                            aicteUgcCode = aicteUgcCode.trim(),
+                            accreditationBody = accreditationBody.trim(),
+                            bankName = bankName.trim(),
+                            bankAccountNo = bankAccountNo.trim(),
+                            bankIfsc = bankIfsc.trim(),
+                            bankBranch = bankBranch.trim()
+                        )
+                    )
+                }
+            ) { Text(if (isSaving) "Saving..." else "Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

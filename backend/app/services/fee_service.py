@@ -1,13 +1,25 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.repositories.fee_repository import FeeRepository
 from app.db.repositories.student_repository import StudentRepository
 from app.db.models.fee import FeeRecord, Payment, FeeStatus
+from app.db.models.user import User, UserRole
 
 class FeeService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.fee_repo = FeeRepository(db)
         self.student_repo = StudentRepository(db)
+
+    async def assert_owns_record(self, record: FeeRecord, current_user: User) -> None:
+        """Ensure that if the caller is a STUDENT, the fee record actually
+        belongs to them. Prevents a student from paying/creating orders for
+        another student's fee record by guessing the record_id."""
+        if current_user.role != UserRole.STUDENT:
+            return
+        own_student = await self.student_repo.get_student_by_user_id(current_user.id)
+        if not own_student or record.student_id != own_student.id:
+            raise HTTPException(status_code=403, detail="You do not have permission to act on this fee record")
 
     async def ensure_student_fee_records(self, student_id: str) -> None:
         from app.db.models.student import Student
@@ -221,14 +233,25 @@ class FeeService:
             
             st_sc = 0.0  # Reset to prevent scope pollution across loop iterations
             payments = await self.fee_repo.get_payments_by_record(r.id)
-            record_paid = float(sum(p.amount for p in payments))
+            # Coerce each amount before summing. Payments loaded from the database
+            # come back as Decimal (the column is Numeric), but one written earlier
+            # in the same session may still hold the float it was constructed with.
+            # Summing the mix raises "unsupported operand type(s) for +: 'Decimal'
+            # and 'float'", which turned paying off the remainder of a partially
+            # paid fee into a 500.
+            record_paid = float(sum(float(p.amount or 0) for p in payments))
             amount_paid += record_paid
             
             is_tuition = "tuition" in struct.fee_type.lower() or "tution" in struct.fee_type.lower()
             if is_tuition:
                 # Tuition is overall fees, only charged in Semester 1
                 if struct.semester == 1:
-                    struct_tuition_total = 85000.0  # Default fallback tuition fee
+                    # Start from the configured fee structure. A quota/year
+                    # blueprint may legitimately override it below, but with no
+                    # blueprint the amount the institution actually configured is
+                    # authoritative — a hardcoded constant here silently bills every
+                    # student a different figure from the one on their fee record.
+                    struct_tuition_total = float(struct.amount or 0.0)
                     if matching_bp:
                         fees_by_year = matching_bp.get("fees", {})
                         year_fees = fees_by_year.get("1") or fees_by_year.get(1)
@@ -304,12 +327,16 @@ class FeeService:
             "records": details
         }
 
-    async def pay_fee(self, record_id: str, amount: float, mode: str, txn_id: str) -> Payment:
-        payment = await self.fee_repo.add_payment(record_id, amount, mode, txn_id)
+    async def pay_fee(self, record_id: str, amount: float, mode: str, txn_id: str, current_user: User | None = None) -> Payment:
         record = await self.fee_repo.get_fee_record_by_id(record_id)
-        if record:
-            summary = await self.get_student_fee_summary(record.student_id)
-            rec_detail = next((item for item in summary["records"] if item["record_id"] == record_id), None)
-            if rec_detail and rec_detail["status"] == "paid":
-                await self.fee_repo.update_fee_record_status(record_id, FeeStatus.PAID)
+        if not record:
+            raise HTTPException(status_code=404, detail="Fee record not found")
+        if current_user is not None:
+            await self.assert_owns_record(record, current_user)
+
+        payment = await self.fee_repo.add_payment(record_id, amount, mode, txn_id)
+        summary = await self.get_student_fee_summary(record.student_id)
+        rec_detail = next((item for item in summary["records"] if item["record_id"] == record_id), None)
+        if rec_detail and rec_detail["status"] == "paid":
+            await self.fee_repo.update_fee_record_status(record_id, FeeStatus.PAID)
         return payment

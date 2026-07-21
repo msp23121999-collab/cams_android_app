@@ -49,10 +49,17 @@ fun StudentAcademicCalendarScreen(
             )
         }
     ) {
+        val academicYearLabel = uiState.academicYear ?: run {
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH)
+            if (month >= java.util.Calendar.JUNE) "$year-${(year + 1) % 100}" else "${year - 1}-${year % 100}"
+        }
+
         CamsScreen(
         scrollable = false,
             title = "Academic Calendar",
-            subtitle = "Official university schedule 2023-24",
+            subtitle = "Official university schedule $academicYearLabel",
             navigationIcon = {
                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
                     Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)

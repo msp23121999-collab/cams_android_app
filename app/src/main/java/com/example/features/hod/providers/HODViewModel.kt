@@ -44,13 +44,14 @@ class HODViewModel(private val repository: HODRepository) : ViewModel() {
 
 class HODViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODViewModel(repository) as T
     }
 }
 
 // --- HOD Faculty Management ViewModel ---
 data class HODFacultyState(
-    val faculty: List<com.example.core.network.FacultyStudentDto> = emptyList(),
+    val faculty: List<com.example.core.network.HODFacultyResponseDto> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -65,10 +66,10 @@ class HODFacultyViewModel(private val repository: HODRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val data = repository.getFacultyManagementData()
+                val data = repository.getActiveFaculty()
                 _uiState.update { it.copy(faculty = data, isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load faculty list") }
             }
         }
     }
@@ -76,15 +77,19 @@ class HODFacultyViewModel(private val repository: HODRepository) : ViewModel() {
 
 class HODFacultyViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODFacultyViewModel(repository) as T
     }
 }
 
 // --- HOD Student Management ViewModel ---
 data class HODStudentState(
-    val students: List<com.example.core.network.FacultyStudentDto> = emptyList(),
+    val students: List<com.example.core.network.HODManagementStudentDto> = emptyList(),
+    val metrics: com.example.core.network.HODManagementMetricsDto = com.example.core.network.HODManagementMetricsDto(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isVerifying: Boolean = false,
+    val verifyError: String? = null
 )
 
 class HODStudentViewModel(private val repository: HODRepository) : ViewModel() {
@@ -97,17 +102,35 @@ class HODStudentViewModel(private val repository: HODRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val data = repository.getStudentManagementData()
-                _uiState.update { it.copy(students = data, isLoading = false) }
+                val data = repository.getHODManagementStudents()
+                _uiState.update { it.copy(students = data.students, metrics = data.metrics, isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load student roster") }
             }
         }
+    }
+
+    fun verifyStudent(studentId: String, action: String, remarks: String?) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVerifying = true, verifyError = null) }
+            try {
+                repository.verifyStudentProfile(studentId, action, remarks)
+                loadStudents()
+                _uiState.update { it.copy(isVerifying = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isVerifying = false, verifyError = e.message ?: "Failed to update verification status") }
+            }
+        }
+    }
+
+    fun clearVerifyError() {
+        _uiState.update { it.copy(verifyError = null) }
     }
 }
 
 class HODStudentViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODStudentViewModel(repository) as T
     }
 }
@@ -150,6 +173,7 @@ class HODApprovalsViewModel(private val repository: HODRepository) : ViewModel()
 
 class HODApprovalsViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODApprovalsViewModel(repository) as T
     }
 }
@@ -157,7 +181,10 @@ class HODApprovalsViewModelFactory(private val repository: HODRepository) : View
 data class HODCircularsState(
     val circulars: List<com.example.core.network.NoticeDto> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false
 )
 
 class HODCircularsViewModel(private val apiService: com.example.core.network.CamsApiService) : ViewModel() {
@@ -170,21 +197,58 @@ class HODCircularsViewModel(private val apiService: com.example.core.network.Cam
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = apiService.getNotices()
+                val response = apiService.getHodNotices()
                 if (response.isSuccessful) {
                     _uiState.update { it.copy(circulars = response.body() ?: emptyList(), isLoading = false) }
                 } else {
-                    _uiState.update { it.copy(isLoading = false, error = response.message()) }
+                    _uiState.update { it.copy(isLoading = false, error = "Failed to load circulars: ${response.code()}") }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load circulars") }
             }
         }
+    }
+
+    fun createCircular(title: String, body: String, audienceType: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            try {
+                val response = apiService.createHodNotice(com.example.core.network.NoticeCreateRequest(title, body, audienceType))
+                if (response.isSuccessful) {
+                    loadCirculars()
+                    _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                } else {
+                    _uiState.update { it.copy(isSaving = false, saveError = "Failed to create circular: ${response.code()}") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.message ?: "Failed to create circular") }
+            }
+        }
+    }
+
+    fun deleteCircular(noticeId: String) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.deleteHodNotice(noticeId)
+                if (response.isSuccessful) {
+                    loadCirculars()
+                } else {
+                    _uiState.update { it.copy(error = "Failed to delete circular: ${response.code()}") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Failed to delete circular") }
+            }
+        }
+    }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
     }
 }
 
 class HODCircularsViewModelFactory(private val apiService: com.example.core.network.CamsApiService) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODCircularsViewModel(apiService) as T
     }
 }
@@ -194,7 +258,10 @@ data class HODTimetableState(
     val selectedSectionId: String? = null,
     val timetableSlots: List<com.example.core.network.TimetableSlotDto> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false
 )
 
 class HODTimetableViewModel(private val repository: HODRepository) : ViewModel() {
@@ -238,10 +305,29 @@ class HODTimetableViewModel(private val repository: HODRepository) : ViewModel()
             }
         }
     }
+
+    fun submitTimetable(sectionId: String, slots: List<com.example.core.network.TimetableSlotInputDto>) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            try {
+                repository.submitTimetable(sectionId, slots)
+                loadSectionTimetable(sectionId)
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.message ?: "Failed to submit timetable") }
+            }
+        }
+    }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
+    }
 }
 
 class HODTimetableViewModelFactory(private val repository: HODRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return HODTimetableViewModel(repository) as T
     }
 }
+

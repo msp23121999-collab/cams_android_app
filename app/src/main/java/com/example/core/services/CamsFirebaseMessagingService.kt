@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.R
@@ -17,14 +16,14 @@ class CamsFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("FCM", "Refreshed token: $token")
-        // TODO: Send token to backend if needed
+        // FCM rotates tokens; the server must be told or pushes stop reaching this
+        // device silently. Registration is best-effort and never blocks the user.
+        PushTokenRegistrar.register(token)
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.d("FCM", "Message received from: ${remoteMessage.from}")
-        
+
         remoteMessage.notification?.let {
             sendNotification(it.title, it.body)
         }

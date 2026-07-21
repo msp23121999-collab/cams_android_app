@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CampusLifeDashboardScreen(
-    viewModel: CampusLifeViewModel = viewModel(),
+    viewModel: CampusLifeViewModel,
     onNavigate: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,7 +116,7 @@ fun CampusLifeDashboardScreen(
                         }
                     } else {
                         uiState.events.forEach { event ->
-                            RegistrationEventRow(event)
+                            RegistrationEventRow(event, onOpen = { onNavigate(AppRoutes.LEGAL_EVENTS) })
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
@@ -220,12 +220,19 @@ fun CampusLifeDashboardScreen(
                         "View All",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = CamsNavy,
-                        modifier = Modifier.clickable { }
+                        modifier = Modifier.clickable { onNavigate(AppRoutes.LEGAL_EVENTS) }
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+                if (uiState.events.isEmpty()) {
+                    Text(
+                        "No upcoming legal events right now.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 uiState.events.forEach { event ->
-                    EventCard(event)
+                    EventCard(event, onOpen = { onNavigate(AppRoutes.LEGAL_EVENTS) })
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -324,18 +331,24 @@ private fun ExperienceModuleCard(modifier: Modifier, module: ExperienceModule, o
 }
 
 @Composable
-private fun EventCard(event: CampusLifeEvent) {
+private fun EventCard(event: CampusLifeEvent, onOpen: () -> Unit) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp))) {
-                AsyncImage(
-                    model = event.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+            Box(modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp)).background(CamsNavy.copy(alpha = 0.06f))) {
+                if (event.imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = event.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Gavel, contentDescription = null, tint = CamsNavy.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
+                    }
+                }
                 Surface(
                     modifier = Modifier.padding(12.dp),
                     color = Color.White.copy(alpha = 0.9f),
@@ -388,7 +401,7 @@ private fun EventCard(event: CampusLifeEvent) {
                         }
                     } else {
                         Button(
-                            onClick = { },
+                            onClick = onOpen,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                             shape = RoundedCornerShape(12.dp)
@@ -397,7 +410,7 @@ private fun EventCard(event: CampusLifeEvent) {
                         }
                     }
                     OutlinedButton(
-                        onClick = { },
+                        onClick = onOpen,
                         modifier = Modifier.weight(0.6f),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
@@ -454,16 +467,11 @@ private fun AchievementItem(achievement: Achievement) {
 }
 
 @Composable
-private fun RegistrationEventRow(event: CampusLifeEvent) {
-    var isRegistered by remember { mutableStateOf(event.registered) }
-
+private fun RegistrationEventRow(event: CampusLifeEvent, onOpen: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                if (isRegistered) Color(0xFF10B981).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                RoundedCornerShape(12.dp)
-            )
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -474,12 +482,7 @@ private fun RegistrationEventRow(event: CampusLifeEvent) {
                 .background(CamsNavy.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                if (isRegistered) Icons.Filled.CheckCircle else Icons.Filled.Event,
-                contentDescription = null,
-                tint = if (isRegistered) Color(0xFF10B981) else CamsNavy,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(Icons.Filled.Event, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -496,16 +499,14 @@ private fun RegistrationEventRow(event: CampusLifeEvent) {
             )
         }
         Button(
-            onClick = { isRegistered = !isRegistered },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isRegistered) Color(0xFF10B981) else CamsNavy
-            ),
+            onClick = onOpen,
+            colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
             shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
             modifier = Modifier.height(32.dp)
         ) {
             Text(
-                if (isRegistered) "Registered" else "Register",
+                "View & Register",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
             )
         }

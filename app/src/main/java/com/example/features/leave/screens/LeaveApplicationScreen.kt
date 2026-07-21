@@ -129,7 +129,19 @@ private fun LeaveContent(uiState: com.example.features.student.providers.LeavesS
     var fromDate by remember { mutableStateOf("") }
     var toDate by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
-    
+    var validationError by remember { mutableStateOf<String?>(null) }
+    val dateRegex = remember { Regex("""\d{4}-\d{2}-\d{2}""") }
+
+    LaunchedEffect(uiState.applySuccess) {
+        if (uiState.applySuccess) {
+            fromDate = ""
+            toDate = ""
+            reason = ""
+            validationError = null
+            viewModel.clearApplyStatus()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -268,28 +280,74 @@ private fun LeaveContent(uiState: com.example.features.student.providers.LeavesS
                     )
                 )
 
-                Button(
-                    onClick = { 
-                        viewModel.applyLeave(
-                            type = if (appType == "Leave") leaveType else odType,
-                            fromDate = fromDate,
-                            toDate = toDate,
-                            reason = reason
+                val displayedError = validationError ?: uiState.submitError
+                if (displayedError != null) {
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            displayedError,
+                            modifier = Modifier.padding(12.dp),
+                            color = Color(0xFFB91C1C),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
                         )
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        validationError = when {
+                            !dateRegex.matches(fromDate) || !dateRegex.matches(toDate) -> "Enter dates in YYYY-MM-DD format."
+                            toDate < fromDate -> "To date cannot be before the from date."
+                            reason.isBlank() -> "Reason / Purpose is required."
+                            else -> null
+                        }
+                        if (validationError == null) {
+                            viewModel.applyLeave(
+                                type = if (appType == "Leave") leaveType else odType,
+                                fromDate = fromDate,
+                                toDate = toDate,
+                                reason = reason,
+                                appCategory = appType
+                            )
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
+                    enabled = !uiState.isSubmitting,
                     colors = ButtonDefaults.buttonColors(containerColor = LexNovaPurple)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Submit Application", fontWeight = FontWeight.Black)
+                    if (uiState.isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.AutoMirrored.Filled.Send, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Submit Application", fontWeight = FontWeight.Black)
+                    }
                 }
             }
         }
         
         ApplicationHistory(uiState)
     }
+}
+
+private val APPROVED_STATUSES = setOf(
+    "APPROVED", "APPROVED_BY_HOD", "FINAL_APPROVED", "HOD_APPROVED",
+    "PRINCIPAL_APPROVED", "FACULTY_APPROVED", "ADVISOR_APPROVED"
+)
+private val REJECTED_STATUSES = setOf(
+    "REJECTED", "REJECTED_BY_HOD", "REJECTED_BY_PRINCIPAL", "HOD_REJECTED",
+    "PRINCIPAL_REJECTED", "REJECTED_BY_FACULTY", "REJECTED_BY_ADVISOR"
+)
+
+private fun classifyLeaveStatus(status: String): String = when (status.uppercase()) {
+    in APPROVED_STATUSES -> "APPROVED"
+    in REJECTED_STATUSES -> "REJECTED"
+    else -> "PENDING"
 }
 
 @Composable
@@ -300,13 +358,13 @@ private fun DashboardWidgets(uiState: com.example.features.student.providers.Lea
     ) {
         WidgetCard(
             label = "Approved",
-            value = "${uiState.leaves.count { it.status == "Approved" }}",
+            value = "${uiState.leaves.count { classifyLeaveStatus(it.status) == "APPROVED" }}",
             color = Color(0xFF10B981),
             modifier = Modifier.weight(1f)
         )
         WidgetCard(
             label = "Pending",
-            value = "${uiState.leaves.count { it.status == "Pending" }}",
+            value = "${uiState.leaves.count { classifyLeaveStatus(it.status) == "PENDING" }}",
             color = LexNovaPurple,
             modifier = Modifier.weight(1f)
         )
@@ -363,7 +421,7 @@ private fun ApplicationHistory(uiState: com.example.features.student.providers.L
 
 @Composable
 fun StatusBadge(status: String) {
-    val (bgColor, textColor) = when (status) {
+    val (bgColor, textColor) = when (classifyLeaveStatus(status)) {
         "APPROVED" -> Color(0xFFECFDF5) to Color(0xFF047857)
         "REJECTED" -> Color(0xFFFEF2F2) to Color(0xFFB91C1C)
         else -> Color(0xFFFFFBEB) to Color(0xFFB45309)

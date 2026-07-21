@@ -36,6 +36,12 @@ import com.example.features.campus_life.models.ActivityPointApplication
 import com.example.features.campus_life.providers.ActivityPointsViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.example.core.network.MultipartUploadHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,8 +106,8 @@ fun ActivityPointsScreen(
     if (showSubmitModal) {
         SubmitApplicationDialog(
             onDismiss = { showSubmitModal = false },
-            onAdd = {
-                viewModel.submitApplication(it)
+            onAdd = { app, filePart ->
+                viewModel.submitApplication(app, filePart)
                 showSubmitModal = false
             }
         )
@@ -111,6 +117,17 @@ fun ActivityPointsScreen(
         ActivityAppDetailDialog(
             app = selectedApp!!,
             onDismiss = { selectedApp = null }
+        )
+    }
+
+    if (uiState.errorMsg != null || uiState.successMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessages() },
+            title = { Text(if (uiState.errorMsg != null) "Error" else "Success") },
+            text = { Text(uiState.errorMsg ?: uiState.successMsg ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessages() }) { Text("OK") }
+            }
         )
     }
 }
@@ -169,8 +186,8 @@ fun ActivityApplicationItem(
                     )
                 }
                 
-                IconButton(onClick = { onDelete(app.id) }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
+                IconButton(onClick = { onDelete(app.id) }, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
                 }
             }
             
@@ -214,12 +231,20 @@ fun EmptyApplicationsView() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplication) -> Unit) {
+fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplication, okhttp3.MultipartBody.Part?) -> Unit) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("co_curricular") }
     var points by remember { mutableStateOf("5") }
     var date by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf<String?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        selectedFileUri = uri
+        selectedFileName = uri?.lastPathSegment ?: "document.pdf"
+    }
 
     val categories = listOf("academic", "co_curricular", "extracurricular", "sports", "certification", "workshop", "seminar", "internship", "community_service")
 
@@ -262,7 +287,7 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
                 OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Activity Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
 
                 Surface(
-                    onClick = {},
+                    onClick = { filePickerLauncher.launch("*/*") },
                     modifier = Modifier.fillMaxWidth().height(80.dp),
                     shape = RoundedCornerShape(16.dp),
                     color = CamsBackground,
@@ -270,8 +295,8 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Upload Support Document", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+                            Icon(if (selectedFileUri != null) Icons.Filled.InsertDriveFile else Icons.Filled.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(selectedFileName ?: "Upload Support Document", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
                         }
                     }
                 }
@@ -280,7 +305,8 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Button(
                         onClick = {
-                            onAdd(ActivityPointApplication("AP-${System.currentTimeMillis().toString().takeLast(4)}", title, category, date, points.toIntOrNull() ?: 5, null, "Pending Review", description, "Document.pdf"))
+                            val filePart = selectedFileUri?.let { MultipartUploadHelper.prepareFilePart("file", it, context) }
+                            onAdd(ActivityPointApplication("AP-${System.currentTimeMillis().toString().takeLast(4)}", title, category, date, points.toIntOrNull() ?: 5, null, "Pending Review", description, ""), filePart)
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
@@ -296,6 +322,7 @@ fun SubmitApplicationDialog(onDismiss: () -> Unit, onAdd: (ActivityPointApplicat
 
 @Composable
 fun ActivityAppDetailDialog(app: ActivityPointApplication, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -307,8 +334,8 @@ fun ActivityAppDetailDialog(app: ActivityPointApplication, onDismiss: () -> Unit
                     Surface(color = CamsNavy.copy(alpha = 0.1f), shape = CircleShape) {
                         Text(app.status.uppercase(), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = CamsNavy))
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 
@@ -354,15 +381,23 @@ fun ActivityAppDetailDialog(app: ActivityPointApplication, onDismiss: () -> Unit
                     }
                 }
 
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Filled.Description, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("View Support Document")
+                val hasRealDocument = app.supportingDocument.startsWith("/api/v1/files") || app.supportingDocument.startsWith("http")
+                if (hasRealDocument) {
+                    Button(
+                        onClick = {
+                            val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                            val origin = com.example.core.config.AppConfig.BASE_URL.substringBefore("/api/v1")
+                            val fullUrl = if (app.supportingDocument.startsWith("http")) app.supportingDocument else origin + app.supportingDocument
+                            com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, app.title, token)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Filled.Description, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Support Document")
+                    }
                 }
             }
         }

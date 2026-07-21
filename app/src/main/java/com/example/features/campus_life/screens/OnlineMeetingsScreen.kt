@@ -51,6 +51,7 @@ fun OnlineMeetingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedMeeting by remember { mutableStateOf<OnlineMeeting?>(null) }
+    var selectedCalendarDay by remember { mutableStateOf<Int?>(null) }
     val context = LocalContext.current
 
     CamsScreen(scrollable = true,
@@ -79,7 +80,36 @@ fun OnlineMeetingsScreen(
                 }
 
                 if (uiState.activeTab == "Calendar") {
-                    CalendarPlaceholder()
+                    MeetingCalendar(uiState.meetings, onDayClick = { day -> selectedCalendarDay = day })
+                    val today = remember { java.time.LocalDate.now() }
+                    val dayMeetings = selectedCalendarDay?.let { day ->
+                        uiState.meetings.filter { m ->
+                            try {
+                                val d = java.time.LocalDate.parse(m.date)
+                                d.year == today.year && d.monthValue == today.monthValue && d.dayOfMonth == day
+                            } catch (e: Exception) { false }
+                        }
+                    }
+                    if (dayMeetings != null) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("MEETINGS ON THIS DAY", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                            dayMeetings.forEach { meeting ->
+                                MeetingCard(
+                                    meeting,
+                                    onDetail = { selectedMeeting = meeting },
+                                    onJoin = {
+                                        viewModel.markAttendance(meeting.id)
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(meeting.meetingLink)))
+                                    },
+                                    onPlayRecording = {
+                                        if (!meeting.recordingUrl.isNullOrBlank()) {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(meeting.recordingUrl)))
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 } else {
                     // List
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -87,11 +117,20 @@ fun OnlineMeetingsScreen(
                             EmptyState(onRetry = { viewModel.fetchMeetings() })
                         } else {
                             uiState.filteredMeetings.forEach { meeting ->
-                                MeetingCard(meeting, onDetail = { selectedMeeting = meeting }, onJoin = {
-                                    viewModel.markAttendance(meeting.id)
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(meeting.meetingLink))
-                                    context.startActivity(intent)
-                                })
+                                MeetingCard(
+                                    meeting,
+                                    onDetail = { selectedMeeting = meeting },
+                                    onJoin = {
+                                        viewModel.markAttendance(meeting.id)
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(meeting.meetingLink))
+                                        context.startActivity(intent)
+                                    },
+                                    onPlayRecording = {
+                                        if (!meeting.recordingUrl.isNullOrBlank()) {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(meeting.recordingUrl)))
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -207,7 +246,7 @@ private fun MeetingFilters(viewModel: OnlineMeetingsViewModel, state: com.exampl
 }
 
 @Composable
-private fun MeetingCard(meeting: OnlineMeeting, onDetail: () -> Unit, onJoin: () -> Unit) {
+private fun MeetingCard(meeting: OnlineMeeting, onDetail: () -> Unit, onJoin: () -> Unit, onPlayRecording: () -> Unit) {
     val isLive = meeting.status == MeetingStatus.LIVE_NOW
     
     CamsCard(
@@ -253,7 +292,7 @@ private fun MeetingCard(meeting: OnlineMeeting, onDetail: () -> Unit, onJoin: ()
                     }
                 } else if (meeting.recordingAvailable) {
                     Button(
-                        onClick = { /* Launch Recording */ },
+                        onClick = onPlayRecording,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -336,19 +375,78 @@ private fun EmptyState(onRetry: (() -> Unit)? = null) {
 }
 
 @Composable
-private fun CalendarPlaceholder() {
+private fun MeetingCalendar(meetings: List<OnlineMeeting>, onDayClick: (Int) -> Unit) {
+    val today = remember { java.time.LocalDate.now() }
+    val firstOfMonth = remember { today.withDayOfMonth(1) }
+    val daysInMonth = firstOfMonth.lengthOfMonth()
+    val firstDayOfWeek = firstOfMonth.dayOfWeek.value % 7 // Sunday = 0
+
+    val meetingsByDay = remember(meetings) {
+        meetings.mapNotNull { m ->
+            try {
+                val d = java.time.LocalDate.parse(m.date)
+                if (d.year == today.year && d.monthValue == today.monthValue) d.dayOfMonth to m else null
+            } catch (e: Exception) { null }
+        }.groupBy({ it.first }, { it.second })
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().height(300.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, Zinc200)
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Filled.CalendarMonth, contentDescription = null, modifier = Modifier.size(48.dp), tint = Zinc200)
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Calendar Integration", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = Slate900)
-                Text("Syncing with your schedule...", style = MaterialTheme.typography.labelSmall, color = Slate400)
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(18.dp))
+                Text(
+                    "${firstOfMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${firstOfMonth.year} — Meeting Calendar",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                listOf("S", "M", "T", "W", "T", "F", "S").forEach {
+                    Text(it, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val totalCells = firstDayOfWeek + daysInMonth
+            val rows = (totalCells + 6) / 7
+            for (row in 0 until rows) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    for (col in 0 until 7) {
+                        val cellIndex = row * 7 + col
+                        val day = cellIndex - firstDayOfWeek + 1
+                        Box(
+                            modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (day in 1..daysInMonth) {
+                                val isToday = day == today.dayOfMonth
+                                val hasMeetings = meetingsByDay.containsKey(day)
+                                Surface(
+                                    modifier = Modifier.fillMaxSize().clickable(enabled = hasMeetings) { onDayClick(day) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = when {
+                                        isToday -> CamsNavy
+                                        hasMeetings -> CamsNavy.copy(alpha = 0.08f)
+                                        else -> Color.Transparent
+                                    }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            "$day",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = if (isToday) Color.White else if (hasMeetings) CamsNavy else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -372,7 +470,7 @@ private fun MeetingDetailsDialog(meeting: OnlineMeeting, onDismiss: () -> Unit, 
                         Text(meeting.organizer, style = MaterialTheme.typography.labelSmall, color = Purple600)
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.background(Zinc50, CircleShape)) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = Slate600)
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Slate600)
                     }
                 }
 

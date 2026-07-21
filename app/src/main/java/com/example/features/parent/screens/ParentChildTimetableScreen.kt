@@ -70,6 +70,13 @@ fun ParentChildTimetableScreen(
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = CamsNavy)
                 }
+            } else if (uiState.error != null) {
+                // Without this branch a failed request rendered an empty screen with no
+                // explanation and no way to retry — indistinguishable from "no data".
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load timetable",
+                    onRetry = { viewModel.loadData() }
+                )
             } else {
                 // Day selection tabs row
                 ScrollableTabRow(
@@ -182,7 +189,7 @@ fun ParentChildTimetableScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
-                                        if (period.instructor != "None") {
+                                        if (period.instructor.isNotBlank()) {
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 "Instructor: ${period.instructor}",

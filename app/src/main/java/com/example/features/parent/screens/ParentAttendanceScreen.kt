@@ -70,9 +70,10 @@ fun ParentAttendanceScreen(
                     CircularProgressIndicator(color = CamsNavy)
                 }
             } else if (uiState.error != null) {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    Text(uiState.error ?: "Failed to load attendance", color = Color.Red)
-                }
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load attendance",
+                    onRetry = { viewModel.loadData() }
+                )
             } else if (uiState.summary == null || uiState.summary?.records?.isEmpty() == true) {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     Text("No attendance records found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -89,7 +90,11 @@ fun ParentAttendanceScreen(
                             AttendanceStatCard("Overall", "${summary.percentage.toInt()}%", CamsNavy, Modifier.weight(1f))
                         }
 
-                Text("Attendance Calendar - June 2024", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                val currentMonthLabel = remember {
+                    val ym = java.time.YearMonth.now()
+                    "${ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH)} ${ym.year}"
+                }
+                Text("Attendance Calendar - $currentMonthLabel", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 
                 CamsCard {
                     LazyVerticalGrid(

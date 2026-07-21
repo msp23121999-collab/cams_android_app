@@ -47,6 +47,11 @@ fun FacultyStudentDirectoryScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = CamsNavy)
             }
+        } else if (state.error != null && state.students.isEmpty()) {
+            com.example.core.ui.NetworkErrorView(
+                message = state.error ?: "Failed to load students",
+                onRetry = { viewModel.loadStudents() }
+            )
         } else {
             // Search Bar
             OutlinedTextField(
@@ -65,18 +70,24 @@ fun FacultyStudentDirectoryScreen(
                 singleLine = true
             )
 
-            // Filters Placeholder
+            // Semester Filter
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DirectoryFilterChip("Semester: VI")
+                SemesterFilterChip(state.selectedSemester, onSelect = { viewModel.setSemesterFilter(it) })
             }
 
-            // Student List
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(filteredStudents) { student ->
-                    StudentCard(student)
+            if (filteredStudents.isEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                    Text("No students found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                // Student List
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(filteredStudents, key = { it.id }) { student ->
+                        StudentCard(student)
+                    }
                 }
             }
         }
@@ -84,18 +95,33 @@ fun FacultyStudentDirectoryScreen(
 }
 
 @Composable
-private fun DirectoryFilterChip(label: String) {
-    Surface(
-        color = Color(0xFFF3F4F6),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+private fun SemesterFilterChip(selectedSemester: Int?, onSelect: (Int?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Surface(
+            onClick = { expanded = true },
+            color = Color(0xFFF3F4F6),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Icon(Icons.Filled.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    selectedSemester?.let { "Semester: $it" } ?: "All Semesters",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(Icons.Filled.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text("All Semesters") }, onClick = { onSelect(null); expanded = false })
+            (1..10).forEach { sem ->
+                DropdownMenuItem(text = { Text("Semester $sem") }, onClick = { onSelect(sem); expanded = false })
+            }
         }
     }
 }

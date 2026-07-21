@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.map
 data class AssignmentsState(
     val assignments: List<Assignment> = emptyList(),
     val isLoading: Boolean = false,
+    val isUploading: Boolean = false,
     val error: String? = null,
     val submissionSuccess: Boolean = false
 )
@@ -49,32 +50,39 @@ class AssignmentsViewModel(
                     title = dto.title,
                     type = dto.type,
                     subject = dto.subject,
+                    unit = dto.unit,
+                    topic = dto.topic,
                     description = dto.description ?: "",
+                    instructions = dto.instructions,
+                    totalMarks = dto.totalMarks ?: 100,
                     issueDate = "",
                     deadline = dto.deadline,
                     status = dto.status,
                     facultyName = "Faculty",
+                    semester = dto.semester,
+                    section = dto.section,
                     mySubmission = dto.mySubmission?.let { sub ->
                         Submission(
                             id = sub.id,
                             assignmentId = dto.id,
-                            submissionDate = sub.submissionDate,
+                            submissionDate = sub.submittedAt,
                             status = sub.status,
-                            submittedFileName = sub.submittedFile ?: "",
-                            submittedFileUrl = sub.submittedFile ?: "",
+                            submittedFileName = sub.submittedFileUrl?.substringAfterLast('/') ?: "",
+                            submittedFileUrl = sub.submittedFileUrl ?: "",
                             submittedFileSize = "",
-                            evaluation = sub.evaluation?.let { ev ->
+                            submittedText = sub.submittedText,
+                            evaluation = if (sub.marksObtained != null || sub.grade != null || sub.feedback != null) {
                                 Evaluation(
-                                    marksObtained = ev.marksObtained ?: 0.0,
-                                    totalMarks = ev.totalMarks?.toInt() ?: 0,
-                                    grade = ev.grade ?: "",
-                                    feedback = ev.feedback ?: "",
+                                    marksObtained = sub.marksObtained ?: 0.0,
+                                    totalMarks = dto.totalMarks ?: 100,
+                                    grade = sub.grade ?: "",
+                                    feedback = sub.feedback ?: "",
                                     remarks = "",
                                     status = "Evaluated",
                                     gradedDate = "",
                                     gradedBy = ""
                                 )
-                            }
+                            } else null
                         )
                     }
                 )
@@ -97,32 +105,39 @@ class AssignmentsViewModel(
                         title = dto.title,
                         type = dto.type,
                         subject = dto.subject,
+                        unit = dto.unit,
+                        topic = dto.topic,
                         description = dto.description ?: "",
+                        instructions = dto.instructions,
+                        totalMarks = dto.totalMarks ?: 100,
                         issueDate = "",
                         deadline = dto.deadline,
                         status = dto.status,
-                        facultyName = "Faculty",
+                        facultyName = dto.facultyName ?: "Faculty",
+                        semester = dto.semester,
+                        section = dto.section,
                         mySubmission = dto.mySubmission?.let { sub ->
                             Submission(
                                 id = sub.id,
                                 assignmentId = dto.id,
-                                submissionDate = sub.submissionDate,
+                                submissionDate = sub.submittedAt,
                                 status = sub.status,
-                                submittedFileName = sub.submittedFile ?: "",
-                                submittedFileUrl = sub.submittedFile ?: "",
+                                submittedFileName = sub.submittedFileUrl?.substringAfterLast('/') ?: "",
+                                submittedFileUrl = sub.submittedFileUrl ?: "",
                                 submittedFileSize = "",
-                                evaluation = sub.evaluation?.let { ev ->
+                                submittedText = sub.submittedText,
+                                evaluation = if (sub.marksObtained != null || sub.grade != null || sub.feedback != null) {
                                     Evaluation(
-                                        marksObtained = ev.marksObtained ?: 0.0,
-                                        totalMarks = ev.totalMarks?.toInt() ?: 0,
-                                        grade = ev.grade ?: "",
-                                        feedback = ev.feedback ?: "",
+                                        marksObtained = sub.marksObtained ?: 0.0,
+                                        totalMarks = dto.totalMarks ?: 100,
+                                        grade = sub.grade ?: "",
+                                        feedback = sub.feedback ?: "",
                                         remarks = "",
                                         status = "Evaluated",
                                         gradedDate = "",
                                         gradedBy = ""
                                     )
-                                }
+                                } else null
                             )
                         }
                     )
@@ -147,6 +162,32 @@ class AssignmentsViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Submission failed") }
+            }
+        }
+    }
+
+    /**
+     * Uploads the picked file's real bytes first, then submits the assignment with the
+     * resulting file_url. Replaces the previous stub that only passed the file name.
+     */
+    fun submitAssignmentWithFile(asgId: String, filePart: okhttp3.MultipartBody.Part, text: String?) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true, error = null, submissionSuccess = false) }
+            try {
+                val uploadResult = studentRepository.uploadAssignmentSubmission(asgId, filePart)
+                if (uploadResult == null) {
+                    _uiState.update { it.copy(isUploading = false, error = "File upload failed") }
+                    return@launch
+                }
+                val success = studentRepository.submitAssignment(asgId, uploadResult.fileUrl, text)
+                if (success) {
+                    _uiState.update { it.copy(isUploading = false, submissionSuccess = true) }
+                    fetchAssignments()
+                } else {
+                    _uiState.update { it.copy(isUploading = false, error = "Submission failed") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isUploading = false, error = e.message ?: "Submission failed") }
             }
         }
     }

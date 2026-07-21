@@ -57,15 +57,14 @@ fun PrincipalDashboardScreen(
                 }
             }
 
-            // Attendance Overview
+            // Pending Actions Overview
             item {
-                Text("Today's Attendance Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("Pending Actions", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatCard("Students", "92%", Icons.Filled.Groups, CamsNavy, Modifier.weight(1f))
-                    StatCard("Faculty", "95%", Icons.Filled.School, Color(0xFF10B981), Modifier.weight(1f))
-                    StatCard("HODs", "100%", Icons.Filled.AssignmentInd, Color(0xFF8B5CF6), Modifier.weight(1f))
+                    StatCard("Leave Requests", "${uiState.pendingLeaves.size}", Icons.Filled.EventBusy, CamsNavy, Modifier.weight(1f)) { onNavigate(AppRoutes.PRINCIPAL_APPROVALS) }
+                    StatCard("Timetables", "${uiState.pendingTimetables.size}", Icons.Filled.Schedule, Color(0xFF10B981), Modifier.weight(1f)) { onNavigate(AppRoutes.PRINCIPAL_APPROVALS) }
                 }
             }
 
@@ -105,8 +104,8 @@ fun PrincipalDashboardScreen(
 }
 
 @Composable
-private fun StatCard(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier) {
-    CamsCard(modifier = modifier) {
+private fun StatCard(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier, onClick: (() -> Unit)? = null) {
+    CamsCard(modifier = modifier, onClick = onClick) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(36.dp).background(color.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))

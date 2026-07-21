@@ -11,22 +11,54 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminReportsViewModelState(
-    val data: Any? = null,
-    val isLoading: Boolean = false,
+    val isSearching: Boolean = false,
     val error: String? = null,
-    val reports: List<Any> = emptyList()
+    val students: List<com.example.features.admin.models.AdminFeeStudent> = emptyList(),
+    val selectedStudent: com.example.features.admin.models.AdminFeeStudent? = null,
+    val faculty: List<com.example.core.network.FacultyWorkloadInfoDto> = emptyList(),
+    val selectedFacultyId: String? = null
 )
 
 class AdminReportsViewModel(private val repository: AdminRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminReportsViewModelState())
     val uiState: StateFlow<AdminReportsViewModelState> = _uiState.asStateFlow()
 
+    init { loadFaculty() }
 
-    init { fetchReports() }
-    fun fetchReports() {
-        _uiState.update { it.copy(isLoading = false, reports = listOf()) }
+    private fun loadFaculty() {
+        viewModelScope.launch {
+            try {
+                val fac = repository.getAllocationFaculty()
+                _uiState.update { it.copy(faculty = fac) }
+            } catch (e: Exception) {
+                // Faculty list is optional here — student reports still work without it.
+            }
+        }
     }
 
+    fun searchStudents(query: String) {
+        if (query.isBlank()) {
+            _uiState.update { it.copy(students = emptyList()) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true, error = null) }
+            try {
+                val results = repository.searchStudentsForFees(query) ?: emptyList()
+                _uiState.update { it.copy(students = results, isSearching = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSearching = false, error = e.message ?: "Search failed") }
+            }
+        }
+    }
+
+    fun selectStudent(student: com.example.features.admin.models.AdminFeeStudent?) {
+        _uiState.update { it.copy(selectedStudent = student, students = emptyList()) }
+    }
+
+    fun selectFaculty(facultyId: String?) {
+        _uiState.update { it.copy(selectedFacultyId = facultyId) }
+    }
 }
 
 class AdminReportsViewModelFactory(private val repository: AdminRepository) : ViewModelProvider.Factory {

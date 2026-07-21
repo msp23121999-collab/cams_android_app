@@ -79,6 +79,12 @@ fun TimetableScreen(
                     "academics" -> AcademicsSkeleton()
                 }
             }
+        } else if (uiState.error != null) {
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load timetable",
+                onRetry = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             Crossfade(targetState = uiState.activeTab, label = "tab_fade") { tab ->
                 when (tab) {
@@ -128,7 +134,15 @@ private fun TabItem(id: String, label: String, icon: ImageVector, isSelected: Bo
 @Composable
 private fun TimetableTab(timetable: List<TimetablePeriod>) {
     val days = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
-    val periods = listOf("09:00", "10:00", "11:15", "12:15", "14:00", "15:00")
+    fun toMinutes(time: String): Int {
+        val parts = time.split(":")
+        return try { parts[0].trim().toInt() * 60 + parts[1].trim().toInt() } catch (e: Exception) { 0 }
+    }
+    val periods = if (timetable.isNotEmpty()) {
+        timetable.map { it.startTime }.distinct().sortedBy { toMinutes(it) }
+    } else {
+        listOf("09:00", "10:00", "11:15", "12:15", "14:00", "15:00")
+    }
     
     Column(modifier = Modifier.fillMaxSize()) {
         Text("Weekly Class Schedule", fontWeight = FontWeight.Black, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
@@ -199,7 +213,7 @@ private fun TimetableTab(timetable: List<TimetablePeriod>) {
 
 @Composable
 private fun TimetableSlotCard(slot: TimetablePeriod) {
-    val colorIndex = slot.subjectCode.hashCode().let { if (it < 0) -it else it } % 5
+    val colorIndex = slot.subjectCode.orEmpty().hashCode().let { if (it < 0) -it else it } % 5
     val bgColor = listOf(Color(0xFFEEF2FF), Color(0xFFECFDF5), MaterialTheme.colorScheme.secondaryContainer, Color(0xFFFFFBEB), Color(0xFFF0F9FF))[colorIndex]
     val accentColor = listOf(Color(0xFF4338CA), Color(0xFF047857), Color(0xFF6D28D9), Color(0xFFB45309), Color(0xFF0369A1))[colorIndex]
     
@@ -211,10 +225,10 @@ private fun TimetableSlotCard(slot: TimetablePeriod) {
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text(slot.subjectName, fontWeight = FontWeight.Black, fontSize = 12.sp, color = accentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(slot.subjectCode, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = accentColor.copy(alpha = 0.7f))
+                Text(slot.subjectName ?: "Not assigned", fontWeight = FontWeight.Black, fontSize = 12.sp, color = accentColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(slot.subjectCode.orEmpty(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = accentColor.copy(alpha = 0.7f))
             }
-            Text(slot.facultyName, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = accentColor.copy(alpha = 0.8f), maxLines = 1)
+            Text(slot.facultyName ?: "Not assigned", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = accentColor.copy(alpha = 0.8f), maxLines = 1)
         }
     }
 }

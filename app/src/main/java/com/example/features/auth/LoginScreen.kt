@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.BuildConfig
 import com.example.core.theme.*
 import com.example.features.auth.providers.AuthViewModel
 
@@ -40,7 +41,8 @@ fun LoginScreen(
     role: String = "Student",
     authViewModel: AuthViewModel,
     onLoginSuccess: (String) -> Unit,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onForgotPassword: () -> Unit = {}
 ) {
     // Normalize role string (e.g. STUDENT -> Student)
     val currentRole = remember(role) {
@@ -68,23 +70,16 @@ fun LoginScreen(
         }
     }
 
-    // Pre-fill credentials based on role for easy testing
-    val defaultEmail = remember(currentRole) {
-        val prefix = when(currentRole.lowercase()) {
-            "student" -> "student"
-            "parent" -> "parent"
-            "faculty" -> "faculty"
-            "hod" -> "hod"
-            "principal" -> "principal"
-            "admin" -> "admin"
-            else -> "student"
-        }
-        "$prefix@cams.local"
-    }
-    
-    var email by remember(defaultEmail) { mutableStateOf(defaultEmail) }
-    var password by remember { mutableStateOf("Password@123") }
+    // Fields start empty. Demo credentials are only filled in when the user
+    // explicitly taps "Use Demo Account" below — they must not appear pre-filled
+    // on screen load.
+    var email by remember(currentRole) { mutableStateOf("") }
+    var password by remember(currentRole) { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+    val isEmailFormatValid = remember(email) {
+        email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+    }
 
     // Focus states for input fields
     var isEmailFocused by remember { mutableStateOf(false) }
@@ -324,7 +319,41 @@ fun LoginScreen(
                             )
                         )
 
-                        // Enterprise Quick Access Demo Login Button (Fills credentials, user presses SIGN IN)
+                        // Login Error Message
+                        val displayedError = validationError ?: authState.error
+                        if (displayedError != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFEF4444).copy(alpha = 0.08f))
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.Error,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = displayedError ?: "",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFFEF4444),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            }
+                        }
+
+                        // Quick-access demo login. DEBUG BUILDS ONLY.
+                        //
+                        // This fills a seeded account and its well-known password. Shipping it
+                        // in a release build would hand anyone a working login wherever those
+                        // seed accounts exist, so it is compiled out of release APKs entirely
+                        // rather than merely hidden.
+                        if (BuildConfig.DEBUG) {
                         Button(
                             onClick = {
                                 email = "${currentRole.lowercase()}@cams.local"
@@ -358,13 +387,19 @@ fun LoginScreen(
                                 )
                             }
                         }
+                        }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
                         // Large Sign In Button
                         Button(
                             onClick = {
-                                authViewModel.login(email, password)
+                                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+                                    validationError = "Enter a valid email address."
+                                } else {
+                                    validationError = null
+                                    authViewModel.login(email.trim(), password)
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -374,7 +409,7 @@ fun LoginScreen(
                                 containerColor = CamsNavy,
                                 disabledContainerColor = CamsNavy.copy(alpha = 0.5f)
                             ),
-                            enabled = !authState.isLoading && email.isNotEmpty() && password.isNotEmpty()
+                            enabled = !authState.isLoading && email.isNotEmpty() && password.isNotEmpty() && isEmailFormatValid
                         ) {
                             Text(
                                 text = if (authState.isLoading) "Signing in securely..." else "Sign In",
@@ -388,7 +423,7 @@ fun LoginScreen(
 
                         // Forgot Password
                         TextButton(
-                            onClick = { /* Forgot password */ },
+                            onClick = onForgotPassword,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
                             Text(

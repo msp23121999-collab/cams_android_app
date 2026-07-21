@@ -1,0 +1,45 @@
+# Local development stack: backend + PostgreSQL.
+#
+#   docker compose up -d db                              # start the database
+#   docker compose run --rm backend alembic upgrade head # build the schema
+#   docker compose run --rm backend python -m scripts.seed
+#   docker compose up backend                            # start the API
+#
+# The API is then reachable at http://localhost:8000/api/v1/
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cams}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cams}
+      POSTGRES_DB: ${POSTGRES_DB:-cams}
+    ports:
+      - "5432:5432"
+    volumes:
+      - cams_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cams} -d ${POSTGRES_DB:-cams}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Compose supplies the database host; everything else comes from .env
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cams}:${POSTGRES_PASSWORD:-cams}@db:5432/${POSTGRES_DB:-cams}
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Uploaded documents must survive container restarts
+      - cams_uploads:/app/app/static/uploads
+
+volumes:
+  cams_pgdata:
+  cams_uploads:

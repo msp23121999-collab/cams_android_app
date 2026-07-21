@@ -58,12 +58,31 @@ fun AdminLogsScreen(
                 leadingIcon = { Icon(Icons.Filled.Search, null) }
             )
 
-            // List replaced by ViewModel
-            val logs = uiState.logs as? List<AccessLog> ?: emptyList()
+            val query = searchQuery.trim().lowercase()
+            val logs = uiState.logs.filter {
+                query.isBlank() ||
+                    it.action.lowercase().contains(query) ||
+                    it.userName.lowercase().contains(query)
+            }
 
-            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(logs) { log ->
-                    LogCard(log)
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp)
+            }
+
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            } else if (logs.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (uiState.logs.isEmpty()) "No activity logs recorded yet" else "No logs match \"$searchQuery\"",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(logs, key = { it.id }) { log ->
+                        LogCard(log)
+                    }
                 }
             }
         }
@@ -71,7 +90,15 @@ fun AdminLogsScreen(
 }
 
 @Composable
-private fun LogCard(log: AccessLog) {
+private fun LogCard(log: com.example.features.admin.models.AdminAuditLog) {
+    // Severity is derived from the action text, since the backend audit log
+    // records a free-form action string rather than an explicit level.
+    val level = when {
+        log.action.contains("fail", ignoreCase = true) || log.action.contains("error", ignoreCase = true) -> "Error"
+        log.action.contains("delete", ignoreCase = true) || log.action.contains("restore", ignoreCase = true) -> "Warning"
+        log.action.contains("success", ignoreCase = true) || log.action.contains("creat", ignoreCase = true) -> "Success"
+        else -> "Info"
+    }
     CamsCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -82,7 +109,7 @@ private fun LogCard(log: AccessLog) {
                 modifier = Modifier
                     .size(40.dp)
                     .background(
-                        when(log.level) {
+                        when(level) {
                             "Error" -> Color.Red.copy(alpha = 0.1f)
                             "Warning" -> Color(0xFFF59E0B).copy(alpha = 0.1f)
                             "Success" -> Color(0xFF10B981).copy(alpha = 0.1f)
@@ -93,14 +120,14 @@ private fun LogCard(log: AccessLog) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    when(log.level) {
+                    when(level) {
                         "Error" -> Icons.Filled.Error
                         "Warning" -> Icons.Filled.Warning
                         "Success" -> Icons.Filled.CheckCircle
                         else -> Icons.Filled.Info
                     },
                     null,
-                    tint = when(log.level) {
+                    tint = when(level) {
                         "Error" -> Color.Red
                         "Warning" -> Color(0xFFF59E0B)
                         "Success" -> Color(0xFF10B981)
@@ -110,10 +137,10 @@ private fun LogCard(log: AccessLog) {
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(log.action, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text(log.details, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(log.action, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
+                Text("by ${log.userName}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(log.time, fontSize = 12.sp, color = Color(0xFF64748B))
+            Text(log.timestamp.take(16).replace("T", " "), fontSize = 12.sp, color = Color(0xFF64748B))
         }
     }
 }

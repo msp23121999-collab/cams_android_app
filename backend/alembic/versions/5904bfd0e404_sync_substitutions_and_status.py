@@ -129,13 +129,24 @@ def upgrade() -> None:
             if column_obj.name not in cols:
                 op.add_column(table_name, column_obj)
 
-    safe_drop_table('pf_contributions')
-    safe_drop_table('salary_slip_requests')
-    safe_drop_table('pf_claims')
-    safe_drop_table('pf_audit_logs')
-    safe_drop_table('pf_historical_periods')
-    safe_drop_table('pf_leave_exclusions')
-    safe_drop_table('pf_configurations')
+    # NOTE (schema-integrity fix): this migration was auto-generated on a branch
+    # that ran parallel to the PF/payroll branch (dad7b9bf3488 -> 1a40b9f0b4be ->
+    # f1d6fedfeb1a). At generation time those models were not in the metadata, so
+    # autogenerate concluded their tables were obsolete and emitted drops for them.
+    #
+    # Because the two branches are siblings that both merge into 80e6227c72e6, a
+    # plain `alembic upgrade head` would CREATE the PF tables on one branch and
+    # then DROP them here on the other, leaving a fresh database missing all seven
+    # PF/payroll tables entirely. Which tables survived even varied between runs
+    # depending on the order Alembic walked the branches.
+    #
+    # All of these tables are still defined in app/db/models/pf.py and are used by
+    # the payroll features, so the drops were never correct. They are removed
+    # rather than guarded: there is no state in which dropping them is right.
+    #
+    #   (was) safe_drop_table('pf_contributions' / 'salary_slip_requests' /
+    #         'pf_claims' / 'pf_audit_logs' / 'pf_historical_periods' /
+    #         'pf_leave_exclusions' / 'pf_configurations')
 
     for col in [
         'pincode', 'increment_history', 'employment_status', 'city', 'date_of_joining',

@@ -14,7 +14,11 @@ data class FeeRecord(
     @Json(name = "scholarship_name") val scholarshipName: String? = null,
     @Json(name = "deduction_reason") val deductionReason: String? = null,
     @Json(name = "due_date") val dueDate: String,
-    val status: String // "paid", "partially_paid", "pending", "overdue"
+    val status: String, // "paid", "partially_paid", "pending", "overdue"
+    @Json(name = "paid_amount") val paidAmount: Double? = null,
+    @Json(name = "remaining_amount") val remainingAmount: Double? = null,
+    @Json(name = "total_amount") val totalAmount: Double? = null,
+    val semester: Int? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -35,12 +39,10 @@ data class FeeSummary(
 data class LoanDetails(
     val bank: String,
     val branch: String,
-    @Json(name = "account_no") val accountNo: String,
     val sanctioned: Double,
     @Json(name = "interest_rate") val interestRate: Double,
     val emi: Double,
     val outstanding: Double,
-    @Json(name = "moratorium_end") val moratoriumEnd: String,
     val status: String
 )
 
@@ -58,8 +60,7 @@ data class Receipt(
     val date: String,
     val head: String,
     val amount: Double,
-    val mode: String,
-    val txn: String
+    val mode: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -76,11 +77,11 @@ data class ScholarshipType(
 
 @JsonClass(generateAdapter = true)
 data class AssistanceRequest(
-    val id: Int,
+    val id: String,
     val type: String,
     val date: String,
     val status: String,
-    val amount: Double
+    val reason: String = ""
 )
 
 @JsonClass(generateAdapter = true)

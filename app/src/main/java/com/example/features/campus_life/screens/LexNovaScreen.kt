@@ -54,7 +54,7 @@ fun LexNovaScreen(
             AnimatedContent(targetState = uiState.activeTab) { tab ->
                 when (tab) {
                     "Command Center" -> LexNovaCommandCenter(uiState)
-                    "Knowledge & Intelligence" -> LexNovaKnowledge(uiState, onNavigate)
+                    "Knowledge & Intelligence" -> LexNovaKnowledge(uiState, onNavigate, viewModel)
                     "Careers" -> LexNovaCareers(onNavigate)
                     else -> LexNovaEmptyState(tab)
                 }
@@ -180,7 +180,7 @@ fun LexNovaDigitalID(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
+fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit, viewModel: LexNovaViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         // Legal Skills Entry
         CamsCard(
@@ -218,14 +218,34 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                     Text("ONLINE", style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, color = Color(0xFF10B981)))
                 }
                 
-                Box(modifier = Modifier.height(200.dp).padding(16.dp)) {
-                    Text("How can I assist your legal research today?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                Column(
+                    modifier = Modifier.height(200.dp).padding(16.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.chatMessages.forEach { msg ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start) {
+                            Surface(
+                                color = if (msg.isUser) CamsNavy else CamsBackground,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    msg.text,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    color = if (msg.isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                    if (state.isSendingMessage) {
+                        Text("Typing...", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
 
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextField(
-                        value = "",
-                        onValueChange = {},
+                        value = state.chatInput,
+                        onValueChange = { viewModel.updateChatInput(it) },
                         placeholder = { Text("Ask your AI Mentor...", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         colors = TextFieldDefaults.colors(
@@ -237,8 +257,12 @@ fun LexNovaKnowledge(state: LexNovaState, onNavigate: (String) -> Unit) {
                         shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = {}, modifier = Modifier.background(CamsNavy, RoundedCornerShape(12.dp))) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White)
+                    IconButton(
+                        onClick = { viewModel.sendChatMessage() },
+                        enabled = !state.isSendingMessage,
+                        modifier = Modifier.background(CamsNavy, RoundedCornerShape(12.dp))
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
                     }
                 }
             }

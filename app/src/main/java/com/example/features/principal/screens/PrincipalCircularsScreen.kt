@@ -1,5 +1,7 @@
 package com.example.features.principal.screens
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,21 +39,40 @@ fun PrincipalCircularsScreen(
         }
     )
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var targetAudience by remember { mutableStateOf("All") }
-    
+
+    LaunchedEffect(uiState.publishSuccess, uiState.publishError) {
+        if (uiState.publishSuccess) {
+            Toast.makeText(context, "Circular published", Toast.LENGTH_SHORT).show()
+            title = ""
+            content = ""
+            viewModel.clearPublishStatus()
+        }
+        uiState.publishError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearPublishStatus()
+        }
+    }
+
     PrincipalBaseScreen(
         title = "Publish Notices & Circulars",
         currentRoute = AppRoutes.PRINCIPAL_CIRCULARS,
         onNavigate = onNavigate,
         floatingActionButton = {
-            FloatingActionButton(onClick = { 
-                viewModel.publishCircular(title, content, targetAudience)
-                title = ""
-                content = ""
-            }, containerColor = CamsNavy, contentColor = Color.White) {
+            FloatingActionButton(
+                onClick = {
+                    if (title.isNotBlank() && content.isNotBlank()) {
+                        viewModel.publishCircular(title, content, targetAudience)
+                    } else {
+                        Toast.makeText(context, "Title and content are required", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                containerColor = CamsNavy, contentColor = Color.White
+            ) {
                 Icon(Icons.AutoMirrored.Filled.Send, "Publish")
             }
         }
@@ -93,6 +114,13 @@ fun PrincipalCircularsScreen(
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        } else if (uiState.error != null) {
+            // Without this the screen rendered empty on failure — no message,
+            // no retry — indistinguishable from genuinely having no data.
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load circulars",
+                onRetry = { viewModel.loadCirculars() }
+            )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(uiState.circulars) { circular ->

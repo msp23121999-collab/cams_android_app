@@ -80,7 +80,39 @@ fun FeeStatusScreen(
                 }
             } else {
                 val ledger = uiState.feeLedger!!
-                
+
+                uiState.paymentMessage?.let { message ->
+                    val bannerColor = if (uiState.paymentSuccess) Color(0xFF10B981) else Color(0xFFEF4444)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = bannerColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (uiState.paymentSuccess) Icons.Filled.CheckCircle else Icons.Filled.Error,
+                                contentDescription = null,
+                                tint = bannerColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                message,
+                                modifier = Modifier.weight(1f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = bannerColor
+                            )
+                            IconButton(onClick = { viewModel.clearPaymentMessage() }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = bannerColor, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+
                 // Top Banner Card
                 CamsCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -94,8 +126,9 @@ fun FeeStatusScreen(
                                 isDownloading = true
                                 val currentChildId = viewModel.currentChildId ?: ""
                                 val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
-                                val url = "${com.example.core.config.AppConfig.BASE_URL}/api/v1/parents/child/fee/download?child_id=$currentChildId"
-                                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "Fee_Receipt_$currentChildId", token)
+                                val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                                val url = "$base/students/parent/child/fees/export-pdf?child_id=$currentChildId"
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "Fee_Ledger_$currentChildId", token)
                                 isDownloading = false
                             },
                             enabled = !isDownloading,
@@ -169,6 +202,25 @@ fun FeeStatusScreen(
                                         color = statusColor
                                     )
                                 }
+                            }
+                        }
+
+                        if (record.status != "paid" && record.remainingAmount > 0) {
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = { viewModel.payFee(record.recordId, record.remainingAmount) },
+                                enabled = !uiState.paymentInProgress,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Filled.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (uiState.paymentInProgress) "Processing..." else "Pay Now ₹${record.remainingAmount}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

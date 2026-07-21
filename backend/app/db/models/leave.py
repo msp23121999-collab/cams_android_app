@@ -15,6 +15,7 @@ class LeaveStatus(str, enum.Enum):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
     RESUBMISSION_REQUIRED = "RESUBMISSION_REQUIRED"
 
     # ── Multi-Level Workflow (Faculty → HOD → Principal) ────────────────

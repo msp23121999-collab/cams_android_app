@@ -53,18 +53,12 @@ fun StudentClubsScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    val announcements = listOf(
-        ClubAnnouncement("Intra-College Moot Registrations Open", "Moot Court Society", "Today", true),
-        ClubAnnouncement("Parliamentary Debate Tryouts", "Debate & Literary Club", "Tomorrow", false),
-        ClubAnnouncement("Legal Aid Camp at Slum Area 4", "Legal Aid Clinic", "Oct 15", false)
-    )
-
     val pagingItems = viewModel.clubsPagingFlow.collectAsLazyPagingItems()
 
     val stats = remember(uiState.clubs) {
         val memberships = uiState.clubs.count { it.role != "None" } // Note: real paging would get this from a separate endpoint
         val leadership = uiState.clubs.count { it.role != "None" && it.role != "Member" }
-        mapOf("attended" to "12", "leadership" to leadership.toString(), "memberships" to memberships.toString())
+        mapOf("leadership" to leadership.toString(), "memberships" to memberships.toString())
     }
 
     CamsScreen(scrollable = true,
@@ -148,7 +142,7 @@ fun StudentClubsScreen(
             }
 
             // Announcements
-            AnnouncementsSection(announcements)
+            AnnouncementsSection(uiState.announcements)
             EngagementSection(stats)
             
             Spacer(Modifier.height(20.dp))
@@ -306,6 +300,13 @@ private fun AnnouncementsSection(announcements: List<ClubAnnouncement>) {
                 Text("Club Announcements", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black))
             }
             Spacer(modifier = Modifier.height(16.dp))
+            if (announcements.isEmpty()) {
+                Text(
+                    "No announcements yet. Join a club to see updates from its officers here.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 announcements.forEach { ann ->
                     Row(modifier = Modifier.height(IntrinsicSize.Min)) {
@@ -344,9 +345,8 @@ private fun EngagementSection(stats: Map<String, String>) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                EngagementStatRow("Events Attended", stats["attended"] ?: "0", Color(0xFF10B981))
+                EngagementStatRow("Memberships", stats["memberships"] ?: "0", Color(0xFF10B981))
                 EngagementStatRow("Leadership Roles", stats["leadership"] ?: "0", Color(0xFFF59E0B))
-                EngagementStatRow("Club Meetings", "85% Avg", Color(0xFF3B82F6))
             }
         }
     }
@@ -499,7 +499,9 @@ private fun DashboardContactBox(email: String, phone: String) {
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(email, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = LexNovaPurple)
-            Text(phone, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (phone.isNotBlank()) {
+                Text(phone, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

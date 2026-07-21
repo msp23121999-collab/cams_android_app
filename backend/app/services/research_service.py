@@ -260,11 +260,25 @@ class ResearchService:
         ]
 
     async def verify_proof(self, proof_id: str, verifier_id: str, status_val: ProofStatus, remarks: str | None = None) -> PublicationProof:
-        stmt = select(PublicationProof).where(PublicationProof.id == proof_id).options(selectinload(PublicationProof.plan))
+        stmt = select(PublicationProof).where(PublicationProof.id == proof_id).options(
+            selectinload(PublicationProof.plan).selectinload(ResearchPlan.faculty)
+        )
         res = await self.db.execute(stmt)
         proof = res.scalar_one_or_none()
         if not proof:
             raise HTTPException(status_code=404, detail="Proof submission not found")
+
+        verifier_stmt = select(User).where(User.id == verifier_id)
+        verifier_res = await self.db.execute(verifier_stmt)
+        verifier = verifier_res.scalar_one_or_none()
+        if verifier and verifier.role == UserRole.HOD:
+            dept_stmt = select(Department.id).where(Department.hod_id == verifier_id)
+            dept_res = await self.db.execute(dept_stmt)
+            dept_ids = {row[0] for row in dept_res.all()}
+            if verifier.department_id:
+                dept_ids.add(verifier.department_id)
+            if proof.plan.faculty.department_id not in dept_ids:
+                raise HTTPException(status_code=403, detail="You can only verify research proofs for your own department")
 
         proof.status = status_val
         proof.remarks = remarks

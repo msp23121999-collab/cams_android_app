@@ -54,6 +54,7 @@ fun StudentProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -76,7 +77,13 @@ fun StudentProfileScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { /* PDF Download */ }) {
+                IconButton(onClick = {
+                    val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                    val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                    val url = "$base/students/profile/export-pdf"
+                    val title = uiState.profile?.rollNo?.let { "profile_$it" } ?: uiState.profile?.fullName ?: "student_profile"
+                    com.example.core.utils.DownloadHelper.downloadPdf(context, url, title, token)
+                }) {
                     Icon(Icons.Filled.Download, contentDescription = "Download Profile", tint = Color.White)
                 }
                 IconButton(onClick = { onNavigate("LOGOUT") }) {
@@ -152,11 +159,11 @@ fun StudentProfileScreen(
                         ) { tab ->
                             when (tab) {
                                 "personal" -> PersonalTab(profile, viewModel)
-                                "academic" -> AcademicTab(profile)
+                                "academic" -> AcademicTab(profile, uiState.marks)
                                 "experience" -> LegalExperienceTab(profile)
                                 "skills" -> SkillsTab(profile)
-                                "aitools" -> AiHubTab()
-                                "documents" -> DocumentsTab(profile)
+                                "aitools" -> AiHubTab(viewModel)
+                                "documents" -> DocumentsTab(profile, viewModel)
                                 "advisor" -> AdvisorRemarksTab(uiState.mentorshipRecord)
                                 else -> PlaceholderTab(tab)
                             }
@@ -317,7 +324,7 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
             SectionHeader(Icons.Filled.ContactPhone, "Contact Information")
             IconButton(
                 onClick = { showEditDialog = true },
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(40.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Edit,
@@ -353,6 +360,7 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
         var tempCurrentAddress by remember { mutableStateOf(profile.currentAddress ?: "") }
         var tempPermanentAddress by remember { mutableStateOf(profile.permanentAddress ?: "") }
         var tempBloodGroup by remember { mutableStateOf(profile.bloodGroup ?: "") }
+        var editDialogError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
@@ -468,20 +476,33 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
                             imeAction = ImeAction.Done
                         )
                     )
+
+                    if (editDialogError != null) {
+                        Text(editDialogError ?: "", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val updated = profile.copy(
-                            mobileNumber = tempMobile,
-                            email = tempEmail,
-                            currentAddress = tempCurrentAddress,
-                            permanentAddress = tempPermanentAddress,
-                            bloodGroup = tempBloodGroup
-                        )
-                        viewModel.updateProfile(updated)
-                        showEditDialog = false
+                        editDialogError = when {
+                            tempEmail.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(tempEmail.trim()).matches() ->
+                                "Enter a valid email address."
+                            tempMobile.isNotBlank() && !android.util.Patterns.PHONE.matcher(tempMobile.trim()).matches() ->
+                                "Enter a valid mobile number."
+                            else -> null
+                        }
+                        if (editDialogError == null) {
+                            val updated = profile.copy(
+                                mobileNumber = tempMobile,
+                                email = tempEmail,
+                                currentAddress = tempCurrentAddress,
+                                permanentAddress = tempPermanentAddress,
+                                bloodGroup = tempBloodGroup
+                            )
+                            viewModel.updateProfile(updated)
+                            showEditDialog = false
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                     shape = RoundedCornerShape(12.dp)
@@ -503,25 +524,71 @@ fun PersonalTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewM
 }
 
 @Composable
-fun AcademicTab(profile: StudentProfileResponse?) {
+fun AcademicTab(profile: StudentProfileResponse?, marks: List<com.example.core.network.StudentInternalMarkDto> = emptyList()) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionHeader(Icons.Filled.School, "Semester Results")
+        SectionHeader(Icons.Filled.School, "Academic Overview")
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Sem I" to "8.2", "Sem II" to "8.5", "Sem III" to "8.1", "Sem IV" to "8.8", "Sem V" to "8.6").forEach { (sem, sgpa) ->
-                ResultCard(sem, sgpa, Modifier.weight(1f))
-            }
+            val cgpa = profile?.cgpa?.toString() ?: "N/A"
+            ResultCard("Overall CGPA", cgpa, Modifier.weight(1f))
+            ResultCard("Current Semester", profile?.semester?.toString() ?: "N/A", Modifier.weight(1f))
         }
-        
+
         CamsCard(
-            modifier = Modifier.fillMaxWidth().height(240.dp),
+            modifier = Modifier.fillMaxWidth().height(if (marks.isEmpty()) 240.dp else 280.dp),
         ) {
-            Column {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Text("Performance Analytics", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Analytics not available.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                if (marks.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No marks recorded yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                    }
+                } else {
+                    MarksBarChart(marks, modifier = Modifier.fillMaxWidth().weight(1f))
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun MarksBarChart(marks: List<com.example.core.network.StudentInternalMarkDto>, modifier: Modifier = Modifier) {
+    val barColor = CamsNavy
+    val trackColor = CamsNavy.copy(alpha = 0.1f)
+    val entries = marks.take(8)
+    androidx.compose.foundation.Canvas(modifier = modifier.padding(top = 8.dp, bottom = 24.dp)) {
+        if (entries.isEmpty()) return@Canvas
+        val barCount = entries.size
+        val gap = size.width * 0.02f
+        val barWidth = (size.width - gap * (barCount + 1)) / barCount
+        entries.forEachIndexed { index, mark ->
+            val fraction = (mark.totalMark / 100.0).coerceIn(0.0, 1.0).toFloat()
+            val barHeight = size.height * fraction
+            val left = gap + index * (barWidth + gap)
+            drawRect(
+                color = trackColor,
+                topLeft = androidx.compose.ui.geometry.Offset(left, 0f),
+                size = androidx.compose.ui.geometry.Size(barWidth, size.height)
+            )
+            drawRect(
+                color = barColor,
+                topLeft = androidx.compose.ui.geometry.Offset(left, size.height - barHeight),
+                size = androidx.compose.ui.geometry.Size(barWidth, barHeight)
+            )
+        }
+    }
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        entries.forEach { mark ->
+            Text(
+                text = mark.subjectName.take(6),
+                fontSize = 9.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -582,7 +649,7 @@ fun SkillsTab(profile: StudentProfileResponse?) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(skill.skill, modifier = Modifier.width(80.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             LinearProgressIndicator(
-                                progress = skill.level / 100f,
+                                progress = { skill.level / 100f },
                                 modifier = Modifier.weight(1f).height(4.dp).clip(CircleShape),
                                 color = CamsNavy,
                                 trackColor = CamsNavy.copy(alpha = 0.1f)
@@ -620,7 +687,13 @@ fun SkillsTab(profile: StudentProfileResponse?) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AiHubTab() {
+fun AiHubTab(viewModel: StudentProfileViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchCareerGuidance()
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -653,9 +726,35 @@ fun AiHubTab() {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             prompts.forEach { prompt ->
                 CamsCard(
-                    modifier = Modifier.clickable { },
+                    modifier = Modifier.clickable { viewModel.sendQuickPrompt(prompt) },
                 ) {
                     Text(prompt, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+
+        if (uiState.isQuickPromptLoading || uiState.quickPromptResponse != null || uiState.quickPromptError != null) {
+            CamsCard(modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(16.dp))
+                        Text("AI Response", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    when {
+                        uiState.isQuickPromptLoading -> {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = CamsNavy)
+                                Text("Thinking...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        uiState.quickPromptError != null -> {
+                            Text(uiState.quickPromptError ?: "", fontSize = 12.sp, color = Color(0xFFE11D48))
+                        }
+                        else -> {
+                            Text(uiState.quickPromptResponse ?: "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+                        }
+                    }
                 }
             }
         }
@@ -664,36 +763,57 @@ fun AiHubTab() {
         CamsCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Box(modifier = Modifier.size(48.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                    Text("92%", fontWeight = FontWeight.Bold, color = CamsNavy)
+            Column {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Box(modifier = Modifier.size(48.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.TrackChanges, contentDescription = null, tint = CamsNavy, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Career Guidance", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("AI-generated suggestion based on your profile.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { viewModel.fetchCareerGuidance(force = true) }) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Regenerate", tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
-                Column {
-                    Text("Corporate Law Match", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Based on your GPA and Trilegal internship.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                when {
+                    uiState.isCareerGuidanceLoading -> {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = CamsNavy)
+                            Text("Generating guidance...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    uiState.careerGuidanceError != null -> {
+                        Text(uiState.careerGuidanceError ?: "", fontSize = 12.sp, color = Color(0xFFE11D48))
+                    }
+                    uiState.careerGuidance != null -> {
+                        Text(uiState.careerGuidance ?: "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+                    }
+                    else -> {
+                        Text("Tap regenerate to get AI career guidance.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = {}) { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
             }
         }
     }
 }
 
 @Composable
-fun DocumentsTab(profile: StudentProfileResponse?) {
+fun DocumentsTab(profile: StudentProfileResponse?, viewModel: StudentProfileViewModel) {
     val docs = listOf(
-        "Aadhaar Card" to profile?.documentAadhaarUrl,
-        "Community Cert" to profile?.documentCommunityUrl,
-        "TC Certificate" to profile?.documentTcUrl,
-        "Other" to profile?.documentOtherUrl
+        Triple("Aadhaar Card", "aadhaar", profile?.documentAadhaarUrl),
+        Triple("Community Cert", "community", profile?.documentCommunityUrl),
+        Triple("TC Certificate", "tc", profile?.documentTcUrl),
+        Triple("Other", "other", profile?.documentOtherUrl)
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader(Icons.Filled.Folder, "Document Repository")
         docs.chunked(2).forEach { rowDocs ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                rowDocs.forEach { (label, url) ->
-                    DocumentCard(label, url, Modifier.weight(1f))
+                rowDocs.forEach { (label, docType, url) ->
+                    DocumentCard(label, docType, url, viewModel, Modifier.weight(1f))
                 }
                 if (rowDocs.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
@@ -702,7 +822,18 @@ fun DocumentsTab(profile: StudentProfileResponse?) {
 }
 
 @Composable
-fun DocumentCard(label: String, url: String?, modifier: Modifier = Modifier) {
+fun DocumentCard(label: String, documentType: String, url: String?, viewModel: StudentProfileViewModel, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            val part = com.example.core.network.MultipartUploadHelper.prepareFilePart("file", uri, context)
+            if (part != null) {
+                viewModel.uploadDocument(documentType, part)
+            }
+        }
+    }
     CamsCard(
         modifier = modifier,
     ) {
@@ -727,7 +858,20 @@ fun DocumentCard(label: String, url: String?, modifier: Modifier = Modifier) {
             Text("PDF or JPG", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(
-                onClick = {},
+                onClick = {
+                    if (url != null) {
+                        val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                        val base = com.example.core.config.AppConfig.BASE_URL
+                        // Stored document URLs are already absolute API paths (e.g. "/api/v1/files/...").
+                        // Use the server origin (scheme+host+port) rather than the Retrofit base (which
+                        // already includes "/api/v1/") to avoid a doubled "/api/v1/api/v1/..." path.
+                        val origin = base.substringBefore("/api/v1")
+                        val fullUrl = if (url.startsWith("http")) url else origin + url
+                        com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, label, token)
+                    } else {
+                        launcher.launch("*/*")
+                    }
+                },
                 contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.height(24.dp)
             ) {

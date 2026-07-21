@@ -40,11 +40,11 @@ class StudyMaterialsViewModel(
                 StudyMaterial(
                     id = dto.id,
                     title = dto.title,
-                    subject = dto.subjectName,
-                    category = "Lecture Notes",
-                    uploadDate = dto.uploadDate,
+                    subject = dto.subjectName ?: "General",
+                    category = dto.type ?: "Lecture Notes",
+                    uploadDate = dto.uploadDate ?: "",
                     fileUrl = dto.fileUrl,
-                    facultyName = "Faculty"
+                    facultyName = dto.facultyName ?: "Faculty"
                 )
             }
         }
@@ -63,11 +63,11 @@ class StudyMaterialsViewModel(
                     StudyMaterial(
                         id = dto.id,
                         title = dto.title,
-                        subject = dto.subjectName,
-                        category = "Lecture Notes",
-                        uploadDate = dto.uploadDate,
+                        subject = dto.subjectName ?: "General",
+                        category = dto.type ?: "Lecture Notes",
+                        uploadDate = dto.uploadDate ?: "",
                         fileUrl = dto.fileUrl,
-                        facultyName = "Faculty"
+                        facultyName = dto.facultyName ?: "Faculty"
                     )
                 }
                 _uiState.update { it.copy(materials = materials, isLoading = false) }

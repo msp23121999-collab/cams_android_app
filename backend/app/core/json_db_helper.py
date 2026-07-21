@@ -142,3 +142,44 @@ def save_db_to_postgres(filename: str, data: Any) -> None:
             connection_pool.putconn(conn)
     except Exception as e:
         logger.error(f"Error saving {key} to database: {e}")
+
+
+# ── file-backed store migration ──────────────────────────────────────────────
+
+def _seed_from_file(path: str, fallback: Callable[[], Any]) -> Callable[[], Any]:
+    """default_factory that seeds the row from a legacy on-disk JSON file."""
+
+    def factory() -> Any:
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                return json.load(handle)
+        except FileNotFoundError:
+            return fallback()
+        except Exception:
+            logger.exception(
+                "Could not read legacy JSON file %s while seeding the database-backed "
+                "store; starting from the default instead", path
+            )
+            return fallback()
+
+    return factory
+
+
+def load_json_store(path: str, fallback: Callable[[], Any]) -> Any:
+    """Read a JSON document store from the database, seeding it from disk once.
+
+    These stores used to be read and written as plain files inside the
+    application directory. That does not survive a container redeploy — the
+    filesystem is replaced, so anything users had submitted was silently lost —
+    and concurrent writers overwrote each other's whole file.
+
+    The row is keyed by the file's basename, so the first load imports whatever is
+    currently on disk and the database is authoritative from then on. The legacy
+    file is left in place untouched as a backup.
+    """
+    return load_db_from_postgres(path, _seed_from_file(path, fallback))
+
+
+def save_json_store(path: str, data: Any) -> None:
+    """Persist a JSON document store to the database (keyed by file basename)."""
+    save_db_to_postgres(path, data)

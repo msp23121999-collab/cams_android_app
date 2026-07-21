@@ -1,0 +1,73 @@
+{
+  "representatives": [
+    {
+      "name": "Ariana Kapoor",
+      "role": "President",
+      "year": "3rd Year",
+      "image_url": null
+    },
+    {
+      "name": "Rohan Mehta",
+      "role": "Vice President",
+      "year": "3rd Year",
+      "image_url": null
+    },
+    {
+      "name": "Sanya Iyer",
+      "role": "General Secretary",
+      "year": "2nd Year",
+      "image_url": null
+    },
+    {
+      "name": "Devansh Rao",
+      "role": "Cultural Secretary",
+      "year": "2nd Year",
+      "image_url": null
+    }
+  ],
+  "initiatives": [
+    {
+      "id": 1,
+      "title": "24x7 Library Access",
+      "status": "In Progress",
+      "progress": 0.65,
+      "category": "Academics"
+    },
+    {
+      "id": 2,
+      "title": "Campus Wi-Fi Upgrade",
+      "status": "In Progress",
+      "progress": 0.4,
+      "category": "Infrastructure"
+    },
+    {
+      "id": 3,
+      "title": "Mental Health Helpline",
+      "status": "Completed",
+      "progress": 1.0,
+      "category": "Welfare"
+    }
+  ],
+  "feedback": [
+    {
+      "id": 1,
+      "title": "More vegetarian options in canteen",
+      "status": "Implemented",
+      "upvotes": 58
+    },
+    {
+      "id": 2,
+      "title": "Extend hostel curfew on weekends",
+      "status": "Approved",
+      "upvotes": 41
+    },
+    {
+      "id": 3,
+      "title": "Add more charging points in library",
+      "status": "Under Review",
+      "upvotes": 27
+    }
+  ],
+  "proposals": [],
+  "fund_utilization_percent": 68
+}

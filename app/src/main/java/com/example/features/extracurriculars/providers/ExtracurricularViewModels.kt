@@ -45,40 +45,41 @@ class ExtracurricularsViewModel(private val repository: StudentRepository) : Vie
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val communityData = repository.getCommunityServiceData()
+                val opportunitiesDto = repository.getServiceOpportunities()
+                val logsDto = repository.getServiceLogs()
                 val projectsDto = repository.getInnovationProjects()
 
-                val opportunities = communityData?.opportunities?.map { dto ->
+                val opportunities = opportunitiesDto.map { dto ->
                     ServiceOpportunity(
                         id = dto.id.toString(),
                         title = dto.title,
                         ngoName = dto.organizer,
                         date = dto.date,
                         location = dto.location,
-                        spotsAvailable = dto.slots,
-                        hours = dto.duration.toIntOrNull() ?: 0,
+                        spotsAvailable = dto.spots,
+                        hours = dto.hours.filter { it.isDigit() }.toIntOrNull() ?: 0,
                         tags = dto.tags
                     )
-                } ?: emptyList()
+                }
 
-                val logs = communityData?.logs?.map { dto ->
+                val logs = logsDto.map { dto ->
                     ServiceLogEntry(
-                        id = dto.id.toString(),
+                        id = dto.id,
                         title = dto.title,
                         date = dto.date,
-                        hours = dto.hours,
+                        hours = dto.hours.toInt(),
                         status = dto.status
                     )
-                } ?: emptyList()
+                }
 
                 val projects = projectsDto.map { dto ->
                     InnovationProject(
-                        id = dto.id.toString(),
+                        id = dto.id,
                         title = dto.title,
-                        abstractText = dto.abstract,
-                        category = "Legal Technology", // Fallback, not in DTO
-                        mentor = "Faculty Mentor", // Fallback, not in DTO
-                        teamMembers = dto.authors,
+                        abstractText = dto.description,
+                        category = dto.category,
+                        mentor = dto.mentor,
+                        teamMembers = dto.team,
                         likes = dto.likes,
                         comments = dto.comments
                     )

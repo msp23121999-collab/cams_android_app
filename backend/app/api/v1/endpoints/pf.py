@@ -366,7 +366,7 @@ async def get_pf_statement(
         min_c = min(payroll_detailed, key=lambda x: (x.year, x.month))
         max_c = max(payroll_detailed, key=lambda x: (x.year, x.month))
         months_count = len(payroll_detailed)
-        total_p_amt = sum(d.amount for d in payroll_detailed)
+        total_p_amt = sum(float(d.amount or 0) for d in payroll_detailed)
         avg_rate = total_p_amt / months_count if months_count > 0 else 0
         cumulative_list.append(
             PFStatementCumulative(

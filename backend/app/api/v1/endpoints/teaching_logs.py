@@ -3,6 +3,7 @@ import json
 import uuid
 import shutil
 import difflib
+import logging
 from datetime import datetime, date, time
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
@@ -16,6 +17,7 @@ from app.db.models.student import Student
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 
+logger = logging.getLogger("app.teaching_logs")
 router = APIRouter()
 
 from app.core.json_db_helper import load_db_from_postgres, save_db_to_postgres
@@ -40,6 +42,56 @@ def load_db() -> Dict[str, Any]:
 
 def save_db(data: Dict[str, Any]) -> None:
     save_db_to_postgres(DB_FILE, data)
+
+
+async def sync_diary_to_sql(entry: Dict[str, Any], db_session: AsyncSession) -> None:
+    """Mirror a JSON class_diaries entry into the real SQL class_diaries table.
+
+    Keeps the SQL-backed table (used by real-DB-driven metrics such as the
+    faculty activity summary's classes_conducted count) in sync with the
+    JSON store, which remains the source of truth for the fuzzy
+    subject/unit/topic matching used by syllabus tracking until that read
+    path is redesigned around real foreign keys.
+    """
+    from app.db.models.class_diary import ClassDiary
+
+    existing_q = await db_session.execute(
+        select(ClassDiary).where(ClassDiary.json_entry_id == entry["id"])
+    )
+    row = existing_q.scalar_one_or_none()
+
+    fields = dict(
+        faculty_id=entry["faculty_id"],
+        date=entry["date"],
+        subject=entry["subject"],
+        course=entry.get("course"),
+        semester=entry.get("semester"),
+        section=entry.get("section"),
+        hour=entry.get("hour"),
+        year=entry.get("year"),
+        unit=entry.get("unit"),
+        topic=entry.get("topic"),
+        subtopic=entry.get("subtopic"),
+        teaching_method=entry.get("teaching_method"),
+        learning_outcome=entry.get("learning_outcome"),
+        class_activity=entry.get("class_activity"),
+        remarks=entry.get("remarks"),
+        status=entry.get("status", "Draft"),
+        deviation_reason=entry.get("deviation_reason"),
+        revised_date=entry.get("revised_date"),
+        attachment_url=entry.get("attachment_url"),
+        attachment_name=entry.get("attachment_name"),
+        completion_status=entry.get("completion_status", "Completed"),
+    )
+
+    if row:
+        for key, value in fields.items():
+            setattr(row, key, value)
+    else:
+        row = ClassDiary(json_entry_id=entry["id"], **fields)
+        db_session.add(row)
+
+    await db_session.commit()
 
 
 def match_subject(sub1: str, sub2: str) -> bool:
@@ -157,6 +209,24 @@ class DiaryEntryInput(BaseModel):
     attachment_url: Optional[str] = ""
     attachment_name: Optional[str] = ""
     completion_status: Optional[str] = "Completed"
+
+async def assert_teaches_class(current_user: User, subject: str, section: str, db_session: AsyncSession) -> None:
+    """Faculty may only log a diary entry for a subject/section they actually teach (per Timetable)."""
+    if current_user.role != UserRole.FACULTY:
+        return
+    stmt = (
+        select(Course.name, Section.section_name)
+        .select_from(Timetable)
+        .join(Course, Timetable.subject_id == Course.id)
+        .join(Section, Timetable.section_id == Section.id)
+        .where(Timetable.faculty_id == current_user.id, Timetable.is_deleted.is_(False))
+    )
+    res = await db_session.execute(stmt)
+    for course_name, section_name in res.all():
+        if match_subject(course_name, subject) and (section_name or "").strip().upper() == (section or "").strip().upper():
+            return
+    raise HTTPException(status_code=403, detail="You are not assigned to teach this subject/section")
+
 
 class ActivityInput(BaseModel):
     activity_type: str
@@ -582,9 +652,11 @@ async def create_diary_entry(
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session)
 ):
+    await assert_teaches_class(current_user, payload.subject, payload.section, db_session)
+
     db = load_db()
     faculty_id = current_user.id
-    
+
     # Prevent creating/submitting if a log has already been submitted for this class
     existing_diaries = db.get("class_diaries", {}).values()
     already_submitted = any(
@@ -627,10 +699,14 @@ async def create_diary_entry(
         "attachment_url": payload.attachment_url or "",
         "attachment_name": payload.attachment_name or "",
         "completion_status": payload.completion_status or "Completed",
+        "hod_status": "Pending",
+        "hod_remarks": "",
+        "hod_reviewed_by": None,
+        "hod_reviewed_at": None,
         "created_at": now_str,
         "updated_at": now_str
     }
-    
+
     db["class_diaries"][entry_id] = entry
     
     # Audit log
@@ -645,6 +721,7 @@ async def create_diary_entry(
     })
     
     save_db(db)
+    await sync_diary_to_sql(entry, db_session)
     await auto_register_study_material(payload, faculty_id, db_session)
     return entry
 
@@ -824,12 +901,15 @@ async def update_diary_entry(
     db_session: AsyncSession = Depends(get_db_session)
 ):
     db = load_db()
-    
+
     if id not in db["class_diaries"]:
         raise HTTPException(status_code=404, detail="Diary entry not found")
-        
+
     entry = db["class_diaries"][id]
-    
+
+    if current_user.role == UserRole.FACULTY and entry.get("faculty_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own diary entries")
+
     # Check correction window limit for submitted entries
     if entry["status"] == "Submitted" and current_user.role == UserRole.FACULTY:
         raise HTTPException(status_code=400, detail="Submitted class logs are final and cannot be edited.")
@@ -867,8 +947,58 @@ async def update_diary_entry(
     })
     
     save_db(db)
+    await sync_diary_to_sql(entry, db_session)
     await auto_register_study_material(payload, current_user.id, db_session)
     return entry
+
+
+class DiaryReviewInput(BaseModel):
+    hod_status: str  # "Approved" | "Rejected"
+    hod_remarks: Optional[str] = None
+
+
+@router.post("/diaries/{id}/review")
+async def review_diary_entry(
+    id: str,
+    payload: DiaryReviewInput,
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    db_session: AsyncSession = Depends(get_db_session)
+):
+    if payload.hod_status not in ("Approved", "Rejected"):
+        raise HTTPException(status_code=400, detail="hod_status must be 'Approved' or 'Rejected'")
+
+    db = load_db()
+    if id not in db["class_diaries"]:
+        raise HTTPException(status_code=404, detail="Diary entry not found")
+    entry = db["class_diaries"][id]
+
+    if current_user.role == UserRole.HOD:
+        courses, _ = await get_scope_filters(current_user, db_session)
+        course_names = {c.name.lower().strip() for c in courses}
+        if not any(match_subject(entry.get("subject"), cname) for cname in course_names):
+            raise HTTPException(status_code=403, detail="You can only review diary entries for your own department")
+
+    now_str = datetime.now().isoformat()
+    entry["hod_status"] = payload.hod_status
+    entry["hod_remarks"] = payload.hod_remarks or ""
+    entry["hod_reviewed_by"] = current_user.full_name
+    entry["hod_reviewed_at"] = now_str
+    entry["updated_at"] = now_str
+    db["class_diaries"][id] = entry
+
+    db["audit_logs"].append({
+        "id": f"audit_{uuid.uuid4().hex}",
+        "user": current_user.full_name,
+        "role": current_user.role.value,
+        "action": f"Diary {payload.hod_status} by HOD",
+        "timestamp": now_str,
+        "ip_address": "127.0.0.1",
+        "remarks": f"Reviewed class diary for {entry.get('subject')} ({entry.get('date')})"
+    })
+
+    save_db(db)
+    return entry
+
 
 @router.get("/syllabus-progress")
 async def get_syllabus_progress(
@@ -924,7 +1054,7 @@ async def get_syllabus_progress(
             elapsed = (datetime.now().date() - active_ay.start_date).days
             days_remaining = max(0, 90 - elapsed)
     except Exception as e:
-        print(f"Error querying academic year for syllabus progress: {e}")
+        logger.error(f"Error querying academic year for syllabus progress: {e}")
         
     lp = db["lesson_plans"]
     
@@ -1049,8 +1179,6 @@ async def save_lesson_plan(
 
             all_allocated = allocated_names.union(tt_allocated_names)
             
-            print(f"DEBUG Save Lesson Plan: User={current_user.full_name} ({current_user.id}), Allocated={all_allocated}, Requested={payload.subject}")
-
             is_allocated = False
             for name in all_allocated:
                 if match_subject(name, payload.subject):
@@ -1219,12 +1347,15 @@ async def get_pending_entries(
     from datetime import timedelta
     db = load_db()
     diaries = list(db["class_diaries"].values())
-    
+
     stmt = select(Timetable).where(Timetable.is_deleted.is_(False))
     res = await db_session.execute(stmt)
     slots = res.scalars().all()
-    
-    course_res = await db_session.execute(select(Course).where(Course.is_deleted.is_(False)))
+
+    course_query = select(Course).where(Course.is_deleted.is_(False))
+    if current_user.role in [UserRole.HOD, UserRole.FACULTY] and current_user.department_id:
+        course_query = course_query.where(Course.dept_id == current_user.department_id)
+    course_res = await db_session.execute(course_query)
     courses = {c.id: c for c in course_res.scalars().all()}
     
     section_res = await db_session.execute(select(Section).where(Section.is_deleted.is_(False)))
@@ -1297,19 +1428,29 @@ async def get_notifications(current_user: User = Depends(get_current_user)):
     return sorted(notifs, key=lambda x: x["date"], reverse=True)
 
 @router.post("/notifications/read/{id}")
-async def mark_notification_read(id: str):
+async def mark_notification_read(id: str, current_user: User = Depends(get_current_user)):
     db = load_db()
     for n in db.get("notifications", []):
         if n["id"] == id:
+            # Only the owning faculty member may mark their own notification read.
+            if n.get("faculty_id") != current_user.id:
+                raise HTTPException(status_code=404, detail="Notification not found")
             n["is_read"] = True
-            break
-    save_db(db)
-    return {"detail": "Notification read"}
+            save_db(db)
+            return {"detail": "Notification read"}
+    raise HTTPException(status_code=404, detail="Notification not found")
 
 @router.get("/audit-logs")
 async def get_audit_logs(current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD, UserRole.PRINCIPAL]))):
     db = load_db()
     return sorted(db.get("audit_logs", []), key=lambda x: x["timestamp"], reverse=True)
+
+DIARY_MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
+DIARY_ALLOWED_EXTENSIONS = {
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+    ".txt", ".rtf", ".csv", ".png", ".jpg", ".jpeg", ".gif", ".zip",
+}
+
 
 @router.post("/upload-file")
 async def upload_diary_file(
@@ -1319,14 +1460,43 @@ async def upload_diary_file(
     static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static")
     uploads_dir = os.path.join(static_dir, "uploads")
     os.makedirs(uploads_dir, exist_ok=True)
-    
-    original_filename = file.filename or "file"
-    safe_filename = f"diary_{uuid.uuid4().hex}_{original_filename.replace(' ', '_')}"
+
+    original_filename = file.filename or ""
+    ext = os.path.splitext(original_filename)[1].lower()
+    if ext not in DIARY_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext or 'unknown'}' is not allowed. Permitted types: {', '.join(sorted(DIARY_ALLOWED_EXTENSIONS))}",
+        )
+
+    # Server-generated name — discard client path components (traversal-safe).
+    safe_filename = f"diary_{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(uploads_dir, safe_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"file_url": f"/mock-uploads/{safe_filename}", "filename": file.filename}
+
+    total = 0
+    try:
+        with open(file_path, "wb") as buffer:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > DIARY_MAX_UPLOAD_BYTES:
+                    buffer.close()
+                    os.remove(file_path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File exceeds the maximum allowed size of {DIARY_MAX_UPLOAD_BYTES // (1024 * 1024)} MB",
+                    )
+                buffer.write(chunk)
+    except HTTPException:
+        raise
+    except Exception:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="Failed to store the uploaded file")
+
+    return {"file_url": f"/api/v1/files/{safe_filename}", "filename": original_filename or safe_filename}
 
 # Distinct HOD and Principal visibility scopes
 @router.get("/hod/dashboard")
@@ -1421,17 +1591,28 @@ async def get_hod_dashboard(
                 if any(is_topic_covered(d, sub, unit_name, t) for d in dept_diaries):
                     done_topics += 1
         pct = round((done_topics / total_topics) * 100, 1) if total_topics > 0 else 0
-        
+
+        faculty_name = "Unassigned"
+        tt_q = await db_session.execute(
+            select(Timetable).where(Timetable.subject_id == matched_course.id, Timetable.is_deleted.is_(False))
+        )
+        tt_slot = tt_q.scalars().first()
+        if tt_slot:
+            fac_q = await db_session.execute(select(User).where(User.id == tt_slot.faculty_id))
+            fac_user = fac_q.scalar_one_or_none()
+            if fac_user:
+                faculty_name = fac_user.full_name
+
         subjects_stats.append({
             "subject": sub,
             "completion": pct,
-            "faculty": "Faculty User"
+            "faculty": faculty_name
         })
         
     return {
         "faculty_activities": sorted(dept_diaries, key=lambda x: x.get("created_at", ""), reverse=True)[:10],
         "syllabus_status": subjects_stats,
-        "pending_diaries_count": 2,
+        "pending_diaries_count": sum(1 for d in dept_diaries if (d.get("hod_status") or "Pending") == "Pending"),
         "total_lectures_conducted": len(dept_diaries)
     }
 
@@ -1704,13 +1885,29 @@ async def get_hod_syllabus_courses(
         for c in unique_courses
     ]
 
+async def _assert_hod_owns_course_name(current_user: User, course_name: str, db: AsyncSession):
+    if current_user.role != UserRole.HOD:
+        return
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="HOD not assigned to a department")
+    stmt = select(Course).where(
+        Course.dept_id == current_user.department_id,
+        Course.is_deleted.is_(False)
+    )
+    res = await db.execute(stmt)
+    dept_courses = res.scalars().all()
+    if not any(match_subject(c.name, course_name) or c.name == course_name for c in dept_courses):
+        raise HTTPException(status_code=403, detail="Course does not belong to your department")
+
 @router.get("/hod/syllabus/courses/{course_name}/plan", response_model=Dict[str, List[str]])
 async def get_hod_course_plan(
     course_name: str,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.SUPER_ADMIN, UserRole.ADMIN]))
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.SUPER_ADMIN, UserRole.ADMIN])),
+    db: AsyncSession = Depends(get_db_session)
 ):
-    db = load_db()
-    lp = db.get("lesson_plans", {})
+    await _assert_hod_owns_course_name(current_user, course_name, db)
+    db_json = load_db()
+    lp = db_json.get("lesson_plans", {})
     
     # Try exact match or fuzzy match
     plan = lp.get(course_name)
@@ -1726,8 +1923,10 @@ async def get_hod_course_plan(
 async def save_hod_course_plan(
     course_name: str,
     payload: HODLessonPlanSaveInput,
-    current_user: User = Depends(role_required([UserRole.HOD]))
+    current_user: User = Depends(role_required([UserRole.HOD])),
+    db_session: AsyncSession = Depends(get_db_session)
 ):
+    await _assert_hod_owns_course_name(current_user, course_name, db_session)
     db = load_db()
     if "lesson_plans" not in db:
         db["lesson_plans"] = {}

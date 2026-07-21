@@ -4,9 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.core.network.AcademicSetupDto
+import com.example.core.network.FacultyWorkloadInfoDto
+import com.example.core.network.HODFacultyResponseDto
+import com.example.core.network.SubjectAllocationCreateDto
 import com.example.core.network.SubjectAllocationDto
+import com.example.core.network.SubjectInfoDto
 import com.example.core.network.HODSubstitutionDto
 import com.example.core.repository.HODRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +23,14 @@ data class HODSubjectAllocationUiState(
     val isLoading: Boolean = false,
     val setup: AcademicSetupDto? = null,
     val allocations: List<SubjectAllocationDto> = emptyList(),
-    val error: String? = null
+    val subjects: List<SubjectInfoDto> = emptyList(),
+    val faculty: List<FacultyWorkloadInfoDto> = emptyList(),
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false,
+    val courseSections: List<com.example.core.network.AcademicSetupSectionDto> = emptyList(),
+    val isLoadingSections: Boolean = false
 )
 
 class HODSubjectAllocationViewModel(
@@ -31,21 +44,64 @@ class HODSubjectAllocationViewModel(
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            
-            val setupResult = repository.getAcademicSetup()
-            val allocResult = repository.getSubjectAllocations()
-            
-            _uiState.update { 
+
+            var setupResult: Result<AcademicSetupDto>? = null
+            var allocResult: Result<List<SubjectAllocationDto>>? = null
+            var subjectsResult: Result<List<SubjectInfoDto>>? = null
+            var facultyResult: Result<List<FacultyWorkloadInfoDto>>? = null
+
+            coroutineScope {
+                val setupDeferred = async { repository.getAcademicSetup() }
+                val allocDeferred = async { repository.getSubjectAllocations() }
+                val subjectsDeferred = async { repository.getAllocationSubjects() }
+                val facultyDeferred = async { repository.getAllocationFaculty() }
+                setupResult = setupDeferred.await()
+                allocResult = allocDeferred.await()
+                subjectsResult = subjectsDeferred.await()
+                facultyResult = facultyDeferred.await()
+            }
+
+            _uiState.update {
                 it.copy(
                     isLoading = false,
-                    setup = setupResult.getOrNull(),
-                    allocations = allocResult.getOrNull() ?: emptyList(),
-                    error = setupResult.exceptionOrNull()?.message ?: allocResult.exceptionOrNull()?.message
+                    setup = setupResult?.getOrNull(),
+                    allocations = allocResult?.getOrNull() ?: emptyList(),
+                    subjects = subjectsResult?.getOrNull() ?: emptyList(),
+                    faculty = facultyResult?.getOrNull() ?: emptyList(),
+                    error = setupResult?.exceptionOrNull()?.message
+                        ?: allocResult?.exceptionOrNull()?.message
+                        ?: subjectsResult?.exceptionOrNull()?.message
+                        ?: facultyResult?.exceptionOrNull()?.message
                 )
             }
+        }
+    }
+
+    fun allocate(courseId: String, sectionId: String, facultyId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            val result = repository.allocateSubjects(listOf(SubjectAllocationCreateDto(courseId, sectionId, facultyId)))
+            if (result.isSuccess) {
+                loadData()
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            } else {
+                _uiState.update { it.copy(isSaving = false, saveError = result.exceptionOrNull()?.message ?: "Failed to save allocation") }
+            }
+        }
+    }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
+    }
+
+    fun loadSectionsForCourse(courseId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingSections = true, courseSections = emptyList()) }
+            val result = repository.getCourseSections(courseId)
+            _uiState.update { it.copy(isLoadingSections = false, courseSections = result.getOrNull() ?: emptyList()) }
         }
     }
 }
@@ -61,11 +117,14 @@ class HODSubjectAllocationViewModelFactory(private val repository: HODRepository
 }
 
 
-
 data class HODSubstitutionUiState(
     val isLoading: Boolean = false,
     val substitutions: List<HODSubstitutionDto> = emptyList(),
-    val error: String? = null
+    val availableFaculty: List<HODFacultyResponseDto> = emptyList(),
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false
 )
 
 class HODSubstitutionViewModel(
@@ -79,18 +138,42 @@ class HODSubstitutionViewModel(
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val result = repository.getSubstitutions()
+            var softError: String? = null
+            val subsResult = repository.getSubstitutions()
+            val faculty = try { repository.getAvailableSubstituteFaculty() } catch (e: Exception) { softError = e.message; emptyList() }
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    substitutions = result.getOrNull() ?: emptyList(),
-                    error = result.exceptionOrNull()?.message
+                    substitutions = subsResult.getOrNull() ?: emptyList(),
+                    availableFaculty = faculty,
+                    error = subsResult.exceptionOrNull()?.message ?: softError
                 )
             }
         }
+    }
+
+    fun assign(
+        absentFacultyId: String, absentFacultyName: String,
+        substituteFacultyId: String, substituteFacultyName: String,
+        subject: String, section: String, date: String, periodLabel: String
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            try {
+                repository.assignSubstitution(absentFacultyId, absentFacultyName, substituteFacultyId, substituteFacultyName, subject, section, date, periodLabel)
+                loadData()
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.message ?: "Failed to assign substitution") }
+            }
+        }
+    }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
     }
 }
 

@@ -49,23 +49,12 @@ class SyllabusViewModel(private val studentRepository: StudentRepository) : View
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Fetch actual syllabus data
-                val dtos = studentRepository.getSyllabus()
-                
-                // The backend currently only provides SyllabusDto (id, subjectName, fileUrl, etc).
-                // We map it to SyllabusProgress with 0 completion since advanced tracking is not supported by backend yet.
-                val syllabusMap = mutableMapOf<String, SyllabusProgress>()
-                dtos.forEach { dto ->
-                    syllabusMap[dto.subjectName] = SyllabusProgress(
-                        overallCompletion = 0,
-                        daysRemaining = 0,
-                        unitsProgress = emptyList()
-                    )
-                }
+                val syllabusMap = studentRepository.getSyllabusProgress()
+                val tracking = studentRepository.getLessonPlanTracking()
 
                 _uiState.update { it.copy(
                     syllabus = syllabusMap,
-                    lessonPlanTracking = emptyList(), // No tracking endpoint available yet
+                    lessonPlanTracking = tracking,
                     isLoading = false
                 ) }
             } catch (e: Exception) {

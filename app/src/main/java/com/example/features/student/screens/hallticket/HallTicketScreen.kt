@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +39,7 @@ fun HallTicketScreen(
     onNavigate: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     StudentBaseScreen(
         title = "Hall Tickets",
@@ -78,7 +80,15 @@ fun HallTicketScreen(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(uiState.tickets) { ticket ->
-                        HallTicketCard(ticket = ticket)
+                        HallTicketCard(
+                            ticket = ticket,
+                            onDownload = {
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                                val url = "$base/students/hall-tickets/${ticket.id}/download"
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, url, "HallTicket_${ticket.id}", token)
+                            }
+                        )
                     }
                 }
             }
@@ -87,7 +97,7 @@ fun HallTicketScreen(
 }
 
 @Composable
-private fun HallTicketCard(ticket: HallTicketDto) {
+private fun HallTicketCard(ticket: HallTicketDto, onDownload: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -152,7 +162,7 @@ private fun HallTicketCard(ticket: HallTicketDto) {
             }
 
             Button(
-                onClick = { /* TODO: Download Hall Ticket */ },
+                onClick = onDownload,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = ticket.isEligible && ticket.isIssued,
                 colors = ButtonDefaults.buttonColors(containerColor = LexNovaPurple)

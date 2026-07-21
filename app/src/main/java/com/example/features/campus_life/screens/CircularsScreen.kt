@@ -54,10 +54,6 @@ fun CircularsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedNotice by remember { mutableStateOf<CircularNotice?>(null) }
 
-    val categories = listOf(
-        "ALL", "Academic Announcement", "Examination Notice",
-        "Department Circular", "Event Notification", "General Information"
-    )
     val priorities = listOf("ALL", "HIGH", "MEDIUM", "LOW")
 
     CamsScreen(
@@ -88,25 +84,13 @@ fun CircularsScreen(
                         singleLine = true
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterDropdown(
-                            label = "Category",
-                            options = categories,
-                            selectedOption = uiState.selectedCategory,
-                            onOptionSelected = { viewModel.updateCategory(it) },
-                            modifier = Modifier.weight(1.5f)
-                        )
-                        FilterDropdown(
-                            label = "Priority",
-                            options = priorities,
-                            selectedOption = uiState.selectedPriority,
-                            onOptionSelected = { viewModel.updatePriority(it) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    FilterDropdown(
+                        label = "Priority",
+                        options = priorities,
+                        selectedOption = uiState.selectedPriority,
+                        onOptionSelected = { viewModel.updatePriority(it) },
+                        modifier = Modifier.fillMaxWidth(0.5f)
+                    )
                 }
             }
 

@@ -243,14 +243,23 @@ class LeaveRequestResponse(BaseModel):
 
 class GrievanceRaiseRequest(BaseModel):
     category: str
+    subject: str = "General"
+    priority: str = "Medium"
     description: str
 
 class GrievanceResponse(BaseModel):
     id: str
     category: str
+    subject: str
+    priority: str
     description: str
     status: str
     assigned_to: str | None
+    date: str
+    assigned_officer: str | None = None
+    resolution_date: str | None = None
+    resolution_rating: int | None = None
+    resolution_feedback: str | None = None
     student_name: str | None = None
     student_roll: str | None = None
     student_dept: str | None = None
@@ -258,9 +267,9 @@ class GrievanceResponse(BaseModel):
 
 class TimetableItemResponse(BaseModel):
     id: str
-    subject_code: str
-    subject_name: str
-    faculty_name: str
+    subject_code: str | None = None
+    subject_name: str | None = None
+    faculty_name: str | None = None
     room: str
     weekday: str
     start_time: str
@@ -279,6 +288,7 @@ class NoticeResponse(BaseModel):
     department_id: str | None = None
     attachment_url: str | None = None
     priority: str | None = None
+    category: str | None = None
     publisher_name: str | None = None
     publisher_role: str | None = None
 
@@ -292,6 +302,7 @@ class StudyMaterialResponse(BaseModel):
     comments: str | None = None
     faculty_name: str | None = None
     section_name: str | None = None
+    uploaded_at: str | None = None
     subject: str | None = None
     semester: int | None = None
     created_at: datetime | None = None
@@ -302,3 +313,58 @@ class NotificationResponse(BaseModel):
     type: str
     is_read: bool
     sent_via: str
+
+class ReceiptResponse(BaseModel):
+    id: str
+    head: str
+    date: str
+    mode: str
+    amount: float
+
+class StudentLoanRequest(BaseModel):
+    bank: str
+    branch: str
+    sanctioned: float
+    interest_rate: float
+    emi: float
+    outstanding: float
+
+class StudentLoanResponse(BaseModel):
+    id: str
+    bank: str
+    branch: str
+    sanctioned: float
+    interest_rate: float
+    emi: float
+    outstanding: float
+    status: str
+
+class AssistanceRequestCreate(BaseModel):
+    type: str
+    reason: str
+
+class AssistanceRequestResponse(BaseModel):
+    id: str
+    type: str
+    reason: str
+    status: str
+    admin_remarks: str | None = None
+    created_at: datetime
+
+class CertificationCreate(BaseModel):
+    title: str
+    issuer: str
+    date: str
+    category: str
+    type: str = "training"
+    file_url: str | None = None
+
+class CertificationResponse(BaseModel):
+    id: str
+    title: str
+    issuer: str
+    date: str
+    category: str
+    type: str
+    is_verified: bool
+    file_url: str | None = None

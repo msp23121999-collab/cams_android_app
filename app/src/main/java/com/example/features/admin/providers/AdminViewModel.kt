@@ -64,7 +64,10 @@ data class AdminAcademicCatalogState(
     val degrees: List<com.example.features.admin.models.AdminDegree> = emptyList(),
     val courses: List<com.example.features.admin.models.AdminCourse> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false
 )
 
 class AdminAcademicCatalogViewModel(private val repository: com.example.core.repository.AdminRepository) : androidx.lifecycle.ViewModel() {
@@ -85,6 +88,59 @@ class AdminAcademicCatalogViewModel(private val repository: com.example.core.rep
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
+    }
+
+    private fun mutate(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            try {
+                block()
+                loadCatalog()
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.message ?: "Operation failed") }
+            }
+        }
+    }
+
+    fun createDepartment(name: String, code: String, courseName: String, programLevel: String, durationYears: Int, semCount: Int) =
+        mutate {
+            repository.createDepartment(
+                mapOf(
+                    "name" to name, "code" to code, "course_name" to courseName,
+                    "program_level" to programLevel, "duration_years" to durationYears, "sem_count" to semCount
+                )
+            )
+        }
+
+    fun deleteDepartment(deptId: String) = mutate { repository.deleteDepartment(deptId) }
+
+    fun createDegree(code: String, name: String, applicableBatch: String, programLevel: String, durationYears: Int, deptId: String?) =
+        mutate {
+            repository.createDegree(
+                mapOf(
+                    "code" to code, "name" to name, "applicable_batch" to applicableBatch,
+                    "program_level" to programLevel, "duration_years" to durationYears, "dept_id" to deptId
+                )
+            )
+        }
+
+    fun deleteDegree(degreeId: String) = mutate { repository.deleteDegree(degreeId) }
+
+    fun createCourse(code: String, name: String, credits: Int, semester: Int, degreeId: String?, deptId: String?) =
+        mutate {
+            repository.createCourse(
+                mapOf(
+                    "code" to code, "name" to name, "credits" to credits,
+                    "semester" to semester, "degree_id" to degreeId, "dept_id" to deptId
+                )
+            )
+        }
+
+    fun deleteCourse(courseId: String) = mutate { repository.deleteCourse(courseId) }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
     }
 }
 // --- Admin Backups ViewModel ---

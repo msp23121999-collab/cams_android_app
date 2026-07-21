@@ -190,6 +190,18 @@ async def seed() -> None:
         db.add_all([sec_a, sec_b, sec_c, sec_d])
         await db.flush()
 
+        # Place every student in a section matching their semester. Sections are
+        # created after students above, so this cannot be set at construction time.
+        #
+        # This matters beyond realism: faculty rosters are scoped to the sections a
+        # faculty member actually teaches (resolved through Timetable.section_id).
+        # With section_id left NULL, seeded faculty saw only their mentees and the
+        # taught-section path was never exercised.
+        #   sec_a -> LAW101 (sem 1, fac1)      sec_c -> LAW201 (sem 3, fac3)
+        for _stu in (stu1, stu2, stu3, stu4, stu5):
+            _stu.section_id = sec_a.id if _stu.semester == 1 else sec_c.id
+        await db.flush()
+
         # ─── 6. TIMETABLE ─────────────────────────────────────────────────────
         tt_entries = [
             Timetable(section_id=sec_a.id, subject_id=c1.id, faculty_id=fac1_user.id, room="Hall A-101", weekday=Weekday.MONDAY, start_time=time(9, 0), end_time=time(10, 30)),
@@ -296,12 +308,12 @@ async def seed() -> None:
 
         # ─── 13. NOTICES ──────────────────────────────────────────────────────
         notices = [
-            Notice(created_by=principal_user.id, title="End Semester Exam Schedule Published", body="Semester final exams commence from June 25th, 2026. Check your portals for date sheets and hall allotments.", audience_type="STUDENT", publish_date=today),
-            Notice(created_by=hod_user.id, title="HOD Board Meeting: Curriculum Review", body="Faculty members, there is a curriculum review meeting at the HOD Cabin today at 3:00 PM.", audience_type="FACULTY", publish_date=today),
-            Notice(created_by=admin_user.id, title="Maintenance Closure: Hostel Block B Elevator", body="Hostel Block B elevator will be down for servicing on Saturday from 9 AM to 1 PM.", audience_type="PARENT", publish_date=today),
-            Notice(created_by=principal_user.id, title="National Moot Court Registration Open", body="Students interested in the All India Moot Court 2026 must register with the Law Coordinator by June 20th.", audience_type="STUDENT", publish_date=today - timedelta(days=2)),
-            Notice(created_by=hod_user.id, title="Research Grant Deadline Reminder", body="All faculty must submit their Annual Research Output Declaration by July 31st.", audience_type="FACULTY", publish_date=today - timedelta(days=3)),
-            Notice(created_by=admin_user.id, title="Fee Payment Deadline: July 15th", body="Students with pending tuition or hostel fee must pay before July 15, 2026 to avoid late fine.", audience_type="ALL", publish_date=today - timedelta(days=1)),
+            Notice(created_by=principal_user.id, title="End Semester Exam Schedule Published", body="Semester final exams commence from June 25th, 2026. Check your portals for date sheets and hall allotments.", audience_type="STUDENT", category="Examination Notice", priority="High", publish_date=today),
+            Notice(created_by=hod_user.id, title="HOD Board Meeting: Curriculum Review", body="Faculty members, there is a curriculum review meeting at the HOD Cabin today at 3:00 PM.", audience_type="FACULTY", category="Department Circular", priority="Medium", publish_date=today),
+            Notice(created_by=admin_user.id, title="Maintenance Closure: Hostel Block B Elevator", body="Hostel Block B elevator will be down for servicing on Saturday from 9 AM to 1 PM.", audience_type="PARENT", category="General Information", priority="Low", publish_date=today),
+            Notice(created_by=principal_user.id, title="National Moot Court Registration Open", body="Students interested in the All India Moot Court 2026 must register with the Law Coordinator by June 20th.", audience_type="STUDENT", category="Event Notification", priority="Medium", publish_date=today - timedelta(days=2)),
+            Notice(created_by=hod_user.id, title="Research Grant Deadline Reminder", body="All faculty must submit their Annual Research Output Declaration by July 31st.", audience_type="FACULTY", category="Department Circular", priority="Medium", publish_date=today - timedelta(days=3)),
+            Notice(created_by=admin_user.id, title="Fee Payment Deadline: July 15th", body="Students with pending tuition or hostel fee must pay before July 15, 2026 to avoid late fine.", audience_type="ALL", category="Academic Announcement", priority="High", publish_date=today - timedelta(days=1)),
         ]
         db.add_all(notices)
 

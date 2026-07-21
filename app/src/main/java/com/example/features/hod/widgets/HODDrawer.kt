@@ -68,6 +68,7 @@ fun HODDrawer(
             DrawerItem("Timetable", Icons.Filled.CalendarMonth, AppRoutes.HOD_TIMETABLE_MGMT, currentRoute, onNavigate)
             DrawerItem("Research", Icons.Filled.Science, AppRoutes.HOD_RESEARCH_OVERVIEW, currentRoute, onNavigate)
             DrawerItem("Approvals", Icons.AutoMirrored.Filled.FactCheck, AppRoutes.HOD_APPROVALS, currentRoute, onNavigate)
+            DrawerItem("Diary Review", Icons.Filled.RateReview, AppRoutes.FACULTY_CLASS_DIARY_HOD, currentRoute, onNavigate)
 
             Spacer(modifier = Modifier.weight(1f))
 

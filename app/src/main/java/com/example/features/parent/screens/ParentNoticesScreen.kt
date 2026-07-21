@@ -90,6 +90,13 @@ fun ParentNoticesScreen(
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = LexNovaPurple)
                 }
+            } else if (uiState.error != null) {
+                // Without this branch a failed request rendered an empty screen with no
+                // explanation and no way to retry — indistinguishable from "no notices".
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load notices",
+                    onRetry = { viewModel.loadData() }
+                )
             } else {
                 // Filters Card
                 CamsCard {
@@ -203,7 +210,7 @@ fun FilterDropdown(label: String, selected: String, options: List<String>, modif
             readOnly = true,
             label = { Text(label, fontSize = 12.sp) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodySmall,
             shape = RoundedCornerShape(12.dp)
         )
@@ -274,6 +281,25 @@ fun NoticeDialog(notice: CollegeNotice, onDismiss: () -> Unit) {
                     Text("Notice Details", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = LexNovaPurple))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(notice.body, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface))
+
+                    if (!notice.attachmentUrl.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        Button(
+                            onClick = {
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val origin = com.example.core.config.AppConfig.BASE_URL.substringBefore("/api/v1")
+                                val fullUrl = if (notice.attachmentUrl.startsWith("http")) notice.attachmentUrl else origin + notice.attachmentUrl
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, notice.title, token)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = LexNovaPurple),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Download Attachment")
+                        }
+                    }
                 }
             }
         }

@@ -18,13 +18,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('salary', sa.Column('employee_id', sa.String(length=64), nullable=True))
-    op.add_column('salary', sa.Column('designation', sa.String(length=128), nullable=True))
-    op.add_column('salary', sa.Column('working_days', sa.Integer(), nullable=False, server_default='30'))
-    op.add_column('salary', sa.Column('leave_days', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('salary', sa.Column('leave_deduction', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
-    op.add_column('salary', sa.Column('pf_deduction', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
-    op.add_column('salary', sa.Column('net_salary', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {c['name'] for c in inspector.get_columns('salary')}
+
+    if 'employee_id' not in existing_columns:
+        op.add_column('salary', sa.Column('employee_id', sa.String(length=64), nullable=True))
+    if 'designation' not in existing_columns:
+        op.add_column('salary', sa.Column('designation', sa.String(length=128), nullable=True))
+    if 'working_days' not in existing_columns:
+        op.add_column('salary', sa.Column('working_days', sa.Integer(), nullable=False, server_default='30'))
+    if 'leave_days' not in existing_columns:
+        op.add_column('salary', sa.Column('leave_days', sa.Integer(), nullable=False, server_default='0'))
+    if 'leave_deduction' not in existing_columns:
+        op.add_column('salary', sa.Column('leave_deduction', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
+    if 'pf_deduction' not in existing_columns:
+        op.add_column('salary', sa.Column('pf_deduction', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
+    if 'net_salary' not in existing_columns:
+        op.add_column('salary', sa.Column('net_salary', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0.0'))
 
 
 def downgrade() -> None:

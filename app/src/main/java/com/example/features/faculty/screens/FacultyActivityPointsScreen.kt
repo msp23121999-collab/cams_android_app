@@ -1,11 +1,13 @@
 package com.example.features.faculty.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
@@ -15,21 +17,74 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.theme.*
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.core.network.ActivityPointCategoryDto
+import com.example.core.network.ActivityPointCategoryRequest
+import com.example.core.network.ActivityPointDto
+import com.example.core.repository.FacultyRepositoryImpl
+import com.example.features.faculty.providers.FacultyActivityPointsViewModel
+import com.example.features.faculty.providers.FacultyActivityPointsViewModelFactory
+
 @Composable
 fun FacultyActivityPointsScreen(onNavigate: (String) -> Unit) {
+    val context = LocalContext.current
+    val repository = remember { FacultyRepositoryImpl(com.example.CamsApplication.instance.container.apiService) }
+    val factory = remember { FacultyActivityPointsViewModelFactory(repository) }
+    val viewModel: FacultyActivityPointsViewModel = viewModel(factory = factory)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var applicationPendingReview by remember { mutableStateOf<ActivityPointDto?>(null) }
     val tabs = listOf("Pending Queue", "Student Records", "Categories")
 
-    FacultyBaseScreen(scrollable = false, 
+    LaunchedEffect(uiState.reviewError) {
+        uiState.reviewError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearReviewError()
+        }
+    }
+    LaunchedEffect(uiState.categorySaveSuccess, uiState.categoryError) {
+        if (uiState.categorySaveSuccess) {
+            Toast.makeText(context, "Category saved", Toast.LENGTH_SHORT).show()
+            showAddCategoryDialog = false
+            viewModel.clearCategoryStatus()
+        }
+        uiState.categoryError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearCategoryStatus()
+        }
+    }
+
+    val pending = uiState.applications.filter { it.status == "Pending Review" || it.status == "Under Verification" }
+    val verified = uiState.applications.count { it.status == "Approved" }
+    val avgPts = uiState.applications.filter { it.status == "Approved" }
+        .map { it.approvedPoints ?: 0.0 }
+        .let { if (it.isEmpty()) 0.0 else it.average() }
+
+    FacultyBaseScreen(scrollable = false,
         title = "Activity Points",
         currentRoute = com.example.core.navigation.AppRoutes.FACULTY_ACTIVITY_POINTS,
-        onNavigate = onNavigate
+        onNavigate = onNavigate,
+        floatingActionButton = {
+            if (selectedTab == 2) {
+                FloatingActionButton(
+                    onClick = { showAddCategoryDialog = true },
+                    containerColor = CamsNavy,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Filled.Add, "Add Category")
+                }
+            }
+        }
     ) {
         Column(
             modifier = Modifier
@@ -41,9 +96,9 @@ fun FacultyActivityPointsScreen(onNavigate: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ActivityStatsCard("Pending", "24", Icons.Filled.Pending, Color(0xFFF59E0B), Modifier.weight(1f))
-                ActivityStatsCard("Verified", "842", Icons.Filled.Verified, Color(0xFF10B981), Modifier.weight(1f))
-                ActivityStatsCard("Avg Pts", "42", Icons.Filled.BarChart, Color(0xFF3B82F6), Modifier.weight(1f))
+                ActivityStatsCard("Pending", "${pending.size}", Icons.Filled.Pending, Color(0xFFF59E0B), Modifier.weight(1f))
+                ActivityStatsCard("Verified", "$verified", Icons.Filled.Verified, Color(0xFF10B981), Modifier.weight(1f))
+                ActivityStatsCard("Avg Pts", "%.1f".format(avgPts), Icons.Filled.BarChart, Color(0xFF3B82F6), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -80,13 +135,42 @@ fun FacultyActivityPointsScreen(onNavigate: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Content based on tab
-            when (selectedTab) {
-                0 -> PendingApprovalQueue()
-                1 -> StudentPointsRecords()
-                2 -> ActivityCategoriesList()
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else {
+                when (selectedTab) {
+                    0 -> PendingApprovalQueue(pending, onReview = { applicationPendingReview = it })
+                    1 -> StudentPointsRecords(uiState.applications)
+                    2 -> ActivityCategoriesList(uiState.categories, onDelete = { viewModel.deleteCategory(it) })
+                }
             }
         }
+    }
+
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            isSaving = uiState.isSavingCategory,
+            onDismiss = { showAddCategoryDialog = false },
+            onSubmit = { viewModel.createCategory(it) }
+        )
+    }
+
+    applicationPendingReview?.let { app ->
+        ReviewApplicationDialog(
+            application = app,
+            isSaving = uiState.isReviewing,
+            onDismiss = { applicationPendingReview = null },
+            onSubmit = { status, points, remarks ->
+                viewModel.reviewApplication(app.id, status, points, remarks)
+                applicationPendingReview = null
+            }
+        )
     }
 }
 
@@ -117,15 +201,18 @@ private fun ActivityStatsCard(
 }
 
 @Composable
-private fun PendingApprovalQueue() {
-    val requests = listOf(
-        PointRequest("Arjun V.", "NSS Camp", "Community Service", "15 Pts"),
-        PointRequest("Sanya K.", "Hackathon Winner", "Technical", "25 Pts"),
-        PointRequest("Karan S.", "Cricket Tournament", "Sports", "10 Pts")
-    )
-
+private fun PendingApprovalQueue(
+    requests: List<ActivityPointDto>,
+    onReview: (ActivityPointDto) -> Unit
+) {
+    if (requests.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No pending applications", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(requests) { req ->
+        items(requests, key = { it.id }) { req ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -139,10 +226,10 @@ private fun PendingApprovalQueue() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(req.studentName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text(req.activity, fontSize = 13.sp, color = CamsNavy)
+                            Text(req.studentName ?: "Unknown Student", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(req.title, fontSize = 13.sp, color = CamsNavy)
                         }
-                        Text(req.points, fontWeight = FontWeight.ExtraBold, color = Color(0xFF10B981), fontSize = 18.sp)
+                        Text("${req.claimedPoints}", fontWeight = FontWeight.ExtraBold, color = Color(0xFF10B981), fontSize = 18.sp)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Category: ${req.category}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -152,7 +239,7 @@ private fun PendingApprovalQueue() {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
-                            onClick = { /* Reject */ },
+                            onClick = { onReview(req) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
@@ -160,12 +247,12 @@ private fun PendingApprovalQueue() {
                             Text("Reject")
                         }
                         Button(
-                            onClick = { /* Approve */ },
+                            onClick = { onReview(req) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
                         ) {
-                            Text("Approve")
+                            Text("Review")
                         }
                     }
                 }
@@ -175,15 +262,22 @@ private fun PendingApprovalQueue() {
 }
 
 @Composable
-private fun StudentPointsRecords() {
-    val records = listOf(
-        StudentRecord("Rahul M.", "152 Pts", "Exceeding"),
-        StudentRecord("Pooja G.", "95 Pts", "On Track"),
-        StudentRecord("Sameer L.", "45 Pts", "Below Target")
-    )
-
+private fun StudentPointsRecords(applications: List<ActivityPointDto>) {
+    val grouped = applications.groupBy { it.studentName ?: it.studentId ?: "Unknown" }
+    if (grouped.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No student records yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(records) { rec ->
+        items(grouped.entries.toList(), key = { it.key }) { (name, apps) ->
+            val total = apps.filter { it.status == "Approved" }.sumOf { it.approvedPoints ?: 0.0 }
+            val status = when {
+                total >= 30 -> "Exceeding"
+                total >= 15 -> "On Track"
+                else -> "Needs Attention"
+            }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -196,14 +290,14 @@ private fun StudentPointsRecords() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(rec.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(rec.status, fontSize = 12.sp, color = when(rec.status) {
+                        Text(name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(status, fontSize = 12.sp, color = when (status) {
                             "Exceeding" -> Color(0xFF10B981)
                             "On Track" -> Color(0xFF3B82F6)
                             else -> Color(0xFFF59E0B)
                         })
                     }
-                    Text(rec.totalPoints, fontWeight = FontWeight.Bold, color = CamsNavy)
+                    Text("$total pts", fontWeight = FontWeight.Bold, color = CamsNavy)
                 }
             }
         }
@@ -211,16 +305,15 @@ private fun StudentPointsRecords() {
 }
 
 @Composable
-private fun ActivityCategoriesList() {
-    val categories = listOf(
-        CategoryItem("NSS/Social Work", "Max 50 Pts", Icons.Filled.Group),
-        CategoryItem("Technical Events", "Max 40 Pts", Icons.Filled.Computer),
-        CategoryItem("Sports", "Max 30 Pts", Icons.Filled.SportsBasketball),
-        CategoryItem("Cultural", "Max 30 Pts", Icons.Filled.MusicNote)
-    )
-
+private fun ActivityCategoriesList(categories: List<ActivityPointCategoryDto>, onDelete: (String) -> Unit) {
+    if (categories.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No categories configured. Tap + to add one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(categories) { cat ->
+        items(categories, key = { it.id }) { cat ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -231,11 +324,14 @@ private fun ActivityCategoriesList() {
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(cat.icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Filled.Category, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(16.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(cat.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(cat.limit, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Max ${cat.maxPoints} points", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = { onDelete(cat.id) }) {
+                        Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -243,6 +339,99 @@ private fun ActivityCategoriesList() {
     }
 }
 
-data class PointRequest(val studentName: String, val activity: String, val category: String, val points: String)
-data class StudentRecord(val name: String, val totalPoints: String, val status: String)
-data class CategoryItem(val name: String, val limit: String, val icon: ImageVector)
+@Composable
+private fun AddCategoryDialog(
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (ActivityPointCategoryRequest) -> Unit
+) {
+    var code by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var maxPoints by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    val isValid = code.isNotBlank() && name.isNotBlank() && maxPoints.toDoubleOrNull() != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Category") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text("Code (e.g. moot_court)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Display Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = maxPoints, onValueChange = { maxPoints = it }, label = { Text("Max Points") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = isValid && !isSaving,
+                onClick = {
+                    onSubmit(
+                        ActivityPointCategoryRequest(
+                            code = code.trim(),
+                            name = name.trim(),
+                            maxPoints = maxPoints.toDouble(),
+                            description = description.trim().ifBlank { null }
+                        )
+                    )
+                }
+            ) { Text(if (isSaving) "Saving..." else "Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+private fun ReviewApplicationDialog(
+    application: ActivityPointDto,
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (status: String, points: Double, remarks: String?) -> Unit
+) {
+    var approvedPoints by remember { mutableStateOf(application.claimedPoints.toString()) }
+    var remarks by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Review Application") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(application.title, fontWeight = FontWeight.Bold)
+                Text("Claimed: ${application.claimedPoints} points", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = approvedPoints,
+                    onValueChange = { approvedPoints = it },
+                    label = { Text("Approved Points") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = remarks,
+                    onValueChange = { remarks = it },
+                    label = { Text("Remarks") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isSaving,
+                onClick = {
+                    val pts = approvedPoints.toDoubleOrNull() ?: 0.0
+                    onSubmit("Approved", pts, remarks.trim().ifBlank { null })
+                }
+            ) { Text(if (isSaving) "Saving..." else "Approve") }
+        },
+        dismissButton = {
+            TextButton(
+                enabled = !isSaving,
+                onClick = { onSubmit("Rejected", 0.0, remarks.trim().ifBlank { null }) }
+            ) { Text("Reject", color = Color(0xFFB91C1C)) }
+        }
+    )
+}

@@ -1550,9 +1550,16 @@ async def principal_get_grievances(
         GrievanceResponse(
             id=g.id,
             category=g.category,
+            subject=g.subject,
+            priority=g.priority,
             description=g.description,
             status=g.status,
             assigned_to=g.assigned_to,
+            date=g.created_at.isoformat() if g.created_at else "",
+            assigned_officer=None,
+            resolution_date=g.resolution_date,
+            resolution_rating=g.resolution_rating,
+            resolution_feedback=g.resolution_feedback,
             student_name=s_user.full_name,
             student_roll=student.roll_no if student else None,
             student_dept=dept.name if dept else None,
@@ -2243,9 +2250,14 @@ async def list_courses_by_degree(
     current_user: User = Depends(role_required([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PRINCIPAL])),
     db: AsyncSession = Depends(get_db_session)
 ) -> list[CourseResponse]:
-    result = await db.execute(
-        select(Course).where(Course.degree_id == degree_id, Course.is_deleted.is_(False))
-    )
+    query = select(Course).where(Course.is_deleted.is_(False))
+    # "all" is a sentinel used by the admin catalog to list every course; without
+    # this it was filtered as a literal degree_id and always returned nothing.
+    if degree_id and degree_id.lower() != "all":
+        query = query.where(Course.degree_id == degree_id)
+    query = query.order_by(Course.semester, Course.code)
+
+    result = await db.execute(query)
     courses = result.scalars().all()
     return [
         CourseResponse(
@@ -2966,7 +2978,7 @@ async def collect_fee(
         raise HTTPException(status_code=404, detail="Fee structure not found")
         
     payments = await fee_repo.get_payments_by_record(record.id)
-    already_paid = sum(p.amount for p in payments)
+    already_paid = sum(float(p.amount or 0) for p in payments)
     total_amount = struct.amount
     
     remaining = total_amount - already_paid
@@ -3053,7 +3065,7 @@ async def get_daily_payments(
         # Get all payments for this record to calculate total paid and remaining
         all_pays_q = await db.execute(select(Payment).where(Payment.fee_record_id == fr.id, Payment.is_deleted.is_(False)))
         all_pays = all_pays_q.scalars().all()
-        total_paid_for_record = sum(x.amount for x in all_pays)
+        total_paid_for_record = sum(float(x.amount or 0) for x in all_pays)
         total_amount = fs.amount
         
         # Get degree details
@@ -3928,7 +3940,7 @@ async def get_admin_salary_request_slip(
                 cumulative_leaves_incl_current += await service._get_approved_leave_days(sal.faculty_id, m, sal.year)
         remaining_leave_balance = max(0.0, 10.0 - cumulative_leaves_incl_current)
         
-        ded_total = sum(d.amount for d in deductions_list) + pf_amount + absent_ded
+        ded_total = sum(float(d.amount or 0) for d in deductions_list) + float(pf_amount or 0) + float(absent_ded or 0)
         net_pay = to_float(sal.gross) - ded_total
         
         return SalarySlipDetailedResponse(

@@ -13,7 +13,9 @@ import kotlinx.coroutines.launch
 data class LeavesState(
     val leaves: List<LeaveRequestDto> = emptyList(),
     val isLoading: Boolean = false,
+    val isSubmitting: Boolean = false,
     val error: String? = null,
+    val submitError: String? = null,
     val applySuccess: Boolean = false
 )
 
@@ -39,21 +41,25 @@ class LeavesViewModel(
         }
     }
 
-    fun applyLeave(type: String, fromDate: String, toDate: String, reason: String) {
+    fun applyLeave(type: String, fromDate: String, toDate: String, reason: String, appCategory: String = "Leave") {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, applySuccess = false) }
+            _uiState.update { it.copy(isSubmitting = true, submitError = null, applySuccess = false) }
             try {
-                val success = studentRepository.applyLeave(type, fromDate, toDate, reason)
+                val success = studentRepository.applyLeave(type, fromDate, toDate, reason, appCategory)
                 if (success) {
-                    _uiState.update { it.copy(isLoading = false, applySuccess = true) }
+                    _uiState.update { it.copy(isSubmitting = false, applySuccess = true) }
                     fetchLeaves()
                 } else {
-                    _uiState.update { it.copy(isLoading = false, error = "Application failed") }
+                    _uiState.update { it.copy(isSubmitting = false, submitError = "Application failed. Please try again.") }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Application failed") }
+                _uiState.update { it.copy(isSubmitting = false, submitError = e.message ?: "Application failed. Please try again.") }
             }
         }
+    }
+
+    fun clearApplyStatus() {
+        _uiState.update { it.copy(applySuccess = false, submitError = null) }
     }
 }
 

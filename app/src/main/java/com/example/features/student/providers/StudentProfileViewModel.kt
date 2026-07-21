@@ -9,6 +9,7 @@ import com.example.features.student.models.Internship
 import com.example.features.student.models.MentorshipRecord
 import com.example.features.student.models.MootCourt
 import com.example.features.student.models.StudentProfileResponse
+import com.example.core.network.StudentInternalMarkDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,10 +32,19 @@ data class ProfileState(
     val profile: StudentProfileResponse? = null,
     val attendance: AttendanceResponse? = null,
     val mentorshipRecord: MentorshipRecord? = null,
+    val marks: List<StudentInternalMarkDto> = emptyList(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val error: String? = null,
-    val activeTab: String = "personal"
+    val activeTab: String = "personal",
+    // AI Hub state
+    val quickPromptResponse: String? = null,
+    val isQuickPromptLoading: Boolean = false,
+    val quickPromptError: String? = null,
+    val careerGuidance: String? = null,
+    val isCareerGuidanceLoading: Boolean = false,
+    val careerGuidanceError: String? = null,
+    val hasCareerGuidanceLoaded: Boolean = false
 )
 
 class StudentProfileViewModel(
@@ -59,14 +69,17 @@ class StudentProfileViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val profile = studentRepository.getProfile()
-                // Assuming attendance is separate or can be fetched
-                val attendanceDto = studentRepository.getDashboard() // Or a specific attendance call
-                
+                val attendanceSummary = studentRepository.getAttendance()
+                val marks = try {
+                    studentRepository.getInternalMarks().filter { it.isApproved }
+                } catch (e: Exception) { emptyList() }
+
                 if (profile != null) {
-                    _uiState.update { 
+                    _uiState.update {
                         it.copy(
                             profile = profile,
-                            attendance = AttendanceResponse(percentage = profile.cgpa?.let { (it * 10).toInt() } ?: 75), // Mocking attendance from CGPA if missing
+                            attendance = AttendanceResponse(percentage = attendanceSummary?.percentage?.toInt()),
+                            marks = marks,
                             isLoading = false,
                             error = null
                         )
@@ -128,12 +141,67 @@ class StudentProfileViewModel(
         }
     }
 
-    fun changePassword(currentPassword: String, newPassword: String) {
+    fun uploadDocument(documentType: String, file: okhttp3.MultipartBody.Part) {
         viewModelScope.launch {
             try {
-                studentRepository.changePassword(currentPassword, newPassword)
+                val fileUrl = studentRepository.uploadProfileDocument(documentType, file)
+                if (fileUrl != null) {
+                    fetchProfileData() // Refresh profile with the newly attached document
+                } else {
+                    _uiState.update { it.copy(error = "Failed to upload document") }
+                }
             } catch (e: Exception) {
-                throw e
+                _uiState.update { it.copy(error = e.message ?: "Failed to upload document") }
+            }
+        }
+    }
+
+    suspend fun changePassword(currentPassword: String, newPassword: String) {
+        studentRepository.changePassword(currentPassword, newPassword)
+    }
+
+    fun sendQuickPrompt(prompt: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isQuickPromptLoading = true, quickPromptError = null, quickPromptResponse = null) }
+            try {
+                val result = studentRepository.sendChatMessage(prompt, null)
+                if (result != null) {
+                    _uiState.update { it.copy(isQuickPromptLoading = false, quickPromptResponse = result.response) }
+                } else {
+                    _uiState.update { it.copy(isQuickPromptLoading = false, quickPromptError = "Failed to get a response. Please try again.") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isQuickPromptLoading = false, quickPromptError = e.message ?: "Failed to get a response.") }
+            }
+        }
+    }
+
+    fun fetchCareerGuidance(force: Boolean = false) {
+        if (!force && _uiState.value.hasCareerGuidanceLoaded) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCareerGuidanceLoading = true, careerGuidanceError = null) }
+            try {
+                val profile = _uiState.value.profile
+                val prompt = buildString {
+                    append("Based on my academic profile (CGPA: ${profile?.cgpa ?: "N/A"}, ")
+                    append("Department: ${profile?.departmentName ?: profile?.courseName ?: "Law"}, ")
+                    append("Internships: ${profile?.internships?.joinToString { i -> i.organization ?: i.company ?: "N/A" } ?: "None"}), ")
+                    append("suggest a suitable legal specialization area and briefly explain why.")
+                }
+                val result = studentRepository.sendChatMessage(prompt, null)
+                if (result != null) {
+                    _uiState.update {
+                        it.copy(
+                            isCareerGuidanceLoading = false,
+                            careerGuidance = result.response,
+                            hasCareerGuidanceLoaded = true
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(isCareerGuidanceLoading = false, careerGuidanceError = "Failed to generate career guidance.") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isCareerGuidanceLoading = false, careerGuidanceError = e.message ?: "Failed to generate career guidance.") }
             }
         }
     }

@@ -29,7 +29,16 @@ import com.example.features.principal.providers.*
 
 @Composable
 fun PrincipalResearchComplianceScreen(onNavigate: (String) -> Unit, viewModel: PrincipalResearchViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.scanResultMessage) {
+        uiState.scanResultMessage?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearScanResult()
+        }
+    }
+
     PrincipalBaseScreen(
         title = "Research Compliance Console",
         subtitle = "Monitor department comparisons, overdue proof submissions, and perform compliance scans.",
@@ -50,10 +59,15 @@ fun PrincipalResearchComplianceScreen(onNavigate: (String) -> Unit, viewModel: P
         CamsCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Research Compliance Defaulters List", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)), shape = RoundedCornerShape(8.dp)) {
+                Button(
+                    onClick = { viewModel.runAuditScan() },
+                    enabled = !uiState.isScanning,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
                     Icon(Icons.Filled.Security, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Run Audit Scan", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(if (uiState.isScanning) "Scanning..." else "Run Audit Scan", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             
@@ -61,6 +75,13 @@ fun PrincipalResearchComplianceScreen(onNavigate: (String) -> Unit, viewModel: P
 
             if (uiState.isLoading) {
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            } else if (uiState.error != null) {
+                // Without this the screen rendered empty on failure — no message,
+                // no retry — indistinguishable from genuinely having no data.
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load research compliance",
+                    onRetry = { viewModel.loadResearch() }
+                )
             } else if (uiState.compliance?.overdueFacultyList.isNullOrEmpty()) {
                 com.example.core.ui.EnterpriseEmptyState("No Defaulters", "All faculty members are compliant.")
             } else {

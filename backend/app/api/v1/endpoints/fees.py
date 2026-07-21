@@ -1,18 +1,37 @@
 """Fees endpoint — student fee records & admin fee management."""
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Body, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text, or_, func
 from typing import List, Optional, Any
 from datetime import date, datetime, timezone
+import hashlib
+import hmac
+import logging
 import uuid
 
+logger = logging.getLogger(__name__)
+
 from app.core.dependencies import get_db_session, role_required
+from app.core.config import settings
 from app.db.models.user import User, UserRole
 from app.db.models.fee import FeeRecord, FeeStructure, Payment, FeeStatus
 from app.db.models.student import Student
 from app.db.models.academic import Department, Degree
+from app.db.repositories.student_repository import StudentRepository
+from app.services.fee_service import FeeService
+from app.schemas.payment import (
+    CreateOrderRequest,
+    CreateOrderResponse,
+    VerifyPaymentRequest,
+    VerifyPaymentResponse,
+)
 
 router = APIRouter()
+
+
+def _get_razorpay_client():
+    import razorpay
+    return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 
 # ─────────────────────────────────────────────────────────
@@ -66,6 +85,24 @@ async def get_student_fees(
     return result
 
 
+def _sync_record_status(record, rec_detail) -> None:
+    """Align a fee record's stored status with what the summary service computes.
+
+    The service derives status from the payments actually recorded against the
+    record, which is the authoritative view. Keeping the stored column in step
+    means the two never disagree — previously a partly-settled record reported
+    "partially_paid" from the summary while the column still said "pending".
+    Only ever promotes toward settlement; it never reopens a PAID record.
+    """
+    if not rec_detail:
+        return
+    computed = rec_detail.get("status")
+    if computed == "paid":
+        record.status = FeeStatus.PAID
+    elif computed == "partially_paid" and record.status != FeeStatus.PAID:
+        record.status = FeeStatus.PARTIALLY_PAID
+
+
 @router.post("/{record_id}/pay")
 async def pay_fee(
     record_id: str,
@@ -73,13 +110,17 @@ async def pay_fee(
     current_user: User = Depends(role_required([UserRole.STUDENT])),
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Mark a fee record as paid and create a payment entry."""
+    """Manual/legacy payment path — kept for backward compat with the web app.
+    Ownership-checked: a student may only pay their own fee record."""
     record_res = await db.execute(
         select(FeeRecord).where(FeeRecord.id == record_id, FeeRecord.is_deleted.is_(False))
     )
     record = record_res.scalar_one_or_none()
     if not record:
         raise HTTPException(status_code=404, detail="Fee record not found")
+
+    fee_service = FeeService(db)
+    await fee_service.assert_owns_record(record, current_user)
 
     if record.status == FeeStatus.PAID:
         raise HTTPException(status_code=400, detail="Fee already paid")
@@ -93,12 +134,250 @@ async def pay_fee(
         amount=float(amount),
         mode=mode,
         txn_id=txn_id,
+        status="paid",
         paid_at=datetime.now(timezone.utc),
     )
     db.add(payment)
-    record.status = FeeStatus.PAID
     await db.commit()
-    return {"status": "paid", "record_id": str(record.id)}
+
+    # Only mark the record PAID once the payments actually cover the balance — a
+    # partial payment must leave it payable, otherwise the remainder becomes
+    # permanently uncollectable.
+    summary = await fee_service.get_student_fee_summary(record.student_id)
+    rec_detail = next(
+        (item for item in summary.get("records", []) if str(item.get("record_id")) == str(record.id)),
+        None,
+    )
+    _sync_record_status(record, rec_detail)
+    await db.commit()
+
+    return {
+        "status": record.status.value if hasattr(record.status, "value") else str(record.status),
+        "record_id": str(record.id),
+    }
+
+
+@router.post("/{record_id}/create-order", response_model=CreateOrderResponse)
+async def create_razorpay_order(
+    record_id: str,
+    payload: CreateOrderRequest,
+    current_user: User = Depends(role_required([UserRole.STUDENT])),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Create a Razorpay order for a fee record and record a 'created' Payment row."""
+    record_res = await db.execute(
+        select(FeeRecord).where(FeeRecord.id == record_id, FeeRecord.is_deleted.is_(False))
+    )
+    record = record_res.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="Fee record not found")
+
+    fee_service = FeeService(db)
+    await fee_service.assert_owns_record(record, current_user)
+
+    if record.status == FeeStatus.PAID:
+        raise HTTPException(status_code=400, detail="Fee already paid")
+
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
+    if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+        raise HTTPException(status_code=503, detail="Payment gateway is not configured")
+
+    paise = int(round(payload.amount * 100))
+    client = _get_razorpay_client()
+    try:
+        order = client.order.create({
+            "amount": paise,
+            "currency": "INR",
+            "receipt": record_id,
+        })
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to create payment order: {exc}")
+
+    payment = Payment(
+        fee_record_id=record.id,
+        amount=payload.amount,
+        mode="Razorpay",
+        txn_id=order["id"],
+        razorpay_order_id=order["id"],
+        status="created",
+        paid_at=datetime.now(timezone.utc),
+    )
+    db.add(payment)
+    await db.commit()
+
+    return CreateOrderResponse(
+        order_id=order["id"],
+        amount=payload.amount,
+        currency="INR",
+        key_id=settings.RAZORPAY_KEY_ID,
+    )
+
+
+@router.post("/{record_id}/verify-payment", response_model=VerifyPaymentResponse)
+async def verify_razorpay_payment(
+    record_id: str,
+    payload: VerifyPaymentRequest,
+    current_user: User = Depends(role_required([UserRole.STUDENT])),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Verify a Razorpay payment signature server-side and update the Payment/FeeRecord."""
+    record_res = await db.execute(
+        select(FeeRecord).where(FeeRecord.id == record_id, FeeRecord.is_deleted.is_(False))
+    )
+    record = record_res.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="Fee record not found")
+
+    fee_service = FeeService(db)
+    await fee_service.assert_owns_record(record, current_user)
+
+    payment_res = await db.execute(
+        select(Payment).where(
+            Payment.razorpay_order_id == payload.razorpay_order_id,
+            Payment.fee_record_id == record.id,
+            Payment.is_deleted.is_(False),
+        )
+    )
+    payment = payment_res.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="No matching payment order found for this fee record")
+
+    client = _get_razorpay_client()
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": payload.razorpay_order_id,
+            "razorpay_payment_id": payload.razorpay_payment_id,
+            "razorpay_signature": payload.razorpay_signature,
+        })
+        verified = True
+    except Exception:
+        verified = False
+
+    if not verified:
+        payment.status = "failed"
+        payment.razorpay_payment_id = payload.razorpay_payment_id
+        payment.razorpay_signature = payload.razorpay_signature
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Payment signature verification failed")
+
+    payment.status = "paid"
+    payment.razorpay_payment_id = payload.razorpay_payment_id
+    payment.razorpay_signature = payload.razorpay_signature
+    payment.paid_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    # Recompute settlement from the recorded payments and align the stored status,
+    # so a verified part-payment lands in PARTIALLY_PAID rather than staying PENDING.
+    summary = await fee_service.get_student_fee_summary(record.student_id)
+    rec_detail = next((item for item in summary.get("records", []) if str(item.get("record_id")) == str(record.id)), None)
+    _sync_record_status(record, rec_detail)
+    await db.commit()
+
+    return VerifyPaymentResponse(
+        status="paid",
+        record_id=str(record.id),
+        fee_status=record.status.value if hasattr(record.status, "value") else str(record.status),
+    )
+
+
+@router.post("/webhook/razorpay")
+async def razorpay_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Server-side Razorpay webhook — defense in depth against the app never
+    calling /verify-payment (killed mid-flow, network drop after the payment
+    succeeded on Razorpay's side). No auth dependency: this is called by
+    Razorpay's servers directly, authenticated via HMAC signature instead."""
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+
+    if not settings.RAZORPAY_WEBHOOK_SECRET:
+        # Intentionally unconfigured in this environment — no-op with a 200 so
+        # Razorpay doesn't retry-storm us, rather than erroring.
+        logger.warning("razorpay_webhook: RAZORPAY_WEBHOOK_SECRET not configured; ignoring webhook call")
+        return {"status": "ignored", "reason": "webhook not configured"}
+
+    # Verify the signature. Prefer the SDK helper if available, else fall back
+    # to manual HMAC verification — never skip verification when a secret IS configured.
+    verified = False
+    try:
+        client = _get_razorpay_client()
+        client.utility.verify_webhook_signature(
+            raw_body.decode("utf-8"), signature, settings.RAZORPAY_WEBHOOK_SECRET
+        )
+        verified = True
+    except AttributeError:
+        expected_signature = hmac.new(
+            settings.RAZORPAY_WEBHOOK_SECRET.encode("utf-8"),
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+        verified = hmac.compare_digest(expected_signature, signature)
+    except Exception:
+        verified = False
+
+    if not verified:
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    try:
+        payload = await request.json()
+    except Exception:
+        # Signature verified but body isn't valid JSON — ack anyway (2xx),
+        # nothing meaningful to process.
+        return {"status": "ok", "processed": False}
+
+    event = payload.get("event")
+    if event != "payment.captured":
+        # Not an event we act on yet; ack quickly regardless.
+        return {"status": "ok", "processed": False, "event": event}
+
+    try:
+        entity = payload["payload"]["payment"]["entity"]
+        order_id = entity.get("order_id")
+        payment_id = entity.get("id")
+    except (KeyError, TypeError):
+        logger.warning("razorpay_webhook: unexpected payload shape for payment.captured event")
+        return {"status": "ok", "processed": False}
+
+    if not order_id:
+        return {"status": "ok", "processed": False}
+
+    payment_res = await db.execute(
+        select(Payment).where(
+            Payment.razorpay_order_id == order_id,
+            Payment.is_deleted.is_(False),
+        )
+    )
+    payment = payment_res.scalar_one_or_none()
+    if not payment:
+        logger.warning("razorpay_webhook: no Payment row found for razorpay_order_id=%s", order_id)
+        return {"status": "ok", "processed": False}
+
+    if payment.status != "paid":
+        payment.status = "paid"
+        payment.razorpay_payment_id = payment_id
+        payment.paid_at = datetime.now(timezone.utc)
+        await db.commit()
+
+        record_res = await db.execute(
+            select(FeeRecord).where(FeeRecord.id == payment.fee_record_id, FeeRecord.is_deleted.is_(False))
+        )
+        record = record_res.scalar_one_or_none()
+        if record and record.status != FeeStatus.PAID:
+            fee_service = FeeService(db)
+            summary = await fee_service.get_student_fee_summary(record.student_id)
+            rec_detail = next(
+                (item for item in summary.get("records", []) if str(item.get("record_id")) == str(record.id)),
+                None,
+            )
+            if rec_detail and rec_detail.get("status") == "paid":
+                record.status = FeeStatus.PAID
+                await db.commit()
+
+    return {"status": "ok", "processed": True}
 
 
 # ─────────────────────────────────────────────────────────
@@ -197,6 +476,7 @@ async def admin_search_students(
         batch = f"{batch_start}-{batch_start + (reg.duration_years if reg else 3)}" if student.batch_year else ""
         result.append({
             "student_id": str(student.id),
+            "user_id": str(user.id),
             "name": user.full_name or "",
             "roll_no": student.roll_no,
             "username": user.phone or user.email.split("@")[0],

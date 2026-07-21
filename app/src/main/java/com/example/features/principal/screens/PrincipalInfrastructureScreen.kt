@@ -37,6 +37,13 @@ fun PrincipalInfrastructureScreen(onNavigate: (String) -> Unit, viewModel: Princ
     ) {
         if (uiState.isLoading) {
             Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (uiState.error != null) {
+            // Without this the screen rendered empty on failure — no message,
+            // no retry — indistinguishable from genuinely having no data.
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load infrastructure",
+                onRetry = { viewModel.loadInfrastructure() }
+            )
         } else if (uiState.data == null || uiState.data!!.buildings.isEmpty()) {
             com.example.core.ui.EnterpriseEmptyState("No Infrastructure Data", "Infrastructure details are not currently available.")
         } else {

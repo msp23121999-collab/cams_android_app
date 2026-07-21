@@ -1,5 +1,7 @@
 package com.example.features.principal.screens
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.principal.providers.PrincipalGrievancesViewModel
 import com.example.core.repository.PrincipalRepositoryImpl
 import com.example.core.network.ApiClient
+import com.example.core.network.GrievanceDto
 
 @Composable
 fun PrincipalGrievancesScreen(
@@ -36,9 +39,18 @@ fun PrincipalGrievancesScreen(
         }
     )
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+    var grievancePendingReview by remember { mutableStateOf<GrievanceDto?>(null) }
     val grievances = uiState.grievances
+
+    LaunchedEffect(uiState.resolveError) {
+        uiState.resolveError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearResolveError()
+        }
+    }
 
     PrincipalBaseScreen(
         title = "Grievance Inbox",
@@ -64,6 +76,13 @@ fun PrincipalGrievancesScreen(
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        } else if (uiState.error != null) {
+            // Without this the screen rendered empty on failure — no message,
+            // no retry — indistinguishable from genuinely having no data.
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load grievances",
+                onRetry = { viewModel.loadGrievances() }
+            )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(grievances.filter { it.subject.contains(searchQuery, ignoreCase = true) || it.id.contains(searchQuery, ignoreCase = true) }) { grievance ->
@@ -85,17 +104,57 @@ fun PrincipalGrievancesScreen(
                         }
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        Button(
-                            onClick = { /* Review */ },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
-                        ) {
-                            Text("Review Grievance")
+                        Text(
+                            grievance.status, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            color = if (grievance.status.equals("Resolved", true)) Color(0xFF10B981) else Color(0xFFB45309),
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                        Spacer(Modifier.weight(1f))
+                        if (!grievance.status.equals("Resolved", true) && !grievance.status.equals("Rejected", true)) {
+                            Button(
+                                onClick = { grievancePendingReview = grievance },
+                                colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
+                            ) {
+                                Text("Review Grievance")
+                            }
                         }
                     }
                 }
             }
         }
     }
+    }
+
+    grievancePendingReview?.let { grievance ->
+        var comments by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { grievancePendingReview = null },
+            title = { Text("Review Grievance") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(grievance.subject, fontWeight = FontWeight.Bold)
+                    Text(grievance.description, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = comments, onValueChange = { comments = it }, label = { Text("Comments") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !uiState.isResolving,
+                    onClick = {
+                        viewModel.resolve(grievance.id, "Resolved", comments.trim().ifBlank { null })
+                        grievancePendingReview = null
+                    }
+                ) { Text(if (uiState.isResolving) "Saving..." else "Mark Resolved") }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !uiState.isResolving,
+                    onClick = {
+                        viewModel.resolve(grievance.id, "Rejected", comments.trim().ifBlank { null })
+                        grievancePendingReview = null
+                    }
+                ) { Text("Reject", color = Color(0xFFB91C1C)) }
+            }
+        )
     }
 }

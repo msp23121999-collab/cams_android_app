@@ -18,7 +18,7 @@ from app.db.models.payroll import Salary, SalarySlip, Deduction, SalarySlipReque
 from app.db.models.attendance import Attendance, AttendanceCorrection
 from app.db.models.leave import LeaveRequest
 from app.db.models.student import Student, MentorshipRecord
-from app.db.models.substitution import FacultyAbsence, SubstitutionAllocation, SubstitutionStatus
+from app.db.models.substitution import FacultyAbsence, SubstitutionAllocation, SubstitutionStatus, AllocationMethod
 from app.db.models.audit import AuditLog
 from app.schemas.dashboard import DashboardResponse, MetricSchema
 from app.schemas.faculty import (
@@ -127,10 +127,10 @@ async def faculty_dashboard(
 
     return DashboardResponse(
         metrics=[
-            MetricSchema(id="classes", label="Today's Classes", value=str(classes_count)),
-            MetricSchema(id="pending", label="Pending Attendance", value=str(pending_attendance_count)),
-            MetricSchema(id="assignments", label="Pending Assignments", value=str(assignments_count)),
-            MetricSchema(id="leave", label="Leave Balance", value=f"{leave_balance} days"),
+            MetricSchema(id="classes_today", label="Today's Classes", value=str(classes_count)),
+            MetricSchema(id="pending_attendance", label="Pending Attendance", value=str(pending_attendance_count)),
+            MetricSchema(id="pending_assignments", label="Pending Assignments", value=str(assignments_count)),
+            MetricSchema(id="leave_balance", label="Leave Balance", value=f"{leave_balance} days"),
         ]
     )
 
@@ -514,6 +514,18 @@ async def mark_attendance_bulk(
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
 
+    if current_user.role == UserRole.FACULTY:
+        teaches_q = await db.execute(
+            select(Timetable.id).where(
+                Timetable.faculty_id == current_user.id,
+                Timetable.section_id == payload.section_id,
+                Timetable.subject_id == payload.subject_id,
+                Timetable.is_deleted.is_(False)
+            ).limit(1)
+        )
+        if not teaches_q.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="You are not assigned to teach this section/subject")
+
     from datetime import datetime
     date_val = datetime.strptime(payload.date, "%Y-%m-%d").date()
 
@@ -789,6 +801,19 @@ async def submit_attendance_correction(
     return {"detail": "Correction request logged and pending HOD approval"}
 
 
+async def _get_hod_student_roll_numbers(current_user: User, db: AsyncSession) -> set[str] | None:
+    """Roll numbers of students in the HOD's own department, or None if the
+    caller isn't an HOD (i.e. Principal/SuperAdmin who see everything)."""
+    if current_user.role != UserRole.HOD:
+        return None
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="HOD is not assigned to a department")
+    roll_q = await db.execute(
+        select(Student.roll_no).where(Student.department_id == current_user.department_id, Student.is_deleted.is_(False))
+    )
+    return {r for r in roll_q.scalars().all()}
+
+
 @router.get("/attendance/correction-requests")
 async def get_attendance_correction_requests(
     status_filter: str = "all",
@@ -800,9 +825,14 @@ async def get_attendance_correction_requests(
         stmt = stmt.where(func.upper(AttendanceCorrection.status) == status_filter.upper())
     else:
         stmt = stmt.order_by(AttendanceCorrection.created_at.desc())
-        
+
     q = await db.execute(stmt)
     corrs = q.scalars().all()
+
+    dept_roll_nos = await _get_hod_student_roll_numbers(current_user, db)
+    if dept_roll_nos is not None:
+        corrs = [c for c in corrs if c.student_reg_no in dept_roll_nos]
+
     return [
         {
             "id": c.id,
@@ -834,7 +864,7 @@ async def approve_attendance_correction(
     corr = await db.get(AttendanceCorrection, requestId)
     if not corr or corr.is_deleted:
         raise HTTPException(status_code=404, detail="Correction request not found")
-        
+
     if corr.status == "APPROVED":
         raise HTTPException(status_code=400, detail="Already approved")
 
@@ -843,6 +873,9 @@ async def approve_attendance_correction(
     student = res_s.scalar_one_or_none()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in DB")
+
+    if current_user.role == UserRole.HOD and student.department_id != current_user.department_id:
+        raise HTTPException(status_code=403, detail="You can only approve corrections for your own department")
 
     stmt_att = select(Attendance).where(
         Attendance.section_id == student.section_id,
@@ -919,6 +952,12 @@ async def reject_attendance_correction(
     corr = await db.get(AttendanceCorrection, requestId)
     if not corr or corr.is_deleted:
         raise HTTPException(status_code=404, detail="Correction request not found")
+
+    if current_user.role == UserRole.HOD:
+        res_s = await db.execute(select(Student).where(Student.roll_no == corr.student_reg_no, Student.is_deleted.is_(False)))
+        student = res_s.scalar_one_or_none()
+        if not student or student.department_id != current_user.department_id:
+            raise HTTPException(status_code=403, detail="You can only reject corrections for your own department")
 
     corr.status = "REJECTED"
     corr.remarks = payload.remarks
@@ -1002,7 +1041,7 @@ async def get_faculty_attendance_notifications(
 
 @router.get("/notifications")
 async def get_faculty_notifications(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
     db: AsyncSession = Depends(get_db_session)
 ):
     from app.services.notification_service import NotificationService
@@ -1024,7 +1063,7 @@ async def get_faculty_notifications(
 @router.post("/notifications/read/{notif_id}")
 async def mark_faculty_notification_read(
     notif_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
     db: AsyncSession = Depends(get_db_session)
 ):
     from app.db.models.communication import Notification
@@ -1036,6 +1075,20 @@ async def mark_faculty_notification_read(
     await db.commit()
     return {"detail": "Notification marked as read"}
 
+
+@router.post("/notifications/read-all")
+async def mark_all_faculty_notifications_read(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    from app.db.models.communication import Notification
+    await db.execute(
+        update(Notification)
+        .where(Notification.user_id == current_user.id, Notification.is_read.is_(False))
+        .values(is_read=True)
+    )
+    await db.commit()
+    return {"detail": "All notifications marked as read"}
 
 
 @router.get("/attendance/audit-logs")
@@ -1066,6 +1119,97 @@ async def get_faculty_attendance_audit_logs(
 # These endpoints expose data from Admin modules (User Accounts, Department Setup,
 # Course/Subject Setup) to the faculty portal with appropriate access controls.
 
+# Fields that must never appear in a roster listing for a plain FACULTY caller.
+# They remain available to HOD / PRINCIPAL / ADMIN / SUPER_ADMIN.
+FACULTY_RESTRICTED_STUDENT_FIELDS = (
+    "aadhaar_number",
+    "passport_number",
+    "current_address",
+    "permanent_address",
+    "father_office_address",
+    "mother_office_address",
+    "parent_annual_income",
+    "medical_info",
+)
+
+
+def _redact_student_pii(payload: dict) -> dict:
+    """Strip sensitive PII from a student roster entry for FACULTY callers."""
+    for field in FACULTY_RESTRICTED_STUDENT_FIELDS:
+        payload.pop(field, None)
+    return payload
+
+
+async def _faculty_permitted_student_ids(current_user: User, db: AsyncSession) -> set[str]:
+    """Student ids a FACULTY member is allowed to see in a roster.
+
+    Union of:
+      1. Students in sections the faculty actually teaches (Timetable.faculty_id),
+         consistent with `_assert_teaches_section_subject` in marks.py.
+      2. Students of a class the faculty is Class Advisor for (ClassAdvisor),
+         scoped exactly the same way as class_advisor.py does it.
+      3. Students this faculty mentors (Student.mentor_id).
+    """
+    from app.db.models.class_advisor import ClassAdvisor
+
+    permitted: set[str] = set()
+
+    # 1. Taught sections
+    sec_res = await db.execute(
+        select(Timetable.section_id).where(
+            Timetable.faculty_id == current_user.id,
+            Timetable.section_id.isnot(None),
+            Timetable.is_deleted.is_(False)
+        ).distinct()
+    )
+    taught_section_ids = [r[0] for r in sec_res.all() if r[0]]
+    if taught_section_ids:
+        res = await db.execute(
+            select(Student.id).where(
+                Student.section_id.in_(taught_section_ids),
+                Student.is_deleted.is_(False)
+            )
+        )
+        permitted.update(r[0] for r in res.all())
+
+    # 2. Class advisor assignments
+    adv_res = await db.execute(
+        select(ClassAdvisor).where(
+            ClassAdvisor.faculty_id == current_user.id,
+            ClassAdvisor.is_deleted.is_(False)
+        )
+    )
+    for assignment in adv_res.scalars().all():
+        try:
+            batch_year = int(str(assignment.batch).split("-")[0])
+        except (ValueError, AttributeError):
+            continue
+        adv_stmt = (
+            select(Student.id)
+            .outerjoin(Section, Student.section_id == Section.id)
+            .where(
+                Student.department_id == assignment.department_id,
+                Student.batch_year == batch_year,
+                Student.is_deleted.is_(False)
+            )
+        )
+        if assignment.section_name:
+            adv_stmt = adv_stmt.where(Section.section_name == assignment.section_name)
+        res = await db.execute(adv_stmt)
+        permitted.update(r[0] for r in res.all())
+
+    # 3. Mentees
+    men_res = await db.execute(
+        select(Student.id).where(
+            Student.mentor_id == current_user.id,
+            Student.is_deleted.is_(False)
+        )
+    )
+    permitted.update(r[0] for r in men_res.all())
+
+    return permitted
+
+
 @router.get("/students/list")
 async def get_faculty_students_list(
     dept_id: str | None = None,
@@ -1083,11 +1227,18 @@ async def get_faculty_students_list(
         User.is_deleted.is_(False)
     )
 
+    is_faculty = current_user.role == UserRole.FACULTY
     if current_user.role == UserRole.HOD:
         dept_id = await get_hod_department_id(current_user, db)
-    elif current_user.role == UserRole.FACULTY:
+    elif is_faculty:
         if current_user.department_id:
             dept_id = current_user.department_id
+        # Faculty may only see students in sections/subjects they actually
+        # teach, plus their class-advisor class and their mentees.
+        permitted_ids = await _faculty_permitted_student_ids(current_user, db)
+        if not permitted_ids:
+            return []
+        stmt = stmt.where(Student.id.in_(list(permitted_ids)))
 
     if dept_id:
         stmt = stmt.where(Student.department_id == dept_id)
@@ -1110,7 +1261,7 @@ async def get_faculty_students_list(
             sec_obj = await db.get(Section, student.section_id)
             if sec_obj:
                 section_name = sec_obj.section_name
-        results.append({
+        entry = {
             "student_id": student.id,
             "user_id": user.id,
             "roll_no": student.roll_no,
@@ -1165,7 +1316,8 @@ async def get_faculty_students_list(
             "special_skills": student.special_skills,
             "medical_info": student.medical_info,
             "certifications": student.certifications
-        })
+        }
+        results.append(_redact_student_pii(entry) if is_faculty else entry)
     return results
 
 
@@ -1412,34 +1564,6 @@ async def get_payroll(
                 
     return filtered_records
 
-@router.get("/materials")
-async def get_faculty_materials(
-    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """Get study materials uploaded by this faculty."""
-    q = await db.execute(
-        select(StudyMaterial).where(
-            StudyMaterial.faculty_id == current_user.id,
-            StudyMaterial.is_deleted.is_(False)
-        )
-    )
-    materials = q.scalars().all()
-    return [
-        {
-            "id": m.id,
-            "title": m.title,
-            "type": m.type,
-            "file_url": m.file_url,
-            "is_verified": m.is_verified,
-            "status": m.status if hasattr(m, "status") else "PENDING",
-            "comments": m.comments if hasattr(m, "comments") else None,
-            "section_id": m.section_id,
-            "created_at": str(m.created_at)
-        }
-        for m in materials
-    ]
-
 @router.post("/materials", response_model=StudyMaterialResponse)
 async def upload_material(
     payload: StudyMaterialUploadRequest,
@@ -1475,106 +1599,6 @@ async def upload_material(
         status=material.status if hasattr(material, "status") else "PENDING",
         comments=material.comments if hasattr(material, "comments") else None
     )
-
-@router.get("/assignments")
-async def get_faculty_assignments(
-    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """Get assignments created by this faculty."""
-    q = await db.execute(
-        select(Assignment).where(
-            Assignment.faculty_id == current_user.id,
-            Assignment.is_deleted.is_(False)
-        )
-    )
-    assignments = q.scalars().all()
-    results = []
-    for a in assignments:
-        # Get section/course name
-        section = await db.get(Section, a.section_id) if a.section_id else None
-        course = await db.get(Course, section.course_id) if section and section.course_id else None
-        results.append({
-            "id": a.id,
-            "title": a.title,
-            "deadline": str(a.deadline) if a.deadline else None,
-            "submission_count": a.submission_count or 0,
-            "section_id": a.section_id,
-            "section_name": section.section_name if section else None,
-            "subject_name": course.name if course else None,
-            "created_at": str(a.created_at)
-        })
-    return results
-
-@router.get("/students")
-async def get_faculty_students_alias(
-    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """Alias for /students/list for the Android app."""
-    from app.db.models.student import Student
-    stmt = select(Student, User).join(User, Student.user_id == User.id).where(
-        Student.is_deleted.is_(False),
-        User.is_deleted.is_(False)
-    )
-    if current_user.department_id:
-        stmt = stmt.where(Student.department_id == current_user.department_id)
-    res = await db.execute(stmt)
-    rows = res.all()
-    results = []
-    for student, user in rows:
-        dept = await db.get(Department, student.department_id) if student.department_id else None
-        results.append({
-            "id": student.id,
-            "student_id": student.id,
-            "roll_no": student.roll_no,
-            "full_name": user.full_name,
-            "email": user.email,
-            "phone": student.mobile_number or user.phone,
-            "semester": student.semester,
-            "department_name": dept.name if dept else None,
-            "verification_status": student.verification_status or "DRAFT",
-        })
-    return results
-
-@router.get("/dashboard/metrics")
-async def faculty_dashboard_metrics(
-    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD])),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """Return dashboard metrics in a format expected by the Android app."""
-    import datetime
-    today_weekday = datetime.datetime.now().strftime("%A").upper()
-    classes_count = 0
-    try:
-        weekday_enum = Weekday[today_weekday]
-        q = await db.execute(
-            select(func.count(Timetable.id)).where(
-                Timetable.faculty_id == current_user.id,
-                Timetable.weekday == weekday_enum,
-                Timetable.is_deleted.is_(False)
-            )
-        )
-        classes_count = q.scalar() or 0
-    except KeyError:
-        pass
-
-    # Assignments
-    aq = await db.execute(
-        select(func.count(Assignment.id)).where(
-            Assignment.faculty_id == current_user.id,
-            Assignment.is_deleted.is_(False)
-        )
-    )
-    assignments_count = aq.scalar() or 0
-
-    # Leave balance (simple default)
-    return {
-        "classes_today": str(classes_count),
-        "pending_assignments": str(assignments_count),
-        "leave_balance": "15 days",
-        "pending_attendance": "0"
-    }
 
 @router.post("/assignments")
 async def create_assignment(
@@ -1637,12 +1661,16 @@ async def create_research(
         title=payload.title,
         publication=payload.publication,
         grant_amount=payload.grant_amount,
+        publisher=payload.publisher,
+        publication_date=payload.publication_date,
+        isbn_issn=payload.isbn_issn,
+        research_type=payload.research_type,
         proof_file_url=payload.proof_file_url,
         status="PENDING" if payload.proof_file_url else "APPROVED"
     )
     db.add(res)
     await db.flush()
-    
+
     # Log submission to AuditLog
     audit_entry = AuditLog(
         user_id=current_user.id,
@@ -1652,13 +1680,18 @@ async def create_research(
         timestamp=datetime.now()
     )
     db.add(audit_entry)
-    
+
     await db.commit()
+    grant_amt = res.grant_amount
     return ResearchResponse(
-        id=res.id, 
-        title=res.title, 
-        publication=res.publication, 
-        grant_amount=res.grant_amount,
+        id=res.id,
+        title=res.title,
+        publication=res.publication,
+        grant_amount=float(grant_amt) if grant_amt is not None else None,  # type: ignore
+        publisher=res.publisher,
+        publication_date=res.publication_date,
+        isbn_issn=res.isbn_issn,
+        research_type=res.research_type,
         proof_file_url=res.proof_file_url,
         status=res.status,
         comments=res.comments
@@ -1740,11 +1773,7 @@ async def hod_dashboard(
 ) -> DashboardResponse:
     dept_id = await get_hod_department_id(current_user, db)
     if not dept_id:
-        from app.db.models.academic import Department
-        dept_q = await db.execute(select(Department).where(Department.is_deleted.is_(False)).order_by(Department.code))
-        dept = dept_q.scalars().first()
-        if dept:
-            dept_id = dept.id
+        raise HTTPException(status_code=400, detail="HOD is not assigned to a department")
     active_faculty = await get_active_faculty_ids(db, dept_id)
 
     # Resolve pending materials verification (excluding deleted materials, and only from active faculty in department)
@@ -1784,16 +1813,43 @@ async def hod_dashboard(
             
     avg_hours = sum(w.teaching_hours for w in unique_workloads) / len(unique_workloads) if unique_workloads else 0
 
-    # Calculate Department Health Index based on average student attendance
-    health_stmt = select(
-        func.count(Attendance.id),
-        func.count(Attendance.id).filter(Attendance.status.in_(["present", "od"]))
-    ).where(Attendance.is_deleted.is_(False))
-    
-    health_res = await db.execute(health_stmt)
-    health_row = health_res.first()
-    total_att = health_row[0] if health_row else 0
-    present_att = health_row[1] if health_row else 0
+    # Calculate Department Health Index based on average student attendance.
+    # Attendance rows store one session per (section, subject, date, hour) with
+    # absentee_ids/od_ids lists rather than a per-student status column, so the
+    # health index is computed as (enrolled - absent) / enrolled across sessions
+    # for sections belonging to this department.
+    from app.db.models.academic import Section as SectionModel, Course as CourseModel
+
+    dept_sections_q = await db.execute(
+        select(SectionModel.id).join(CourseModel, SectionModel.course_id == CourseModel.id).where(
+            CourseModel.dept_id == dept_id, SectionModel.is_deleted.is_(False)
+        )
+    )
+    dept_section_ids = [row[0] for row in dept_sections_q.all()]
+
+    total_att = 0
+    present_att = 0
+    if dept_section_ids:
+        section_sizes_q = await db.execute(
+            select(Student.section_id, func.count(Student.id)).where(
+                Student.section_id.in_(dept_section_ids), Student.is_deleted.is_(False)
+            ).group_by(Student.section_id)
+        )
+        section_sizes = dict(section_sizes_q.all())
+
+        health_res = await db.execute(
+            select(Attendance).where(
+                Attendance.section_id.in_(dept_section_ids), Attendance.is_deleted.is_(False)
+            )
+        )
+        for record in health_res.scalars().all():
+            enrolled = section_sizes.get(record.section_id, 0)
+            if enrolled == 0:
+                continue
+            absent = len(record.absentee_ids or [])
+            total_att += enrolled
+            present_att += max(0, enrolled - absent)
+
     health_idx = int((present_att / total_att) * 100) if total_att > 0 else 100
 
     return DashboardResponse(
@@ -2346,7 +2402,12 @@ async def update_my_profile(
     if payload.state is not None: profile.state = payload.state
     if payload.pincode is not None: profile.pincode = payload.pincode
     if payload.profile_photo_url is not None: profile.profile_photo_url = payload.profile_photo_url
-    
+    if payload.gender is not None: profile.gender = payload.gender
+    if payload.date_of_birth is not None: profile.date_of_birth = payload.date_of_birth
+    if payload.blood_group is not None: profile.blood_group = payload.blood_group
+    if payload.nationality is not None: profile.nationality = payload.nationality
+    if payload.official_phone is not None: current_user.phone = payload.official_phone
+
     if payload.educational_qualifications is not None:
         profile.educational_qualifications = [q.model_dump() for q in payload.educational_qualifications]
     if payload.experience_details is not None:
@@ -2640,7 +2701,12 @@ async def approve_profile_update_request(
     req = await db.get(FacultyProfileUpdateRequest, request_id)
     if not req or req.is_deleted or req.status != "PENDING":
         raise HTTPException(status_code=404, detail="Pending request not found.")
-        
+
+    req_dept_id = await get_hod_department_id(current_user, db)
+    target_user_dept = await db.get(User, req.user_id)
+    if not req_dept_id or not target_user_dept or target_user_dept.department_id != req_dept_id:
+        raise HTTPException(status_code=403, detail="You can only process requests for your own department")
+
     req.status = "APPROVED"
     req.comments = payload.comments
     req.processed_at = datetime.now()
@@ -2718,7 +2784,12 @@ async def reject_profile_update_request(
     req = await db.get(FacultyProfileUpdateRequest, request_id)
     if not req or req.is_deleted or req.status != "PENDING":
         raise HTTPException(status_code=404, detail="Pending request not found.")
-        
+
+    req_dept_id = await get_hod_department_id(current_user, db)
+    target_user_dept = await db.get(User, req.user_id)
+    if not req_dept_id or not target_user_dept or target_user_dept.department_id != req_dept_id:
+        raise HTTPException(status_code=403, detail="You can only process requests for your own department")
+
     req.status = "REJECTED"
     req.comments = payload.comments
     req.processed_at = datetime.now()
@@ -2771,7 +2842,12 @@ async def request_changes_profile_update_request(
     req = await db.get(FacultyProfileUpdateRequest, request_id)
     if not req or req.is_deleted or req.status != "PENDING":
         raise HTTPException(status_code=404, detail="Pending request not found.")
-        
+
+    req_dept_id = await get_hod_department_id(current_user, db)
+    target_user_dept = await db.get(User, req.user_id)
+    if not req_dept_id or not target_user_dept or target_user_dept.department_id != req_dept_id:
+        raise HTTPException(status_code=403, detail="You can only process requests for your own department")
+
     req.status = "CHANGES_REQUESTED"
     req.comments = payload.comments
     req.processed_at = datetime.now()
@@ -2823,15 +2899,16 @@ async def get_activity_summary(
     # Default to current user if not specified
     target_user_id = user_id if user_id else current_user.id
     
-    # 1. Classes Conducted (From local json)
-    from app.api.v1.endpoints.teaching_logs import load_db as load_teaching_db
-    classes_conducted = 0
-    try:
-        teaching_db = load_teaching_db()
-        diaries = [d for d in teaching_db.get("class_diaries", {}).values() if d.get("faculty_id") == target_user_id and d.get("status") == "Submitted"]
-        classes_conducted = len(diaries)
-    except Exception:
-        pass
+    # 1. Classes Conducted (real SQL-backed count)
+    from app.db.models.class_diary import ClassDiary
+    classes_conducted_q = await db.execute(
+        select(func.count(ClassDiary.id)).where(
+            ClassDiary.faculty_id == target_user_id,
+            ClassDiary.status == "Submitted",
+            ClassDiary.is_deleted.is_(False)
+        )
+    )
+    classes_conducted = classes_conducted_q.scalar_one_or_none() or 0
 
     # 2. Attendance Marked (Total rows in sections handled by this faculty)
     sections_q = await db.execute(select(Timetable.section_id).where(Timetable.faculty_id == target_user_id, Timetable.is_deleted.is_(False)))
@@ -2953,7 +3030,7 @@ async def upload_document(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    return {"file_url": f"/mock-uploads/{safe_filename}", "filename": file.filename or "file"}
+    return {"file_url": f"/api/v1/files/{safe_filename}", "filename": file.filename or "file"}
 
 @router.get("/research/list", response_model=list[ResearchResponse])
 @router.get("/research/list/{user_id}", response_model=list[ResearchResponse])
@@ -3593,35 +3670,38 @@ async def get_hod_student_report(
     depts = (await db.execute(dept_q)).scalars().all()
     dept_by_id = {d.id: d for d in depts}
 
-    # Fetch attendance
-    att_records = []
+    # Attendance rows store one session per (section, subject, date, hour) with
+    # absentee_ids/od_ids lists rather than a per-student status column, so
+    # per-student presence is computed session-by-session against the
+    # student's own enrolled section.
+    sessions_by_section: dict[str, list] = {}
     if student_ids:
-        att_q = select(Attendance).where(
-            Attendance.is_deleted.is_(False),
-            Attendance.student_id.in_(student_ids)
-        )
-        att_records_all = (await db.execute(att_q)).scalars().all()
-        # Deduplicate
-        seen_att = set()
-        for a in att_records_all:
-            a_key = (a.student_id, getattr(a, 'date', None) or a.id)
-            if a_key not in seen_att:
-                seen_att.add(a_key)
-                att_records.append(a)
+        section_ids = {sp.section_id for sp in student_profiles if sp.section_id}
+        if section_ids:
+            att_sessions_q = await db.execute(
+                select(Attendance).where(
+                    Attendance.section_id.in_(section_ids),
+                    Attendance.is_deleted.is_(False)
+                )
+            )
+            for session in att_sessions_q.scalars().all():
+                sessions_by_section.setdefault(session.section_id, []).append(session)
 
-    total_att = len(att_records)
-    
-    # Helper to check status safely
-    def is_present(status_val):
-        val = getattr(status_val, 'value', str(status_val)).lower()
-        return val == "present" or val == "od"
+    def build_student_attendance(sp) -> tuple[int, int]:
+        sessions = sessions_by_section.get(sp.section_id, []) if sp.section_id else []
+        total = len(sessions)
+        present = 0
+        for session in sessions:
+            absent = sp.id in (session.absentee_ids or [])
+            on_duty = sp.id in (session.od_ids or [])
+            if not absent or on_duty:
+                present += 1
+        return present, total
 
-    def is_absent(status_val):
-        val = getattr(status_val, 'value', str(status_val)).lower()
-        return val == "absent"
-
-    present_count = sum(1 for a in att_records if is_present(a.status))
-    overall_attendance_pct = round((present_count / total_att * 100), 1) if total_att > 0 else 0
+    total_att = sum(len(sessions) for sessions in sessions_by_section.values())
+    all_present = sum(build_student_attendance(sp)[0] for sp in student_profiles)
+    all_total = sum(build_student_attendance(sp)[1] for sp in student_profiles)
+    overall_attendance_pct = round((all_present / all_total * 100), 1) if all_total > 0 else 0
 
     # Fetch leaves
     all_leaves = []
@@ -3664,9 +3744,7 @@ async def get_hod_student_report(
             continue
             
         # Attendance
-        s_att_records = [a for a in att_records if a.student_id == sp.id]
-        s_present = sum(1 for a in s_att_records if is_present(a.status))
-        s_total = len(s_att_records)
+        s_present, s_total = build_student_attendance(sp)
         s_pct = round((s_present / s_total * 100), 1) if s_total > 0 else 0
 
         # Leaves
@@ -3846,16 +3924,156 @@ async def export_students_report_csv(
     )
 
 @router.get("/substitutions/sync")
-async def get_substitutions() -> list:
-    import json, os
-    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "substitutions_db.json")
-    if not os.path.exists(db_path):
-        return []
+async def get_substitutions(
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    db: AsyncSession = Depends(get_db_session)
+) -> list:
+    """Reads live substitution records from Postgres (SubstitutionAllocation/
+    FacultyAbsence) — the source of truth for HOD-assigned substitutions."""
+    query = (
+        select(SubstitutionAllocation, FacultyAbsence, Timetable, Course, Section)
+        .join(FacultyAbsence, SubstitutionAllocation.absence_id == FacultyAbsence.id)
+        .outerjoin(Timetable, SubstitutionAllocation.timetable_id == Timetable.id)
+        .outerjoin(Course, Timetable.subject_id == Course.id)
+        .outerjoin(Section, Timetable.section_id == Section.id)
+        .where(SubstitutionAllocation.is_deleted.is_(False))
+    )
+    if current_user.role in [UserRole.FACULTY, UserRole.HOD] and current_user.department_id:
+        query = query.where(
+            (Course.dept_id == current_user.department_id) | (Course.dept_id.is_(None))
+        )
+    rows = (await db.execute(query)).all()
+
+    faculty_ids = set()
+    for alloc, absence, tt, course, section in rows:
+        faculty_ids.add(absence.faculty_id)
+        if alloc.substitute_faculty_id:
+            faculty_ids.add(alloc.substitute_faculty_id)
+    users_res = await db.execute(select(User).where(User.id.in_(faculty_ids)))
+    users_by_id = {u.id: u for u in users_res.scalars().all()}
+
+    results = []
+    for alloc, absence, tt, course, section in rows:
+        absent_user = users_by_id.get(absence.faculty_id)
+        sub_user = users_by_id.get(alloc.substitute_faculty_id) if alloc.substitute_faculty_id else None
+        period_label = f"{tt.start_time.strftime('%H:%M')} - {tt.end_time.strftime('%H:%M')}" if tt else (alloc.remarks or "")
+        results.append({
+            "id": alloc.id,
+            "absentFacultyId": absence.faculty_id,
+            "absentFacultyName": absent_user.full_name if absent_user else "Unknown",
+            "substituteFacultyId": alloc.substitute_faculty_id,
+            "substituteFacultyName": sub_user.full_name if sub_user else None,
+            "subject": course.name if course else "",
+            "section": section.section_name if section else "",
+            "date": alloc.date.isoformat(),
+            "periodLabel": period_label,
+            "status": alloc.status.value if hasattr(alloc.status, "value") else str(alloc.status),
+        })
+    return sorted(results, key=lambda r: r["date"], reverse=True)
+
+
+class SubstitutionAssignPayload(BaseModel):
+    absent_faculty_id: str
+    absent_faculty_name: str
+    substitute_faculty_id: str
+    substitute_faculty_name: str
+    subject: str
+    section: str
+    date: str
+    period_label: str
+
+
+@router.post("/hod/substitution/assign")
+async def assign_substitution(
+    payload: SubstitutionAssignPayload,
+    current_user: User = Depends(role_required([UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+) -> dict:
+    """Add a single substitution record directly in Postgres (ownership-scoped,
+    non-destructive) so it's visible everywhere SubstitutionAllocation is read
+    (reports, analytics) — unlike the legacy JSON-file /substitutions/sync path."""
+    from datetime import datetime as dt
+
+    dept_id = await get_hod_department_id(current_user, db)
+    if not dept_id:
+        raise HTTPException(status_code=400, detail="HOD is not assigned to a department")
+
+    for faculty_id in (payload.absent_faculty_id, payload.substitute_faculty_id):
+        fac_q = await db.execute(select(User).where(User.id == faculty_id))
+        fac = fac_q.scalar_one_or_none()
+        if not fac or fac.department_id != dept_id:
+            raise HTTPException(status_code=403, detail="You can only assign substitutions within your own department")
+
     try:
-        with open(db_path, "r") as f:
-            return json.load(f)
-    except Exception:
-        return []
+        parsed_date = dt.strptime(payload.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be in YYYY-MM-DD format")
+
+    tt_query = (
+        select(Timetable)
+        .join(Course, Timetable.subject_id == Course.id)
+        .join(Section, Timetable.section_id == Section.id)
+        .where(
+            Timetable.faculty_id == payload.absent_faculty_id,
+            Timetable.is_deleted.is_(False),
+            Course.name == payload.subject,
+            Section.section_name == payload.section,
+        )
+    )
+    tt_res = await db.execute(tt_query)
+    timetable_slot = tt_res.scalars().first()
+    if not timetable_slot:
+        raise HTTPException(status_code=404, detail="No matching timetable slot found for this faculty/subject/section")
+
+    absence_q = await db.execute(
+        select(FacultyAbsence).where(
+            FacultyAbsence.faculty_id == payload.absent_faculty_id,
+            FacultyAbsence.date == parsed_date,
+            FacultyAbsence.is_deleted.is_(False)
+        )
+    )
+    absence = absence_q.scalar_one_or_none()
+    if not absence:
+        absence = FacultyAbsence(faculty_id=payload.absent_faculty_id, date=parsed_date, reason="Substitution requested by HOD")
+        db.add(absence)
+        await db.flush()
+
+    allocation = SubstitutionAllocation(
+        absence_id=absence.id,
+        timetable_id=timetable_slot.id,
+        date=parsed_date,
+        substitute_faculty_id=payload.substitute_faculty_id,
+        status=SubstitutionStatus.ALLOCATED,
+        allocation_method=AllocationMethod.MANUAL,
+        remarks=payload.period_label,
+    )
+    db.add(allocation)
+    await db.commit()
+    await db.refresh(allocation)
+
+    from app.services.notification_service import NotificationService
+    notif_service = NotificationService(db)
+    await notif_service.send_notification(
+        user_id=payload.substitute_faculty_id,
+        type_val="substitution_assigned",
+        message=f"You have been assigned to substitute for {payload.absent_faculty_name} — {payload.subject} ({payload.section}) on {payload.date} during {payload.period_label}."
+    )
+
+    return {
+        "ok": True,
+        "record": {
+            "id": allocation.id,
+            "absentFacultyId": payload.absent_faculty_id,
+            "absentFacultyName": payload.absent_faculty_name,
+            "substituteFacultyId": payload.substitute_faculty_id,
+            "substituteFacultyName": payload.substitute_faculty_name,
+            "subject": payload.subject,
+            "section": payload.section,
+            "date": payload.date,
+            "periodLabel": payload.period_label,
+            "status": allocation.status.value,
+        }
+    }
 
 @router.post("/substitutions/sync")
 async def sync_substitutions(
@@ -4434,13 +4652,7 @@ async def get_hod_timetable_metadata(
     
     dept_id = current_user.department_id
     if not dept_id:
-        from app.db.models.academic import Department
-        dept_q = await db.execute(select(Department).where(Department.is_deleted.is_(False)).order_by(Department.code))
-        dept = dept_q.scalars().first()
-        if dept:
-            dept_id = dept.id
-        else:
-            raise HTTPException(status_code=400, detail="HOD is not assigned to any department.")
+        raise HTTPException(status_code=400, detail="HOD is not assigned to any department.")
 
     # 1. Fetch all courses in HOD's department
     courses_q = await db.execute(
@@ -4522,6 +4734,9 @@ async def get_hod_timetable_section(
     if not rep_course:
         return []
 
+    if current_user.department_id and rep_course.dept_id != current_user.department_id:
+        raise HTTPException(status_code=403, detail="You can only view timetables for your own department")
+
     # Find ALL section IDs for this class (same dept, degree, semester, section_name)
     all_sec_ids_q = await db.execute(
         select(Section.id)
@@ -4589,6 +4804,9 @@ async def submit_hod_timetable(
     # 2. Get the representative course to determine class identity (dept_id, semester)
     course_q = await db.execute(select(Course).where(Course.id == section.course_id, Course.is_deleted.is_(False)))
     rep_course = course_q.scalar_one_or_none()
+
+    if current_user.department_id and rep_course and rep_course.dept_id != current_user.department_id:
+        raise HTTPException(status_code=403, detail="You can only submit timetables for your own department")
 
     # 3. Find ALL section IDs for this class group (same dept+degree+semester+section_name)
     #    so we clear ALL old slots when HOD re-submits the whole class timetable.
@@ -4699,7 +4917,9 @@ async def get_hod_attendance_monitoring(
     target_dept_id = dept_id
     if current_user.role == UserRole.HOD:
         target_dept_id = current_user.department_id
-    
+        if not target_dept_id:
+            raise HTTPException(status_code=400, detail="HOD is not assigned to a department")
+
     course_query = select(Course).where(Course.is_deleted.is_(False))
     if target_dept_id:
         course_query = course_query.outerjoin(Degree, Course.degree_id == Degree.id)
@@ -4734,27 +4954,41 @@ async def get_hod_attendance_monitoring(
         student_ids = student_ids_q.scalars().all()
         
         att_pct = 100.0
+        low_attendance_count = 0
         if student_ids:
             from app.db.models.academic import Section
             sec_ids_q = await db.execute(select(Section.id).where(Section.course_id == course.id, Section.is_deleted.is_(False)))
             sec_ids = sec_ids_q.scalars().all()
-            
+
             if sec_ids:
-                att_q = await db.execute(
-                    select(Attendance.status, func.count(Attendance.id))
-                    .where(
-                        Attendance.student_id.in_(student_ids),
+                # Attendance rows store one session per (section, subject, date, hour)
+                # with absentee_ids/od_ids lists rather than a per-student status
+                # column, so per-student presence is computed session-by-session.
+                att_sessions_q = await db.execute(
+                    select(Attendance).where(
                         Attendance.section_id.in_(sec_ids),
+                        Attendance.subject_id == course.id,
                         Attendance.is_deleted.is_(False)
                     )
-                    .group_by(Attendance.status)
                 )
-                counts = dict(att_q.all())
-                total = sum(counts.values())
-                if total > 0:
-                    present_or_od = counts.get("present", 0) + counts.get("od", 0)
-                    att_pct = round((present_or_od / total) * 105, 1)
-                    att_pct = min(100.0, att_pct)
+                sessions = att_sessions_q.scalars().all()
+                total_sessions = len(sessions)
+                if total_sessions > 0:
+                    present_total = 0
+                    possible_total = 0
+                    for sid in student_ids:
+                        student_present = 0
+                        for session in sessions:
+                            absent = sid in (session.absentee_ids or [])
+                            on_duty = sid in (session.od_ids or [])
+                            if not absent or on_duty:
+                                student_present += 1
+                        possible_total += total_sessions
+                        present_total += student_present
+                        if total_sessions > 0 and (student_present / total_sessions) * 100 < 75:
+                            low_attendance_count += 1
+                    if possible_total > 0:
+                        att_pct = round((present_total / possible_total) * 100, 1)
                     
         dept_name = ""
         if course.dept_id:
@@ -4763,10 +4997,12 @@ async def get_hod_attendance_monitoring(
 
         results.append({
             "subject": course.name,
+            "subject_code": course.code or "",
             "department": dept_name,
             "semester": course.semester,
             "student_count": student_count,
-            "attendance_percentage": att_pct
+            "attendance_percentage": att_pct,
+            "low_attendance_count": low_attendance_count
         })
         
     return results
@@ -4863,14 +5099,26 @@ async def get_hod_active_faculty(
         
     res = await db.execute(q)
     rows = res.all()
-    
+
+    faculty_ids = [u.id for u, _ in rows]
+    subject_counts: dict[str, int] = {}
+    if faculty_ids:
+        counts_q = await db.execute(
+            select(Timetable.faculty_id, func.count(func.distinct(Timetable.subject_id)))
+            .where(Timetable.faculty_id.in_(faculty_ids), Timetable.is_deleted.is_(False))
+            .group_by(Timetable.faculty_id)
+        )
+        subject_counts = dict(counts_q.all())
+
     return [
         HODFacultyResponse(
             id=u.id,
             full_name=u.full_name,
             email=u.email,
             phone=u.phone,
-            department_name=dept_name
+            department_name=dept_name,
+            designation="Head of Department" if u.role == UserRole.HOD else "Assistant Professor",
+            subjects_count=subject_counts.get(u.id, 0)
         )
         for u, dept_name in rows
     ]
@@ -5068,7 +5316,7 @@ async def get_my_salary_request_slip(
                 cumulative_leaves_incl_current += await service._get_approved_leave_days(sal.faculty_id, m, sal.year)
         remaining_leave_balance = max(0.0, 10.0 - cumulative_leaves_incl_current)
         
-        ded_total = sum(d.amount for d in deductions_list) + pf_amount + absent_ded
+        ded_total = sum(float(d.amount or 0) for d in deductions_list) + float(pf_amount or 0) + float(absent_ded or 0)
         net_pay = to_float(sal.gross) - ded_total
         
         return SalarySlipDetailedResponse(
@@ -5246,11 +5494,25 @@ async def fetch_hod_management_students(
     stmt = select(Student, User).join(User, Student.user_id == User.id).where(Student.is_deleted.is_(False))
     
     active_dept_id = dept_id
+    is_faculty = current_user.role == UserRole.FACULTY
     if current_user.role == UserRole.HOD:
         active_dept_id = current_user.department_id
-    elif current_user.role == UserRole.FACULTY:
+    elif is_faculty:
         active_dept_id = current_user.department_id
-        
+        permitted_ids = await _faculty_permitted_student_ids(current_user, db)
+        if not permitted_ids:
+            return {
+                "students": [],
+                "leave_requests": [],
+                "metrics": {
+                    "total_students": 0,
+                    "active_students": 0,
+                    "students_on_leave": 0,
+                    "average_attendance": 100
+                }
+            }
+        stmt = stmt.where(Student.id.in_(list(permitted_ids)))
+
     if active_dept_id:
         stmt = stmt.where(Student.department_id == active_dept_id)
         
@@ -5304,7 +5566,7 @@ async def fetch_hod_management_students(
                 absent = sum(1 for r in att_recs if r.absentee_ids and student.id in r.absentee_ids)
                 att_rate = round(((tot - absent) / tot) * 100)
         
-        students_list.append({
+        entry = {
             "id": student.id,
             "user_id": user.id,
             "roll_no": student.roll_no,
@@ -5357,8 +5619,9 @@ async def fetch_hod_management_students(
             "special_skills": student.special_skills,
             "medical_info": student.medical_info,
             "certifications": student.certifications
-        })
-        
+        }
+        students_list.append(_redact_student_pii(entry) if is_faculty else entry)
+
     total_students = len(students_list)
     active_students = sum(1 for s in students_list if s["status"] == "Active")
     on_leave_count = sum(1 for s in students_list if s["is_on_leave"])
@@ -5390,10 +5653,13 @@ async def verify_student_profile(
     student = student_q.scalar_one_or_none()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-        
+
+    if current_user.role in (UserRole.FACULTY, UserRole.HOD) and current_user.department_id != student.department_id:
+        raise HTTPException(status_code=403, detail="You can only verify students in your own department")
+
     action = payload.action.upper()
     remarks = payload.remarks
-    
+
     if current_user.role == UserRole.FACULTY:
         if action == "APPROVE":
             student.verification_status = "UNDER_HOD_VERIFICATION"
@@ -6356,205 +6622,58 @@ async def upload_hod_announcement_image(
     return {"url": url, "filename": filename}
 
 
-@router.get("/subjects")
-async def get_faculty_subjects(
-    current_user: User = Depends(get_current_user),
+@router.get("/principal/faculty-overview")
+async def get_principal_faculty_overview(
+    current_user: User = Depends(role_required([UserRole.PRINCIPAL, UserRole.SUPER_ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
-    """
-    Returns subjects assigned to the logged in faculty.
-    """
-    return [
-        {
-            "subject_code": "LAW101",
-            "subject_name": "Constitutional Law",
-            "degree_code": "LLB",
-            "section": "A",
-            "year": 1,
-            "semester": 1,
-            "batch": "2026"
-        },
-        {
-            "subject_code": "LAW201",
-            "subject_name": "Family Law",
-            "degree_code": "LLB",
-            "section": "A",
-            "year": 2,
-            "semester": 3,
-            "batch": "2025"
-        }
-    ]
-
-
-from app.db.models.substitution import SubstitutionAllocation, FacultyAbsence, SubstitutionStatus
-from app.db.models.research import ResearchPlan, PublicationProof, ResearchVerification, ResearchPlanStatus
-from app.db.models.user import User
-
-class HODSubstitutionDto(BaseModel):
-    id: str
-    faculty_id: str
-    substitute_id: str
-    date: str
-    period: int
-    status: str = ""
-    subject: str = ""
-    absent_faculty: str = ""
-    substitute_faculty: str = ""
-
-@router.get("/hod/substitutions", response_model=list[HODSubstitutionDto])
-async def get_hod_substitutions(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> list[HODSubstitutionDto]:
-    # HOD only
-    query = (
-        select(SubstitutionAllocation, FacultyAbsence, User, User)
-        .join(FacultyAbsence, SubstitutionAllocation.absence_id == FacultyAbsence.id)
-        .join(User, FacultyAbsence.faculty_id == User.id)
-        .outerjoin(User, SubstitutionAllocation.substitute_id == User.id)
+    """Institution-wide faculty roster (all departments) for the Principal's
+    Faculty Overview screen — a directory view, distinct from the per-department
+    performance aggregates already shown on the Institutional Performance screen."""
+    q = (
+        select(User, FacultyProfile, Department)
+        .join(FacultyProfile, FacultyProfile.user_id == User.id)
+        .outerjoin(Department, User.department_id == Department.id)
+        .where(
+            User.role.in_([UserRole.FACULTY, UserRole.HOD]),
+            User.is_deleted.is_(False),
+            FacultyProfile.is_deleted.is_(False),
+        )
     )
-    result = await db.execute(query)
-    
-    response = []
-    for alloc, absence, absent_user, sub_user in result:
-        response.append(HODSubstitutionDto(
-            id=alloc.id,
-            faculty_id=absence.faculty_id,
-            substitute_id=alloc.substitute_id,
-            date=str(absence.date),
-            period=alloc.period,
-            status=alloc.status.name if hasattr(alloc.status, "name") else alloc.status,
-            subject="",
-            absent_faculty=absent_user.full_name if absent_user else "",
-            substitute_faculty=sub_user.full_name if sub_user else ""
-        ))
-    return response
+    rows = (await db.execute(q)).all()
 
-class HODResearchMonitoringDto(BaseModel):
-    id: str
-    title: str
-    faculty_name: str = ""
-    type: str = ""
-    status: str = ""
-    latest_progress_percentage: int = 0
-    area: str = ""
+    from app.db.models.leave import LeaveStatus
 
-@router.get("/hod/research/monitoring", response_model=list[HODResearchMonitoringDto])
-async def get_hod_research_monitoring(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> list[HODResearchMonitoringDto]:
-    query = select(ResearchPlan, User).join(User, ResearchPlan.faculty_id == User.id)
-    result = await db.execute(query)
-    
-    response = []
-    for plan, user in result:
-        response.append(HODResearchMonitoringDto(
-            id=plan.id,
-            title=plan.title,
-            faculty_name=user.full_name if user else "",
-            type=plan.research_type or "",
-            status=plan.status.name if hasattr(plan.status, "name") else plan.status,
-            latest_progress_percentage=0,
-            area=plan.research_area or ""
-        ))
-    return response
-
-class HODPendingProofDto(BaseModel):
-    id: str
-    title: str
-    faculty_name: str = ""
-    journal_name: str = ""
-    issn_isbn: str = ""
-
-@router.get("/hod/research/pending-proofs", response_model=list[HODPendingProofDto])
-async def get_hod_pending_proofs(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> list[HODPendingProofDto]:
-    query = (
-        select(PublicationProof, ResearchPlan, User)
-        .join(ResearchPlan, PublicationProof.plan_id == ResearchPlan.id)
-        .join(User, ResearchPlan.faculty_id == User.id)
-        .where(PublicationProof.status == "PENDING")
+    today = date.today()
+    on_leave_q = await db.execute(
+        select(LeaveRequest.user_id).where(
+            LeaveRequest.status.in_([
+                LeaveStatus.FINAL_APPROVED, LeaveStatus.APPROVED,
+                LeaveStatus.APPROVED_BY_HOD, LeaveStatus.PRINCIPAL_APPROVED,
+            ]),
+            LeaveRequest.from_date <= today,
+            LeaveRequest.to_date >= today,
+            LeaveRequest.is_deleted.is_(False),
+        )
     )
-    result = await db.execute(query)
-    
-    response = []
-    for proof, plan, user in result:
-        response.append(HODPendingProofDto(
-            id=proof.id,
-            title=plan.title,
-            faculty_name=user.full_name if user else "",
-            journal_name=proof.publication_name or "",
-            issn_isbn=proof.issn_isbn or ""
-        ))
-    return response
+    on_leave_ids = {r[0] for r in on_leave_q.all()}
 
-class VerificationRequestDto(BaseModel):
-    status: str
-    remarks: str = ""
+    result = []
+    for user, profile, dept in rows:
+        result.append({
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+            "designation": profile.designation,
+            "department_id": dept.id if dept else None,
+            "department_name": dept.name if dept else "Unassigned",
+            "employee_code": profile.employee_code,
+            "faculty_type": profile.faculty_type,
+            "employment_status": profile.employment_status or "Active",
+            "date_of_joining": profile.date_of_joining.isoformat() if profile.date_of_joining else None,
+            "is_on_leave_today": user.id in on_leave_ids,
+        })
 
-@router.post("/hod/research/proofs/{id}/verify")
-async def verify_research_proof(
-    id: str,
-    request: VerificationRequestDto,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> dict:
-    proof = await db.get(PublicationProof, id)
-    if not proof:
-        raise HTTPException(status_code=404, detail="Proof not found")
-    
-    proof.status = request.status
-    proof.verifier_id = current_user.id
-    proof.verifier_remarks = request.remarks
-    
-    await db.commit()
-    return {"message": "Verification saved"}
-
-
-
-class AcademicSetupDto(BaseModel):
-    activeYear: str
-    currentSemester: str
-    status: str
-
-@router.get("/hod/academic-setup", response_model=AcademicSetupDto)
-async def get_hod_academic_setup(current_user: User = Depends(get_current_user)) -> AcademicSetupDto:
-    return AcademicSetupDto(activeYear="2026-2027", currentSemester="Fall", status="Active")
-
-class HODTeachingLogsDashboardDto(BaseModel):
-    expectedLogs: int
-    submittedLogs: int
-    verifiedLogs: int
-    completionRate: int
-
-@router.get("/hod/teaching-logs", response_model=HODTeachingLogsDashboardDto)
-async def get_hod_teaching_logs(current_user: User = Depends(get_current_user)) -> HODTeachingLogsDashboardDto:
-    return HODTeachingLogsDashboardDto(expectedLogs=150, submittedLogs=120, verifiedLogs=100, completionRate=80)
-
-class HODSyllabusMetadataDto(BaseModel):
-    totalCourses: int
-    mappedCourses: int
-    pendingMapping: int
-    overallProgress: int
-
-@router.get("/hod/syllabus-metadata", response_model=HODSyllabusMetadataDto)
-async def get_hod_syllabus_metadata(current_user: User = Depends(get_current_user)) -> HODSyllabusMetadataDto:
-    return HODSyllabusMetadataDto(totalCourses=50, mappedCourses=45, pendingMapping=5, overallProgress=90)
-
-class HODCourseDto(BaseModel):
-    courseCode: str
-    title: str
-    credits: int
-    department: str
-    mapped: bool = True
-
-@router.get("/hod/syllabus-courses", response_model=list[HODCourseDto])
-async def get_hod_syllabus_courses(current_user: User = Depends(get_current_user)) -> list[HODCourseDto]:
-    return [
-        HODCourseDto(courseCode="CS101", title="Intro to CS", credits=3, department="Computer Science", mapped=True),
-        HODCourseDto(courseCode="CS102", title="Data Structures", credits=4, department="Computer Science", mapped=False)
-    ]
-
+    return sorted(result, key=lambda x: (x["department_name"] or "", x["full_name"] or ""))

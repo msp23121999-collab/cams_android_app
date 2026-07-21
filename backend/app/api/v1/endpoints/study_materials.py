@@ -15,37 +15,43 @@ from app.db.models.study_material import StudyMaterial
 from app.db.models.academic import Course, Section
 from app.db.models.audit import AuditLog
 
+from app.core.json_db_helper import load_json_store, save_json_store
+
 router = APIRouter()
 
 DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "study_materials_db.json")
 
+def _default_db() -> Dict[str, Any]:
+    return {
+        "bookmarks": {},
+        "favorites": {},
+        "downloads": [],
+        "student_notifications": [],
+    }
+
+
 def load_db() -> Dict[str, Any]:
-    if not os.path.exists(DB_FILE):
-        initial_db = {
-            "bookmarks": {},
-            "favorites": {},
-            "downloads": [],
-            "student_notifications": []
-        }
-        with open(DB_FILE, "w") as f:
-            json.dump(initial_db, f, indent=4)
-        return initial_db
-        
-    with open(DB_FILE, "r") as f:
-        data = json.load(f)
-    if "bookmarks" not in data:
-        data["bookmarks"] = {}
-    if "favorites" not in data:
-        data["favorites"] = {}
-    if "downloads" not in data:
-        data["downloads"] = []
-    if "student_notifications" not in data:
-        data["student_notifications"] = []
+    """Per-student study-material state (bookmarks, favourites, downloads, notifications).
+
+    The study materials themselves live in PostgreSQL (the `study_materials` table);
+    only this per-student interaction state is a JSON document. It used to be read and
+    written as a file inside the application directory, which does not survive a
+    container redeploy — every student's bookmarks and download history were lost on
+    each deploy, and concurrent writers overwrote each other's whole file.
+
+    It now lives in the database, seeded once from the existing file.
+    """
+    data = load_json_store(DB_FILE, _default_db)
+    if not isinstance(data, dict):
+        data = _default_db()
+    for key, default in _default_db().items():
+        data.setdefault(key, default)
     return data
 
+
 def save_db(db: Dict[str, Any]) -> None:
-    with open(DB_FILE, "w") as f:
-        json.dump(db, f, indent=4)
+    save_json_store(DB_FILE, db)
+
 
 # Pydantic Schemas
 class UploadMaterialRequest(BaseModel):
@@ -238,7 +244,9 @@ async def edit_material(
     material = res.scalar_one_or_none()
     if not material:
         raise HTTPException(status_code=404, detail="Study material not found")
-        
+    if material.faculty_id != current_user.id and current_user.role not in (UserRole.HOD, UserRole.PRINCIPAL, UserRole.SUPER_ADMIN):
+        raise HTTPException(status_code=403, detail="You can only edit your own study materials")
+
     sec_q = select(Section).join(Course, Section.course_id == Course.id).where(Course.name == payload.subject)
     res_s = await db.execute(sec_q)
     section = res_s.scalars().first()
@@ -298,7 +306,9 @@ async def archive_material(
     material = res.scalar_one_or_none()
     if not material:
         raise HTTPException(status_code=404, detail="Study material not found")
-        
+    if material.faculty_id != current_user.id and current_user.role not in (UserRole.HOD, UserRole.PRINCIPAL, UserRole.SUPER_ADMIN):
+        raise HTTPException(status_code=403, detail="You can only delete your own study materials")
+
     material.is_deleted = True
     db.add(material)
     
@@ -449,9 +459,120 @@ async def principal_review_material(
         "status": payload.status
     }
 
+
+@router.get("/hod/pending")
+async def get_hod_pending(
+    current_user: User = Depends(role_required([UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Same as /principal/pending but scoped to the HOD's own department
+    (only materials uploaded by faculty in that department)."""
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="HOD is not assigned to a department")
+
+    q = (
+        select(StudyMaterial, User.full_name, Course.name)
+        .join(User, StudyMaterial.faculty_id == User.id)
+        .outerjoin(Section, StudyMaterial.section_id == Section.id)
+        .outerjoin(Course, Section.course_id == Course.id)
+        .where(
+            StudyMaterial.status == "PENDING",
+            StudyMaterial.is_deleted.is_(False),
+            User.department_id == current_user.department_id
+        )
+    )
+    res = await db.execute(q)
+    rows = res.all()
+    result = []
+    for m, faculty_name, course_name in rows:
+        result.append({
+            "id": m.id,
+            "title": m.title,
+            "description": m.comments or "",
+            "subject": course_name or "Unknown",
+            "category": m.type,
+            "file_url": m.file_url,
+            "file_format": m.type,
+            "status": "Pending Approval",
+            "uploaded_date": m.created_at.isoformat(),
+            "faculty_id": m.faculty_id,
+            "faculty_name": faculty_name or "Faculty Member"
+        })
+    return result
+
+
+@router.post("/hod/review/{material_id}")
+async def hod_review_material(
+    material_id: str,
+    payload: PrincipalReviewRequest,
+    current_user: User = Depends(role_required([UserRole.HOD])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Same as /principal/review/{material_id} but restricted to materials
+    uploaded by faculty in the HOD's own department."""
+    q = select(StudyMaterial).where(StudyMaterial.id == material_id)
+    res = await db.execute(q)
+    material = res.scalar_one_or_none()
+    if not material:
+        raise HTTPException(status_code=404, detail="Study material not found")
+
+    fac_q = await db.execute(select(User).where(User.id == material.faculty_id))
+    faculty_member = fac_q.scalar_one_or_none()
+    if not faculty_member or faculty_member.department_id != current_user.department_id:
+        raise HTTPException(status_code=403, detail="You can only review materials from your own department")
+
+    status_val = "APPROVED" if payload.status == "Approved" else "REJECTED"
+    material.status = status_val
+    material.is_verified = (status_val == "APPROVED")
+    material.comments = payload.remarks
+    db.add(material)
+
+    audit_entry = AuditLog(
+        user_id=current_user.id,
+        action=f"HOD_VERIFY_{status_val}",
+        entity="StudyMaterial",
+        entity_id=material.id,
+        timestamp=datetime.now()
+    )
+    db.add(audit_entry)
+
+    from app.services.notification_service import NotificationService
+    notif_service = NotificationService(db)
+    status_str = "approved" if status_val == "APPROVED" else "rejected"
+    notif_type = "material_approval" if status_val == "APPROVED" else "material_rejection"
+
+    await notif_service.send_notification(
+        user_id=material.faculty_id,
+        type_val=notif_type,
+        message=f"Your study material '{material.title}' has been {status_str} by your HOD."
+    )
+
+    if status_val == "APPROVED" and material.section_id:
+        from app.db.models.student import Student, ParentStudentMap
+        students_q = await db.execute(select(Student).where(Student.section_id == material.section_id, Student.is_deleted.is_(False)))
+        for student in students_q.scalars().all():
+            await notif_service.send_notification(
+                user_id=student.user_id,
+                type_val="new_study_material",
+                message=f"A new study material '{material.title}' has been published for your section."
+            )
+            pm_q = await db.execute(select(ParentStudentMap).where(ParentStudentMap.student_id == student.id, ParentStudentMap.is_deleted.is_(False)))
+            for pm in pm_q.scalars().all():
+                await notif_service.send_notification(
+                    user_id=pm.parent_id,
+                    type_val="new_study_material",
+                    message=f"A new study material '{material.title}' has been published for your child's section."
+                )
+
+    await db.commit()
+    return {"id": material.id, "status": payload.status}
+
 # Student Routes
 @router.get("/student/approved")
-async def get_student_approved(db: AsyncSession = Depends(get_db_session)):
+async def get_student_approved(
+    current_user: User = Depends(role_required([UserRole.STUDENT])),
+    db: AsyncSession = Depends(get_db_session),
+):
     q = (
         select(StudyMaterial, User.full_name, Course.name)
         .outerjoin(User, StudyMaterial.faculty_id == User.id)
@@ -585,22 +706,61 @@ async def get_reports_data(
         "monthly_wise": [{"month": k, "count": v} for k, v in monthly_counts.items()]
     }
 
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
+ALLOWED_UPLOAD_EXTENSIONS = {
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+    ".txt", ".rtf", ".csv", ".png", ".jpg", ".jpeg", ".gif", ".zip",
+}
+
+
 @router.post("/upload-file")
 async def upload_file(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN, UserRole.SUPER_ADMIN]))
 ):
     static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static")
     uploads_dir = os.path.join(static_dir, "uploads")
     os.makedirs(uploads_dir, exist_ok=True)
-    
-    safe_filename = (file.filename or f"upload_{uuid.uuid4().hex}").replace(" ", "_")
+
+    # Validate extension against an allow-list (never trust the raw filename).
+    original_name = file.filename or ""
+    ext = os.path.splitext(original_name)[1].lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext or 'unknown'}' is not allowed. Permitted types: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}",
+        )
+
+    # Generate a server-side filename — discard any client-supplied path
+    # components so a crafted filename like '../../etc/x' cannot escape uploads/.
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(uploads_dir, safe_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    return {"file_url": f"/mock-uploads/{safe_filename}", "filename": safe_filename}
+
+    # Stream to disk with a hard size cap to prevent disk-exhaustion DoS.
+    total = 0
+    try:
+        with open(file_path, "wb") as buffer:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_UPLOAD_BYTES:
+                    buffer.close()
+                    os.remove(file_path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File exceeds the maximum allowed size of {MAX_UPLOAD_BYTES // (1024 * 1024)} MB",
+                    )
+                buffer.write(chunk)
+    except HTTPException:
+        raise
+    except Exception:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="Failed to store the uploaded file")
+
+    return {"file_url": f"/api/v1/files/{safe_filename}", "filename": original_name or safe_filename}
 
 
 # Student Study Materials Module Endpoints (persistent student interactions stored in json)

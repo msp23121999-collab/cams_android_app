@@ -108,6 +108,8 @@ dependencies {
   implementation(libs.firebase.ai)
   implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.firebase.messaging)
+  // Provides Task.await(), used to read the FCM token from a coroutine
+  implementation(libs.kotlinx.coroutines.play.services)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
@@ -117,6 +119,7 @@ dependencies {
   implementation(libs.retrofit)
   implementation(libs.androidx.paging.runtime)
   implementation(libs.androidx.paging.compose)
+  implementation("com.razorpay:checkout:1.6.33")
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

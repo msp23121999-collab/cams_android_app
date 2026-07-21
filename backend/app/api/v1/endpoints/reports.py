@@ -19,6 +19,68 @@ from app.db.models.fee import FeeRecord, FeeStructure, Payment
 
 router = APIRouter()
 
+# Roles that may pull reports for anyone in the institution.
+_STAFF_REPORT_ROLES = {UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY}
+
+
+async def _assert_can_access_student_report(
+    current_user: User, student_id: str | None, db: AsyncSession
+) -> None:
+    """Authorise access to a student-scoped report.
+
+    Staff (admin/principal/HOD/faculty) may pull any student's report. A STUDENT
+    may only pull their own, and a PARENT only for a linked child. Without this
+    an authenticated user could read any other student's marks, attendance or
+    fee receipts simply by changing the id in the query string.
+    """
+    if current_user.role in _STAFF_REPORT_ROLES:
+        return
+
+    if not student_id:
+        raise HTTPException(status_code=400, detail="student_id is required")
+
+    if current_user.role == UserRole.STUDENT:
+        res = await db.execute(
+            select(Student).where(Student.user_id == current_user.id, Student.is_deleted.is_(False))
+        )
+        own = res.scalar_one_or_none()
+        if not own or student_id not in {own.id, own.user_id}:
+            raise HTTPException(status_code=403, detail="You can only access your own reports")
+        return
+
+    if current_user.role == UserRole.PARENT:
+        res = await db.execute(
+            select(ParentStudentMap).where(
+                ParentStudentMap.parent_id == current_user.id,
+                ParentStudentMap.is_deleted.is_(False),
+            )
+        )
+        mapped_ids = {m.student_id for m in res.scalars().all()}
+        if not mapped_ids:
+            raise HTTPException(status_code=404, detail="No student linked to this parent account")
+        if student_id in mapped_ids:
+            return
+        # Also allow the child's user_id to be supplied.
+        stu_res = await db.execute(
+            select(Student).where(Student.id.in_(mapped_ids), Student.is_deleted.is_(False))
+        )
+        if student_id in {s.user_id for s in stu_res.scalars().all()}:
+            return
+        raise HTTPException(status_code=403, detail="This student is not linked to your account")
+
+    raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+def _assert_can_access_faculty_report(current_user: User, faculty_id: str) -> None:
+    """Salary slips are money data: only admin/principal or the faculty member
+    themselves may download them."""
+    if current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PRINCIPAL}:
+        return
+    if current_user.id == faculty_id:
+        return
+    raise HTTPException(status_code=403, detail="You can only access your own salary slip")
+
+
 def render_to_pdf(html_content: str) -> Response:
     """Helper to convert HTML to a PDF response via xhtml2pdf."""
     pdf_buffer = io.BytesIO()
@@ -42,6 +104,7 @@ async def generate_student_resume_pdf(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
+    await _assert_can_access_student_report(current_user, user_id, db)
     # Fetch user & student profile
     usr_q = await db.execute(select(User).where(User.id == user_id, User.is_deleted.is_(False)))
     usr = usr_q.scalar_one_or_none()
@@ -486,6 +549,9 @@ async def generate_faculty_resume_pdf(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
+    # Staff may view any faculty profile; a faculty member may view their own.
+    if current_user.role not in _STAFF_REPORT_ROLES and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
     from app.db.models.faculty import FacultyResearch
     
     usr_q = await db.execute(select(User).where(User.id == user_id, User.is_deleted.is_(False)))
@@ -1038,6 +1104,7 @@ async def generate_attendance_report_pdf(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
+    await _assert_can_access_student_report(current_user, student_id, db)
     # 1. Resolve student if student_id is provided
     student = None
     if student_id:
@@ -1215,6 +1282,7 @@ async def generate_marks_report_pdf(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
+    await _assert_can_access_student_report(current_user, student_id, db)
     student = await db.get(Student, student_id)
     if not student:
         std_q = await db.execute(select(Student).where(Student.user_id == student_id, Student.is_deleted.is_(False)))
@@ -1365,6 +1433,7 @@ async def generate_salary_slip_pdf(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
+    _assert_can_access_faculty_report(current_user, faculty_id)
     fac_user = await db.get(User, faculty_id)
     if not fac_user:
         raise HTTPException(status_code=404, detail="Faculty user not found")
@@ -1401,15 +1470,17 @@ async def generate_salary_slip_pdf(
     doj_str = "N/A"
 
     if sal:
-        basic_salary = float(sal.basic)
-        allowances = float(sal.allowances)
-        gross = float(sal.gross)
-        pf_ded = float(sal.pf_deduction)
-        leave_ded = float(sal.leave_deduction)
-        net_salary = float(sal.net_salary)
+        # pf_deduction / leave_deduction / joining_date are nullable columns, so
+        # coerce defensively — a NULL here used to raise TypeError and 500.
+        basic_salary = float(sal.basic or 0)
+        allowances = float(sal.allowances or 0)
+        gross = float(sal.gross or 0)
+        pf_ded = float(sal.pf_deduction or 0)
+        leave_ded = float(sal.leave_deduction or 0)
+        net_salary = float(sal.net_salary or 0)
         designation = sal.designation or designation
-        working_days = sal.working_days
-        leave_days = sal.leave_days
+        working_days = sal.working_days or 30
+        leave_days = sal.leave_days or 0
         if sal.joining_date:
             doj_str = sal.joining_date.strftime("%Y-%m-%d")
     else:
@@ -1445,6 +1516,11 @@ async def generate_salary_slip_pdf(
             .data-table {{ width: 100%; border-collapse: collapse; margin-top: 5px; }}
             .data-table th {{ background-color: #F3F4F6; color: #111827; border: 1px solid #D1D5DB; padding: 6px; font-weight: bold; text-align: left; }}
             .data-table td {{ border: 1px solid #E5E7EB; padding: 6px; }}
+            /* Nested breakdown tables must not inherit the outer cell border/padding:
+               the compounded padding exceeded the inner column width and made
+               reportlab abort with a negative availWidth (salary slip PDF 500). */
+            .inner-table {{ width: 100%; border: none; border-collapse: collapse; }}
+            .inner-table td {{ border: none; padding: 2px 0; }}
             .signatures-table {{ width: 100%; margin-top: 50px; text-align: center; font-size: 9px; }}
             .sig-space {{ border-top: 1px solid #9CA3AF; width: 80%; margin: 0 auto; padding-top: 4px; }}
             .footer {{ text-align: center; margin-top: 40px; font-size: 8px; color: #9CA3AF; border-top: 1px solid #E5E7EB; padding-top: 10px; }}
@@ -1490,37 +1566,28 @@ async def generate_salary_slip_pdf(
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">EARNINGS DESCRIPTION</th>
-                    <th style="width: 50%;">DEDUCTIONS DESCRIPTION</th>
+                    <th colspan="2" style="width: 50%;">EARNINGS DESCRIPTION</th>
+                    <th colspan="2" style="width: 50%;">DEDUCTIONS DESCRIPTION</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>
-                        <table style="width: 100%;">
-                            <tr><td>Basic Salary:</td><td style="text-align: right; font-weight: bold;">INR {basic_salary:,.2f}</td></tr>
-                            <tr><td>Special Allowances:</td><td style="text-align: right; font-weight: bold;">INR {allowances:,.2f}</td></tr>
-                            <tr style="height: 40px;"><td></td><td></td></tr>
-                        </table>
-                    </td>
-                    <td>
-                        <table style="width: 100%;">
-                            <tr><td>LOP Deduction:</td><td style="text-align: right; font-weight: bold;">INR {leave_ded:,.2f}</td></tr>
-                            <tr style="height: 60px;"><td></td><td></td></tr>
-                        </table>
-                    </td>
+                    <td style="width: 30%;">Basic Salary:</td>
+                    <td style="width: 20%; text-align: right; font-weight: bold;">INR {basic_salary:,.2f}</td>
+                    <td style="width: 30%;">LOP Deduction:</td>
+                    <td style="width: 20%; text-align: right; font-weight: bold;">INR {leave_ded:,.2f}</td>
                 </tr>
-                <tr style="background-color: #F9FAF5; font-weight: bold; font-size: 11px;">
-                    <td>
-                        <table style="width: 100%;">
-                            <tr><td>GROSS PAY:</td><td style="text-align: right; color: #4F46E5;">INR {gross:,.2f}</td></tr>
-                        </table>
-                    </td>
-                    <td>
-                        <table style="width: 100%;">
-                            <tr><td>TOTAL DEDUCTION:</td><td style="text-align: right; color: #EF4444;">INR {total_deductions:,.2f}</td></tr>
-                        </table>
-                    </td>
+                <tr>
+                    <td>Special Allowances:</td>
+                    <td style="text-align: right; font-weight: bold;">INR {allowances:,.2f}</td>
+                    <td>PF Deduction:</td>
+                    <td style="text-align: right; font-weight: bold;">INR {pf_ded:,.2f}</td>
+                </tr>
+                <tr style="background-color: #F9FAFB; font-weight: bold; font-size: 11px;">
+                    <td>GROSS PAY:</td>
+                    <td style="text-align: right; color: #4F46E5;">INR {gross:,.2f}</td>
+                    <td>TOTAL DEDUCTION:</td>
+                    <td style="text-align: right; color: #EF4444;">INR {total_deductions:,.2f}</td>
                 </tr>
             </tbody>
         </table>
@@ -1568,7 +1635,10 @@ async def generate_fees_receipt_pdf(
     else:
         if not student_id:
             raise HTTPException(status_code=400, detail="Either record_id or student_id is required")
-            
+
+    # Authorise only once the target student is known (it may come from record_id).
+    await _assert_can_access_student_report(current_user, student_id, db)
+
     student = await db.get(Student, student_id)
     if not student:
         std_q = await db.execute(select(Student).where(Student.user_id == student_id, Student.is_deleted.is_(False)))

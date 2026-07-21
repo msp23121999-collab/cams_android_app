@@ -57,7 +57,8 @@ fun CamsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "Offline Mode. Changes will be synced later.",
+                        // No offline write queue exists, so don't promise syncing.
+                        "You're offline. Reconnect to load the latest data.",
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold

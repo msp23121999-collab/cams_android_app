@@ -5,7 +5,7 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class SyllabusProgress(
-    @Json(name = "overall_completion") val overallCompletion: Int,
+    @Json(name = "overall_completion") val overallCompletion: Double,
     @Json(name = "days_remaining") val daysRemaining: Int? = null,
     @Json(name = "units_progress") val unitsProgress: List<UnitProgress> = emptyList()
 )

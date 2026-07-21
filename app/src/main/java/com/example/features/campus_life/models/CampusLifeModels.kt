@@ -57,16 +57,16 @@ data class CircularNotice(
 )
 
 data class Club(
-    val id: Int,
+    val id: String,
     val name: String,
     val description: String,
     val category: String,
     val membersCount: Int,
     val role: String = "None",
-    val president: String = "Dr. Sarah Mitchell",
-    val contact: String = "clubs@lexnova.edu",
-    val phone: String = "+91 98765 43210",
-    val nextMeeting: String? = "Every Tuesday at 4:00 PM",
+    val president: String = "Not assigned",
+    val contact: String = "Contact club faculty coordinator",
+    val phone: String = "",
+    val nextMeeting: String? = "Not scheduled",
     val recentActivities: List<String> = emptyList(),
     val upcomingEvents: List<ClubEvent> = emptyList(),
     val gradientStart: Long = 0xFFF8FAFC,
@@ -382,22 +382,28 @@ data class CommunityServiceOpportunity(
 )
 
 data class CommunityServiceLog(
-    val id: Int,
+    val id: String,
     val title: String,
+    val organization: String,
+    val category: String,
     val date: String,
     val hours: Int,
     val status: String,
-    val certificate: Boolean
+    val certificate: Boolean,
+    val certificateUrl: String? = null,
+    val description: String = "",
+    val proofDocument: String? = null
 )
 
 data class InnovationProject(
-    val id: Int,
+    val id: String,
     val title: String,
     val description: String,
     val category: String,
     val mentor: String,
     val team: List<String>,
     val likes: Int,
+    val likedByMe: Boolean = false,
     val comments: Int,
     val badges: List<String>
 )

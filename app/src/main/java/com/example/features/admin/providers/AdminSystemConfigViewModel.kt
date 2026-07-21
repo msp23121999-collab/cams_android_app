@@ -11,10 +11,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AdminSystemConfigViewModelState(
-    
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val error: String? = null,
-    val settings: com.example.features.admin.models.AdminSystemSettings? = null
+    val settings: com.example.features.admin.models.AdminSystemSettings? = null,
+    val emailNotificationsEnabled: Boolean = true,
+    val isSaving: Boolean = false,
+    val saveError: String? = null,
+    val saveSuccess: Boolean = false
 )
 
 class AdminSystemConfigViewModel(private val repository: AdminRepository) : ViewModel() {
@@ -35,6 +38,47 @@ class AdminSystemConfigViewModel(private val repository: AdminRepository) : View
         }
     }
 
+    fun saveSettings(updated: com.example.features.admin.models.AdminSystemSettings) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null, saveSuccess = false) }
+            try {
+                repository.saveSystemSettings(
+                    com.example.core.network.AdminSystemSettingsDto(
+                        collegeName = updated.collegeName,
+                        address = updated.address,
+                        affiliationNumber = updated.affiliationNumber,
+                        aicteUgcCode = updated.aicteUgcCode,
+                        accreditationBody = updated.accreditationBody,
+                        bankName = updated.bankName,
+                        bankAccountNo = updated.bankAccountNo,
+                        bankIfsc = updated.bankIfsc,
+                        bankBranch = updated.bankBranch
+                    )
+                )
+                fetchConfig()
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.message ?: "Failed to save settings") }
+            }
+        }
+    }
+
+    fun setEmailNotifications(enabled: Boolean) {
+        // Optimistic toggle; reverted if the backend rejects the change.
+        val previous = _uiState.value.emailNotificationsEnabled
+        _uiState.update { it.copy(emailNotificationsEnabled = enabled) }
+        viewModelScope.launch {
+            try {
+                repository.setEmailNotificationsEnabled(enabled)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(emailNotificationsEnabled = previous, saveError = e.message ?: "Failed to update preference") }
+            }
+        }
+    }
+
+    fun clearSaveStatus() {
+        _uiState.update { it.copy(saveError = null, saveSuccess = false) }
+    }
 }
 
 class AdminSystemConfigViewModelFactory(private val repository: AdminRepository) : ViewModelProvider.Factory {

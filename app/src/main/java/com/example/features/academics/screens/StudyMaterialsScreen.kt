@@ -55,7 +55,7 @@ fun StudyMaterialsScreen(
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
 
-    val categories = listOf("All", "Core Materials", "Reference Books", "Case Studies", "Assignments")
+    val categories = listOf("All", "Notes", "QP", "Reference", "Lab")
 
     CamsScreen(
         scrollable = false,
@@ -198,8 +198,10 @@ fun MaterialCard(material: StudyMaterial) {
                 
                 IconButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com/download"))
-                        context.startActivity(intent)
+                        val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                        val fullUrl = if (material.fileUrl.startsWith("http")) material.fileUrl
+                            else "${com.example.core.config.AppConfig.BASE_URL}".trimEnd('/') + "/" + material.fileUrl.trimStart('/')
+                        com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, material.title, token)
                     },
                     modifier = Modifier
                         .size(36.dp)
@@ -248,7 +250,12 @@ fun MaterialCard(material: StudyMaterial) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(material.attachments) { attachment ->
                         Surface(
-                            modifier = Modifier.clickable { },
+                            modifier = Modifier.clickable {
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val fullUrl = if (attachment.url.startsWith("http")) attachment.url
+                                    else com.example.core.config.AppConfig.BASE_URL.trimEnd('/') + "/" + attachment.url.trimStart('/')
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, attachment.name, token)
+                            },
                             shape = RoundedCornerShape(8.dp),
                             color = CamsBackground,
                             border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))

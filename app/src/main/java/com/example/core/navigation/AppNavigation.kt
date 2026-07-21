@@ -68,6 +68,8 @@ object AppRoutes {
     const val LOGIN = "/login"
     const val ROLE_SELECTION = "/role-selection"
     const val UNAUTHORIZED = "/unauthorized"
+    const val FORGOT_PASSWORD = "/forgot-password"
+    const val RESET_PASSWORD = "/reset-password"
     
     // Dashboards
     const val STUDENT_DASHBOARD = "/student/dashboard"
@@ -207,6 +209,7 @@ object AppRoutes {
     const val FEES = "/student/fees"
     const val CIRCULARS = "/student/circulars"
     const val STUDENT_HALL_TICKET = "/student/hall-ticket"
+    const val MOOT_COURT_MEMORIALS = "/student/moot-court-memorials"
     const val STUDENT_PROFILE = "/student/profile"
     const val STUDENT_CALENDAR = "/student/calendar"
     const val STUDENT_ACADEMICS = "/student/academics"
@@ -346,10 +349,31 @@ fun AppNavigation(
                     }
                 },
                 onBack = { navController.popBackStack() },
-                onDebugTap = { navController.navigate(AppRoutes.DEBUG) }
+                onDebugTap = { navController.navigate(AppRoutes.DEBUG) },
+                onForgotPassword = { navController.navigate(AppRoutes.FORGOT_PASSWORD) }
             )
         }
-        
+
+        composable(AppRoutes.FORGOT_PASSWORD) {
+            com.example.features.auth.ForgotPasswordScreen(
+                authViewModel = authViewModel,
+                onBack = { navController.popBackStack() },
+                onHaveResetCode = { navController.navigate(AppRoutes.RESET_PASSWORD) }
+            )
+        }
+
+        composable(AppRoutes.RESET_PASSWORD) {
+            com.example.features.auth.ResetPasswordScreen(
+                authViewModel = authViewModel,
+                onBack = { navController.popBackStack() },
+                onResetSuccess = {
+                    navController.navigate(AppRoutes.ROLE_SELECTION) {
+                        popUpTo(AppRoutes.FORGOT_PASSWORD) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(AppRoutes.UNAUTHORIZED) {
             UnauthorizedScreen(
                 onNavigateToLogin = {
@@ -406,7 +430,25 @@ fun AppNavigation(
             }
         }
         
-        composable("/student/attendance") { 
+        composable(AppRoutes.MOOT_COURT_MEMORIALS) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("STUDENT"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                val mootCourtViewModel: com.example.features.student.providers.MootCourtViewModel = viewModel(
+                    factory = com.example.features.student.providers.MootCourtViewModelFactory(container.studentRepository)
+                )
+                com.example.features.student.screens.MootCourtMemorialsScreen(
+                    viewModel = mootCourtViewModel,
+                    onNavigate = { route -> navigateToRoute(route) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
+        composable("/student/attendance") {
             RoleGuard(
                 currentRole = authState.role,
                 allowedRoles = listOf("STUDENT"),
@@ -444,41 +486,7 @@ fun AppNavigation(
             }
         }
 
-        composable("/student/fees") { 
-            RoleGuard(
-                currentRole = authState.role,
-                allowedRoles = listOf("STUDENT"),
-                isLoading = authState.isLoading,
-                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
-            ) {
-                val feesViewModel: FeesViewModel = viewModel(
-                    factory = FeesViewModelFactory(container.studentRepository)
-                )
-                com.example.features.fees.screens.FeesScreen(
-                    viewModel = feesViewModel,
-                    onNavigate = { route -> navigateToRoute(route) }
-                ) 
-            }
-        }
-
-        composable("/student/assignments") { 
-            RoleGuard(
-                currentRole = authState.role,
-                allowedRoles = listOf("STUDENT"),
-                isLoading = authState.isLoading,
-                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
-            ) {
-                val assignmentsViewModel: com.example.features.student.providers.AssignmentsViewModel = viewModel(
-                    factory = com.example.features.student.providers.AssignmentsViewModelFactory(container.studentRepository)
-                )
-                com.example.features.academics.screens.StudentAssignmentsScreen(
-                    viewModel = assignmentsViewModel,
-                    onNavigate = { route -> navigateToRoute(route) }
-                ) 
-            }
-        }
-
-        composable("/student/leaves") { 
+        composable("/student/leaves") {
             RoleGuard(
                 currentRole = authState.role,
                 allowedRoles = listOf("STUDENT"),
@@ -495,24 +503,7 @@ fun AppNavigation(
             }
         }
 
-        composable("/student/grievances") { 
-            RoleGuard(
-                currentRole = authState.role,
-                allowedRoles = listOf("STUDENT"),
-                isLoading = authState.isLoading,
-                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
-            ) {
-                val grievancesViewModel: GrievancesViewModel = viewModel(
-                    factory = GrievancesViewModelFactory(container.studentRepository)
-                )
-                GrievancesScreen(
-                    viewModel = grievancesViewModel,
-                    onNavigate = { route -> navigateToRoute(route) }
-                ) 
-            }
-        }
-
-        composable("/student/study-materials") { 
+        composable("/student/study-materials") {
             RoleGuard(
                 currentRole = authState.role,
                 allowedRoles = listOf("STUDENT"),
@@ -684,12 +675,13 @@ fun AppNavigation(
             ) {
                 val viewModel: com.example.features.academics.providers.SyllabusViewModel = viewModel(factory = com.example.features.academics.providers.SyllabusViewModelFactory(container.studentRepository))
                 SyllabusCoverageScreen(
-                    onNavigate = { route -> 
+                    viewModel = viewModel,
+                    onNavigate = { route ->
                         if (route != AppRoutes.STUDENT_SYLLABUS) {
                             navigateToRoute(route)
                         }
                     }
-                ) 
+                )
             }
         }
         
@@ -712,6 +704,27 @@ fun AppNavigation(
             }
         }
 
+        composable(AppRoutes.CIRCULARS) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("STUDENT"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                val viewModel: com.example.features.campus_life.providers.CircularsViewModel = viewModel(
+                    factory = com.example.features.campus_life.providers.CircularsViewModelFactory(container.studentRepository)
+                )
+                com.example.features.campus_life.screens.CircularsScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route ->
+                        if (route != AppRoutes.CIRCULARS) {
+                            navigateToRoute(route)
+                        }
+                    }
+                )
+            }
+        }
+
         composable(AppRoutes.CAMPUS_LIFE) {
             RoleGuard(
                 currentRole = authState.role,
@@ -719,7 +732,12 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.campus_life.screens.CampusLifeDashboardScreen(onNavigate = { route ->
+                val campusLifeViewModel: com.example.features.campus_life.providers.CampusLifeViewModel = viewModel(
+                    factory = com.example.features.campus_life.providers.CampusLifeViewModelFactory(container.studentRepository)
+                )
+                com.example.features.campus_life.screens.CampusLifeDashboardScreen(
+                    viewModel = campusLifeViewModel,
+                    onNavigate = { route ->
                     if (route != AppRoutes.CAMPUS_LIFE) {
                         navigateToRoute(route)
                     }
@@ -765,25 +783,6 @@ fun AppNavigation(
             }
         }
         
-        composable("/student/circulars") { 
-            RoleGuard(
-                currentRole = authState.role,
-                allowedRoles = listOf("STUDENT"),
-                isLoading = authState.isLoading,
-                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
-            ) {
-                val viewModel: CircularsViewModel = viewModel(factory = CircularsViewModelFactory(container.studentRepository))
-                CircularsScreen(
-                    viewModel = viewModel,
-                    onNavigate = { route -> 
-                        if (route != "/student/circulars") {
-                            navigateToRoute(route)
-                        }
-                    }
-                ) 
-            }
-        }
-
         composable(AppRoutes.STUDENT_ACADEMICS) {
             RoleGuard(
                 currentRole = authState.role,
@@ -833,6 +832,7 @@ fun AppNavigation(
                 val viewModel: com.example.features.student.providers.StudentProfileViewModel = viewModel(factory = com.example.features.student.providers.StudentProfileViewModelFactory(container.studentRepository))
                 com.example.features.student.screens.StudentSettingsScreen(
                     viewModel = viewModel,
+                    authViewModel = authViewModel,
                     onNavigate = { route ->
                         if (route == "LOGOUT") {
                             showLogoutDialog = true
@@ -927,7 +927,8 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.parent.screens.ContactCollegeScreen(onNavigate = { route ->
+                val contactViewModel: com.example.features.parent.providers.ContactCollegeViewModel = viewModel(factory = com.example.features.parent.providers.ContactCollegeViewModelFactory(container.parentRepository))
+                com.example.features.parent.screens.ContactCollegeScreen(viewModel = contactViewModel, onNavigate = { route ->
                     if (route != AppRoutes.PARENT_CONTACT) {
                         navigateToRoute(route)
                     }
@@ -983,6 +984,7 @@ fun AppNavigation(
                 val viewModel: com.example.features.parent.providers.ParentProfileViewModel = viewModel(factory = com.example.features.parent.providers.ParentProfileViewModelFactory(container.parentRepository))
                 com.example.features.parent.screens.ParentSettingsScreen(
                     viewModel = viewModel,
+                    authViewModel = authViewModel,
                     onNavigate = { route ->
                         if (route == "LOGOUT") {
                             showLogoutDialog = true
@@ -1052,13 +1054,17 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.faculty.screens.FacultyAcademicCalendarScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                }) 
+                val viewModel: com.example.features.faculty.providers.FacultyCalendarViewModel = viewModel(factory = com.example.features.faculty.providers.FacultyCalendarViewModelFactory(container.facultyRepository))
+                com.example.features.faculty.screens.FacultyAcademicCalendarScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route ->
+                        navigateToRoute(route)
+                    }
+                )
             }
         }
 
-        composable(AppRoutes.FACULTY_TIMETABLE) { 
+        composable(AppRoutes.FACULTY_TIMETABLE) {
             RoleGuard(
                 currentRole = authState.role,
                 allowedRoles = listOf("FACULTY"),
@@ -1116,7 +1122,7 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                val viewModel: com.example.features.faculty.providers.FacultyStudentsViewModel = viewModel(factory = com.example.features.faculty.providers.FacultyStudentsViewModelFactory(container.facultyRepository))
+                val viewModel: com.example.features.faculty.providers.FacultyMarksEntryViewModel = viewModel(factory = com.example.features.faculty.providers.FacultyMarksEntryViewModelFactory(container.facultyRepository))
                 com.example.features.faculty.screens.FacultyMarksEntryScreen(
                     viewModel = viewModel,
                     onNavigate = { route ->
@@ -1167,9 +1173,13 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.faculty.screens.FacultySmartClassroomScreen(onNavigate = { route ->
-                    navigateToRoute(route)
-                })
+                val viewModel: com.example.features.faculty.providers.FacultySmartClassroomViewModel = viewModel(factory = com.example.features.faculty.providers.FacultySmartClassroomViewModelFactory(container.facultyRepository))
+                com.example.features.faculty.screens.FacultySmartClassroomScreen(
+                    viewModel = viewModel,
+                    onNavigate = { route ->
+                        navigateToRoute(route)
+                    }
+                )
             }
         }
 
@@ -1358,7 +1368,7 @@ fun AppNavigation(
         composable(AppRoutes.FACULTY_CLASS_DIARY_HOD) {
             RoleGuard(
                 currentRole = authState.role,
-                allowedRoles = listOf("FACULTY"),
+                allowedRoles = listOf("HOD"),
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
@@ -1941,8 +1951,52 @@ fun AppNavigation(
                 com.example.features.admin.screens.AdminAcademicCatalogScreen(onNavigate = { route -> navigateToRoute(route) })
             }
         }
-        
-        composable(AppRoutes.PRINCIPAL_DASHBOARD) { 
+
+        composable(AppRoutes.ADMIN_HOSTEL) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("ADMIN", "SUPER_ADMIN", "PRINCIPAL"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                com.example.features.admin.screens.AdminHostelScreen(onNavigate = { route -> navigateToRoute(route) })
+            }
+        }
+
+        composable(AppRoutes.ADMIN_INVENTORY) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("ADMIN", "SUPER_ADMIN", "PRINCIPAL"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                com.example.features.admin.screens.AdminInventoryScreen(onNavigate = { route -> navigateToRoute(route) })
+            }
+        }
+
+        composable(AppRoutes.ADMIN_LIBRARY) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("ADMIN", "SUPER_ADMIN", "PRINCIPAL"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                com.example.features.admin.screens.AdminLibraryScreen(onNavigate = { route -> navigateToRoute(route) })
+            }
+        }
+
+        composable(AppRoutes.ADMIN_TRANSPORT) {
+            RoleGuard(
+                currentRole = authState.role,
+                allowedRoles = listOf("ADMIN", "SUPER_ADMIN", "PRINCIPAL"),
+                isLoading = authState.isLoading,
+                onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
+            ) {
+                com.example.features.admin.screens.AdminTransportScreen(onNavigate = { route -> navigateToRoute(route) })
+            }
+        }
+
+        composable(AppRoutes.PRINCIPAL_DASHBOARD) {
             RoleGuard(
                 currentRole = authState.role,
                 allowedRoles = listOf("PRINCIPAL"),
@@ -1979,7 +2033,7 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.shared.PlaceholderScreen("Faculty Overview", onNavigate = { route -> navigateToRoute(route) })
+                com.example.features.principal.screens.PrincipalFacultyOverviewScreen(onNavigate = { route -> navigateToRoute(route) })
             }
         }
         
@@ -1990,7 +2044,7 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.shared.PlaceholderScreen("Budget & Grants", onNavigate = { route -> navigateToRoute(route) })
+                com.example.features.principal.screens.PrincipalBudgetGrantsScreen(onNavigate = { route -> navigateToRoute(route) })
             }
         }
         
@@ -2001,7 +2055,7 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.shared.PlaceholderScreen("Strategic Notices", onNavigate = { route -> navigateToRoute(route) })
+                com.example.features.principal.screens.PrincipalStrategicNoticesScreen(onNavigate = { route -> navigateToRoute(route) })
             }
         }
         
@@ -2012,7 +2066,7 @@ fun AppNavigation(
                 isLoading = authState.isLoading,
                 onUnauthorized = { navController.navigate(AppRoutes.UNAUTHORIZED) }
             ) {
-                com.example.features.shared.PlaceholderScreen("Institutional Calendar", onNavigate = { route -> navigateToRoute(route) })
+                com.example.features.principal.screens.PrincipalInstitutionalCalendarScreen(onNavigate = { route -> navigateToRoute(route) })
             }
         }
         

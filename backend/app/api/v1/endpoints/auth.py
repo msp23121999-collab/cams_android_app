@@ -1,15 +1,57 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+import secrets
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.dependencies import get_current_user, get_db_session
+from app.core.dependencies import get_current_user, get_db_session, role_required
 from app.core.security import decode_token, create_access_token, hash_password, verify_password
 from app.db.models.user import User, UserRole
-from app.schemas.auth import LoginRequest, LoginResponse, RefreshRequest, RefreshResponse, UserMeResponse
+from app.db.models.password_reset import PasswordResetToken
+from app.schemas.auth import (
+    LoginRequest,
+    LoginResponse,
+    RefreshRequest,
+    RefreshResponse,
+    UserMeResponse,
+    ChangePasswordRequest,
+    MessageResponse,
+    RequestEmailChangeRequest,
+    ConfirmEmailChangeRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    NotificationPreferencesRequest,
+)
 from app.services.auth_service import AuthService
+from app.services.email_service import send_email
 from app.core.config import settings
+from app.core.rate_limit import (
+    limiter,
+    account_login_allowed,
+    record_failed_login,
+    clear_failed_logins,
+)
 
 router = APIRouter()
+
+MIN_PASSWORD_LENGTH = 8
+
+
+def validate_password_strength(password: str) -> None:
+    """Enforce the password policy shown to users in the app UI:
+    at least 8 characters with uppercase, lowercase, number, and special character.
+    Raises HTTPException(400) with a specific message on the first rule violated."""
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters long")
+    if not any(c.isupper() for c in password):
+        raise HTTPException(status_code=400, detail="Password must include at least one uppercase letter")
+    if not any(c.islower() for c in password):
+        raise HTTPException(status_code=400, detail="Password must include at least one lowercase letter")
+    if not any(c.isdigit() for c in password):
+        raise HTTPException(status_code=400, detail="Password must include at least one number")
+    if all(c.isalnum() for c in password):
+        raise HTTPException(status_code=400, detail="Password must include at least one special character")
 
 
 def role_subdomain(role: str) -> str:
@@ -21,22 +63,32 @@ def role_subdomain(role: str) -> str:
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db_session)) -> LoginResponse:
-    print(f"[AUTH LOGIN] Attempt: email={payload.email!r}, password_len={len(payload.password) if payload.password else 0}")
+@limiter.limit(settings.RATE_LIMIT_LOGIN)
+async def login(request: Request, payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db_session)) -> LoginResponse:
+    # Per-account brute-force protection. Checked before authenticating so a
+    # locked account cannot be probed further, and only failures consume budget.
+    if not account_login_allowed(payload.email):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many failed sign-in attempts for this account. Please try again shortly.",
+        )
+
     service = AuthService(db)
     try:
         user, access_token, refresh_token = await service.authenticate(payload.email, payload.password)
-    except HTTPException as e:
-        print(f"[AUTH LOGIN] Failed: email={payload.email!r}, error={e.detail}")
-        raise e
-    print(f"[AUTH LOGIN] Success: email={payload.email!r}, role={user.role.value}")
+    except HTTPException as exc:
+        if exc.status_code in (400, 401, 403):
+            record_failed_login(payload.email)
+        raise
+
+    clear_failed_logins(payload.email)
 
     response.set_cookie(
         "access_token",
         access_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.COOKIE_SECURE,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     response.set_cookie(
@@ -44,7 +96,7 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
         refresh_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.COOKIE_SECURE,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600
     )
 
@@ -57,7 +109,9 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
 
 
 @router.post("/refresh", response_model=RefreshResponse)
+@limiter.limit(settings.RATE_LIMIT_TOKEN_REFRESH)
 async def refresh_token(
+    request: Request,
     response: Response,
     payload: RefreshRequest | None = None,
     refresh_token: str | None = Cookie(default=None)
@@ -79,7 +133,7 @@ async def refresh_token(
         access_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.COOKIE_SECURE,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     return RefreshResponse(access_token=access_token, refresh_token=token)
@@ -100,12 +154,210 @@ async def me(current_user: User = Depends(get_current_user)) -> UserMeResponse:
         full_name=current_user.full_name,
         role=current_user.role,
         department_id=current_user.department_id if current_user.department_id else None,
+        email_notifications_enabled=current_user.email_notifications_enabled,
+    )
+
+
+@router.patch("/notification-preferences", response_model=UserMeResponse)
+async def update_notification_preferences(
+    payload: NotificationPreferencesRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> UserMeResponse:
+    current_user.email_notifications_enabled = payload.email_notifications_enabled
+    await db.commit()
+    return UserMeResponse(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        role=current_user.role,
+        department_id=current_user.department_id if current_user.department_id else None,
+        email_notifications_enabled=current_user.email_notifications_enabled,
     )
 
 
 
+@router.post("/change-password", response_model=MessageResponse)
+@limiter.limit(settings.RATE_LIMIT_CHANGE_PASSWORD)
+async def change_password(
+    request: Request,
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> MessageResponse:
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    validate_password_strength(payload.new_password)
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    await db.commit()
+    return MessageResponse(detail="Password changed successfully")
+
+
+@router.post("/request-email-change", response_model=MessageResponse)
+@limiter.limit(settings.RATE_LIMIT_CHANGE_PASSWORD)
+async def request_email_change(
+    request: Request,
+    payload: RequestEmailChangeRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> MessageResponse:
+    # Re-authenticate before allowing the account's address to move. A bearer token
+    # alone must not be enough: otherwise a stolen session lets an attacker point the
+    # account at their own address and then use the password-reset flow to take it
+    # over outright. Mirrors the check on /change-password.
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    new_email = payload.new_email.lower()
+
+    existing_res = await db.execute(
+        select(User).where(User.email == new_email, User.id != current_user.id, User.is_deleted.is_(False))
+    )
+    if existing_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="That email address is already in use")
+
+    token = secrets.token_urlsafe(32)
+    current_user.pending_email = new_email
+    current_user.email_change_token = token
+    current_user.email_change_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    await db.commit()
+
+    verify_url = f"{settings.FRONTEND_BASE_URL}/verify-email-change?token={token}"
+    background_tasks.add_task(
+        send_email,
+        new_email,
+        "Confirm your new CAMS email address",
+        f"Hello {current_user.full_name},\n\n"
+        f"Please confirm your new email address by visiting the link below "
+        f"(valid for 1 hour):\n\n{verify_url}\n\n"
+        f"If you did not request this change, you can safely ignore this email.",
+    )
+
+    # Always return the same generic success response regardless of whether
+    # the SMTP send actually succeeds — the pending change itself was created.
+    return MessageResponse(detail="Verification email sent to the new address")
+
+
+@router.post("/confirm-email-change", response_model=MessageResponse)
+async def confirm_email_change(
+    payload: ConfirmEmailChangeRequest,
+    db: AsyncSession = Depends(get_db_session),
+) -> MessageResponse:
+    user_res = await db.execute(
+        select(User).where(User.email_change_token == payload.token, User.is_deleted.is_(False))
+    )
+    user = user_res.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    expires_at = user.email_change_token_expires_at
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if not expires_at or expires_at <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    if not user.pending_email:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    user.email = user.pending_email
+    user.pending_email = None
+    user.email_change_token = None
+    user.email_change_token_expires_at = None
+    await db.commit()
+    return MessageResponse(detail="Email address updated successfully")
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+@limiter.limit(settings.RATE_LIMIT_PASSWORD_RESET_REQUEST)
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db_session),
+) -> MessageResponse:
+    generic_response = MessageResponse(
+        detail="If an account with that email exists, a reset link has been sent."
+    )
+
+    user_res = await db.execute(
+        select(User).where(User.email == payload.email.lower(), User.is_deleted.is_(False))
+    )
+    user = user_res.scalar_one_or_none()
+    if not user:
+        # Do not reveal whether the email exists — always return the same response.
+        return generic_response
+
+    token = secrets.token_urlsafe(32)
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token=token,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+    )
+    db.add(reset_token)
+    await db.commit()
+
+    reset_url = f"{settings.FRONTEND_BASE_URL}/reset-password?token={token}"
+    background_tasks.add_task(
+        send_email,
+        user.email,
+        "Reset your CAMS password",
+        f"Hello {user.full_name},\n\n"
+        f"We received a request to reset your password. This request is valid for 1 hour.\n\n"
+        f"On the web, open this link to choose a new password:\n{reset_url}\n\n"
+        f"In the mobile app, open the Reset Password screen and paste this reset code:\n\n"
+        f"{token}\n\n"
+        f"If you did not request this, you can safely ignore this email.",
+    )
+
+    return generic_response
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+@limiter.limit(settings.RATE_LIMIT_PASSWORD_RESET_CONFIRM)
+async def reset_password(
+    request: Request,
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db_session),
+) -> MessageResponse:
+    validate_password_strength(payload.new_password)
+
+    token_res = await db.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token == payload.token,
+            PasswordResetToken.is_deleted.is_(False),
+        )
+    )
+    reset_token = token_res.scalar_one_or_none()
+
+    if not reset_token or reset_token.used_at is not None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    expires_at = reset_token.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user_res = await db.execute(select(User).where(User.id == reset_token.user_id))
+    user = user_res.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.hashed_password = hash_password(payload.new_password)
+    reset_token.used_at = datetime.now(timezone.utc)
+    await db.commit()
+    return MessageResponse(detail="Password has been reset successfully")
+
+
 @router.get("/debug/users")
-async def debug_list_users(db: AsyncSession = Depends(get_db_session)) -> list[dict]:
+async def debug_list_users(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(role_required([UserRole.SUPER_ADMIN])),
+) -> list[dict]:
     """[DEV ONLY] List all users in the database."""
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404)
@@ -126,7 +378,10 @@ async def debug_list_users(db: AsyncSession = Depends(get_db_session)) -> list[d
 
 
 @router.get("/debug/fix-student")
-async def debug_fix_student(db: AsyncSession = Depends(get_db_session)) -> dict:
+async def debug_fix_student(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(role_required([UserRole.SUPER_ADMIN])),
+) -> dict:
     """[DEV ONLY] Reset student@cams.local using raw SQL."""
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404)
@@ -318,7 +573,10 @@ async def debug_fix_student(db: AsyncSession = Depends(get_db_session)) -> dict:
 
 
 @router.get("/debug/fix-thanush")
-async def debug_fix_thanush(db: AsyncSession = Depends(get_db_session)) -> dict:
+async def debug_fix_thanush(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(role_required([UserRole.SUPER_ADMIN])),
+) -> dict:
     """[DEV ONLY] Reset thanush@college.edu password to Password@123."""
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404)
@@ -351,7 +609,10 @@ async def debug_fix_thanush(db: AsyncSession = Depends(get_db_session)) -> dict:
 
 
 @router.get("/debug/fix-arun")
-async def debug_fix_arun(db: AsyncSession = Depends(get_db_session)) -> dict:
+async def debug_fix_arun(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(role_required([UserRole.SUPER_ADMIN])),
+) -> dict:
     """[DEV ONLY] Reset arun@college.edu password to Password@123."""
     if settings.ENVIRONMENT == "production":
         raise HTTPException(status_code=404)

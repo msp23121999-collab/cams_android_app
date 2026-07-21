@@ -84,6 +84,9 @@ fun ChildSwitcher(repository: com.example.core.repository.ParentRepository) {
         }
     }
 
+    // A parent with a single child gets no picker — there is nothing to switch to.
+    if (childrenList.size < 2) return
+
     val selectedChild = childrenList.find { it.id == selectedId }
 
     Box {

@@ -204,7 +204,8 @@ private fun PortalCard(
                         lineHeight = 15.sp,
                         fontSize = 11.sp
                     ),
-                    maxLines = 3
+                    maxLines = 3,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
         }

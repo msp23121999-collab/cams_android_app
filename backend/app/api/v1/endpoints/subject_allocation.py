@@ -14,6 +14,14 @@ from app.schemas.subject_allocation import SubjectAllocationCreate, SubjectAlloc
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def _resolve_dept_id(current_user: User, department_id: str | None) -> str | None:
+    """HODs may only operate on their own department; the department_id query
+    param is only honored for PRINCIPAL/ADMIN roles who oversee multiple depts."""
+    if current_user.role == UserRole.HOD:
+        return current_user.department_id
+    return department_id or current_user.department_id
+
+
 async def _get_default_dept_id(db: AsyncSession) -> str | None:
     # 1. Try to find department with active academic cohorts
     stmt = (
@@ -43,10 +51,10 @@ async def _get_default_dept_id(db: AsyncSession) -> str | None:
 @router.get("/setup", response_model=AcademicSetupResponse)
 async def get_academic_setup(
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
-    dept_id = department_id or current_user.department_id or await _get_default_dept_id(db)
+    dept_id = _resolve_dept_id(current_user, department_id) or await _get_default_dept_id(db)
     if not dept_id:
         raise HTTPException(status_code=404, detail="No departments found")
         
@@ -116,13 +124,32 @@ async def get_academic_setup(
         batches=batches_data
     )
 
+@router.get("/course-sections")
+async def get_course_sections(
+    course_id: str,
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Real Section rows (with genuine ids) for a specific course — used to
+    populate the section picker when allocating a subject to faculty."""
+    if current_user.role == UserRole.HOD:
+        course = await db.get(Course, course_id)
+        if not course or course.dept_id != current_user.department_id:
+            raise HTTPException(status_code=403, detail="You can only view sections for courses in your own department")
+
+    sections_res = await db.execute(
+        select(Section).where(Section.course_id == course_id, Section.is_deleted.is_(False)).order_by(Section.section_name)
+    )
+    return [{"id": s.id, "name": s.section_name} for s in sections_res.scalars().all()]
+
+
 @router.get("/subjects", response_model=List[SubjectInfo])
 async def get_subjects(
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
-    dept_id = department_id or current_user.department_id or await _get_default_dept_id(db)
+    dept_id = _resolve_dept_id(current_user, department_id) or await _get_default_dept_id(db)
     dept = await db.get(Department, dept_id) if dept_id else None
 
     courses_res = await db.execute(
@@ -151,10 +178,10 @@ async def get_subjects(
 @router.get("/faculty", response_model=List[FacultyWorkloadInfo])
 async def get_faculty_info(
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
-    dept_id = department_id or current_user.department_id or await _get_default_dept_id(db)
+    dept_id = _resolve_dept_id(current_user, department_id) or await _get_default_dept_id(db)
     
     ay_res = await db.execute(select(AcademicYear).where(AcademicYear.is_active.is_(True)))
     active_ays = ay_res.scalars().all()
@@ -240,7 +267,7 @@ async def get_faculty_info(
 async def allocate_subjects(
     allocations: List[SubjectAllocationCreate],
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
     ay_res = await db.execute(select(AcademicYear).where(AcademicYear.is_active.is_(True)))
@@ -251,7 +278,7 @@ async def allocate_subjects(
         
     active_ay_ids = [a.id for a in active_ays]
     
-    dept_id = department_id or current_user.department_id
+    dept_id = _resolve_dept_id(current_user, department_id)
     if not dept_id:
         if allocations:
             first_course_id = allocations[0].course_id
@@ -323,7 +350,7 @@ async def allocate_subjects(
 @router.get("/allocations", response_model=List[SubjectAllocationResponse])
 async def get_allocations(
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
     ay_res = await db.execute(select(AcademicYear).where(AcademicYear.is_active.is_(True)))
@@ -332,7 +359,7 @@ async def get_allocations(
         return []
     active_ay_ids = [ay.id for ay in active_ays]
 
-    dept_id = department_id or current_user.department_id or await _get_default_dept_id(db)
+    dept_id = _resolve_dept_id(current_user, department_id) or await _get_default_dept_id(db)
 
     # 1. Fetch from subject_allocations (limited to active AY & active semester)
     res = await db.execute(
@@ -395,10 +422,10 @@ async def get_allocations(
 @router.get("/history", response_model=List[AllocationHistoryResponse])
 async def get_history(
     department_id: str | None = None,
-    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL])),
+    current_user: User = Depends(role_required([UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ):
-    dept_id = department_id or current_user.department_id or await _get_default_dept_id(db)
+    dept_id = _resolve_dept_id(current_user, department_id) or await _get_default_dept_id(db)
 
     res = await db.execute(
         select(SubjectAllocation, AcademicYear, Course, User, Section)

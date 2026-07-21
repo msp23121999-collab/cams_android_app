@@ -37,9 +37,17 @@ fun PrincipalApprovalsScreen(
         }
     )
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Leave Requests", "Faculty Onboarding")
+    val tabs = listOf("Leave Requests", "Faculty Onboarding", "Timetables")
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
 
     PrincipalBaseScreen(
         title = "Approvals & Onboarding",
@@ -83,7 +91,13 @@ fun PrincipalApprovalsScreen(
                 )
                 1 -> PrincipalFacultyOnboardingTab(
                     faculties = uiState.pendingFaculty,
-                    onApprove = { viewModel.approveFaculty(it) }
+                    onApprove = { viewModel.approveFaculty(it) },
+                    onReject = { viewModel.rejectFaculty(it) }
+                )
+                2 -> PrincipalTimetablesTab(
+                    timetables = uiState.pendingTimetables,
+                    onApprove = { viewModel.approveTimetable(it) },
+                    onReject = { viewModel.rejectTimetable(it) }
                 )
             }
         }
@@ -96,9 +110,14 @@ fun PrincipalLeavesTab(
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit
 ) {
-    
+    if (leaves.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No pending leave requests", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(leaves) { leave ->
+        items(leaves, key = { it.id }) { leave ->
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
@@ -148,10 +167,17 @@ fun PrincipalLeavesTab(
 @Composable
 fun PrincipalFacultyOnboardingTab(
     faculties: List<com.example.features.principal.models.PrincipalPendingFaculty>,
-    onApprove: (String) -> Unit
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit
 ) {
+    if (faculties.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No pending faculty onboarding requests", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(faculties) { faculty ->
+        items(faculties, key = { it.id }) { faculty ->
             CamsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
@@ -171,7 +197,58 @@ fun PrincipalFacultyOnboardingTab(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                     ) {
-                        Text("Approve Onboarding")
+                        Text("Approve")
+                    }
+                    OutlinedButton(
+                        onClick = { onReject(faculty.id) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                    ) {
+                        Text("Reject")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrincipalTimetablesTab(
+    timetables: List<com.example.features.principal.models.TimetableApproval>,
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit
+) {
+    if (timetables.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No pending timetable approvals", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(timetables, key = { it.id }) { tt ->
+            CamsCard {
+                Column {
+                    Text(tt.facultyName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text(tt.subjectName, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(tt.requestedChanges, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Filled.Event, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(tt.date, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { onApprove(tt.id) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) { Text("Approve") }
+                        OutlinedButton(
+                            onClick = { onReject(tt.id) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        ) { Text("Reject") }
                     }
                 }
             }

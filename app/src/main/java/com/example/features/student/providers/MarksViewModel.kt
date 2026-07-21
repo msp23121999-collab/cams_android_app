@@ -3,7 +3,6 @@ package com.example.features.student.providers
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.features.academics.models.InternalMarkRecord
-import com.example.core.network.InternalMarkDto
 import com.example.core.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +13,11 @@ import kotlinx.coroutines.launch
 data class MarksState(
     val marks: List<InternalMarkRecord> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val studentName: String = "",
+    val rollNo: String = "",
+    val degree: String = "",
+    val semester: Int = 0
 )
 
 class MarksViewModel(
@@ -34,17 +37,32 @@ class MarksViewModel(
                 val dtos = studentRepository.getInternalMarks()
                 val marks = dtos.map { dto ->
                     InternalMarkRecord(
-                        id = dto.id,
-                        subjectName = if (dto.subjectName == "Unknown" && dto.examType.isNotEmpty()) dto.examType else dto.subjectName,
-                        examScore = dto.mark ?: dto.markObtained,
-                        assignmentScore = 0.0,
-                        presentationScore = 0.0,
-                        vivaScore = 0.0,
-                        attendanceScore = 0.0,
-                        totalScore = dto.mark ?: dto.markObtained
+                        id = dto.subjectId,
+                        subjectName = dto.subjectName,
+                        examScore = dto.internalExamMark,
+                        assignmentScore = dto.assignmentMark,
+                        presentationScore = dto.presentationMark,
+                        vivaScore = dto.vivaVoiceMark,
+                        attendanceScore = dto.attendanceMark,
+                        totalScore = dto.totalMark,
+                        isApproved = dto.isApproved,
+                        hodMessage = dto.hodMessage,
+                        facultyReply = dto.facultyReply,
+                        component = "Final",
+                        maxMark = 100.0
                     )
                 }
-                _uiState.update { it.copy(marks = marks, isLoading = false) }
+                val profile = studentRepository.getProfile()
+                _uiState.update {
+                    it.copy(
+                        marks = marks,
+                        isLoading = false,
+                        studentName = profile?.fullName?.ifBlank { "Student" } ?: "Student",
+                        rollNo = profile?.rollNo ?: "N/A",
+                        degree = profile?.courseName ?: "N/A",
+                        semester = profile?.semester ?: 0
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load marks") }
             }

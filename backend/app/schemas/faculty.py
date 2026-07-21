@@ -449,4 +449,6 @@ class HODFacultyResponse(BaseModel):
     email: str
     phone: str | None = None
     department_name: str | None = None
+    designation: str | None = None
+    subjects_count: int = 0
 

@@ -25,6 +25,26 @@ data class AuthState(
     val error: String? = null
 )
 
+data class PasswordResetState(
+    val isLoading: Boolean = false,
+    val message: String? = null,
+    val error: String? = null,
+    val success: Boolean = false
+)
+
+data class EmailChangeState(
+    val isLoading: Boolean = false,
+    val message: String? = null,
+    val error: String? = null,
+    val success: Boolean = false
+)
+
+data class NotificationPreferencesState(
+    val emailNotificationsEnabled: Boolean = true,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
 // Equivalent to Riverpod's AuthNotifier
 class AuthViewModel(
     private val authRepository: AuthRepository,
@@ -33,6 +53,15 @@ class AuthViewModel(
 
     private val _uiState = MutableStateFlow(AuthState(isLoading = true))
     val uiState: StateFlow<AuthState> = _uiState.asStateFlow()
+
+    private val _passwordResetState = MutableStateFlow(PasswordResetState())
+    val passwordResetState: StateFlow<PasswordResetState> = _passwordResetState.asStateFlow()
+
+    private val _emailChangeState = MutableStateFlow(EmailChangeState())
+    val emailChangeState: StateFlow<EmailChangeState> = _emailChangeState.asStateFlow()
+
+    private val _notificationPreferencesState = MutableStateFlow(NotificationPreferencesState())
+    val notificationPreferencesState: StateFlow<NotificationPreferencesState> = _notificationPreferencesState.asStateFlow()
 
     init {
         loadInitialState()
@@ -94,6 +123,11 @@ class AuthViewModel(
             val result = authRepository.login(email, password)
             
             if (result.isSuccess) {
+                // Register this device for push now that there is a session. The
+                // token cannot be registered before sign-in (the endpoint requires
+                // auth), so this is the first point it can succeed.
+                com.example.core.services.PushTokenRegistrar.registerCurrentToken()
+
                 val token = authManager.getToken()
                 val role = authManager.getRole()
                 val subdomainTarget = authManager.getSubdomainTarget()
@@ -132,8 +166,85 @@ class AuthViewModel(
         }
     }
 
+    fun requestPasswordReset(email: String) {
+        viewModelScope.launch {
+            _passwordResetState.update { PasswordResetState(isLoading = true) }
+            val result = authRepository.forgotPassword(email)
+            _passwordResetState.update {
+                if (result.isSuccess) {
+                    PasswordResetState(isLoading = false, message = result.getOrNull(), success = true)
+                } else {
+                    PasswordResetState(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to send reset email")
+                }
+            }
+        }
+    }
+
+    fun resetPassword(token: String, newPassword: String) {
+        viewModelScope.launch {
+            _passwordResetState.update { PasswordResetState(isLoading = true) }
+            val result = authRepository.resetPassword(token, newPassword)
+            _passwordResetState.update {
+                if (result.isSuccess) {
+                    PasswordResetState(isLoading = false, message = result.getOrNull(), success = true)
+                } else {
+                    PasswordResetState(isLoading = false, error = result.exceptionOrNull()?.message ?: "Invalid or expired reset token")
+                }
+            }
+        }
+    }
+
+    fun clearPasswordResetState() {
+        _passwordResetState.update { PasswordResetState() }
+    }
+
+    fun requestEmailChange(newEmail: String, currentPassword: String) {
+        viewModelScope.launch {
+            _emailChangeState.update { EmailChangeState(isLoading = true) }
+            val result = authRepository.requestEmailChange(newEmail, currentPassword)
+            _emailChangeState.update {
+                if (result.isSuccess) {
+                    EmailChangeState(isLoading = false, message = result.getOrNull(), success = true)
+                } else {
+                    EmailChangeState(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to request email change")
+                }
+            }
+        }
+    }
+
+    fun clearEmailChangeState() {
+        _emailChangeState.update { EmailChangeState() }
+    }
+
+    fun loadNotificationPreferences() {
+        viewModelScope.launch {
+            _notificationPreferencesState.update { it.copy(isLoading = true, error = null) }
+            val enabled = authRepository.getEmailNotificationsEnabled()
+            _notificationPreferencesState.update { NotificationPreferencesState(emailNotificationsEnabled = enabled, isLoading = false) }
+        }
+    }
+
+    fun setEmailNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            // Optimistic update so the toggle feels responsive; reverted on failure.
+            _notificationPreferencesState.update { it.copy(emailNotificationsEnabled = enabled, isLoading = true, error = null) }
+            val result = authRepository.setEmailNotificationsEnabled(enabled)
+            _notificationPreferencesState.update {
+                if (result.isSuccess) {
+                    it.copy(emailNotificationsEnabled = result.getOrElse { enabled }, isLoading = false)
+                } else {
+                    it.copy(emailNotificationsEnabled = !enabled, isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to update preference")
+                }
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
+            // Detach this device first — the unregister call needs the session that
+            // logout() is about to clear. Otherwise the next person to sign in on a
+            // shared device keeps receiving the previous user's notifications.
+            com.example.core.services.PushTokenRegistrar.unregisterCurrentToken()
             authRepository.logout()
             _uiState.update { AuthState() }
         }

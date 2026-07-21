@@ -86,7 +86,6 @@ fun FacultyDrawer(
             DrawerItem("Class Management", Icons.Filled.ManageAccounts, com.example.core.navigation.AppRoutes.FACULTY_CLASS_STUDENT_MGMT, currentRoute, onNavigate)
             DrawerItem("Mentor Management", Icons.Filled.SupervisorAccount, com.example.core.navigation.AppRoutes.FACULTY_MENTOR_STUDENT_MGMT, currentRoute, onNavigate)
             DrawerItem("Class Diary", Icons.AutoMirrored.Filled.MenuBook, com.example.core.navigation.AppRoutes.FACULTY_CLASS_DIARY, currentRoute, onNavigate)
-            DrawerItem("Diary HOD Review", Icons.Filled.RateReview, com.example.core.navigation.AppRoutes.FACULTY_CLASS_DIARY_HOD, currentRoute, onNavigate)
 
             Spacer(modifier = Modifier.weight(1f))
 

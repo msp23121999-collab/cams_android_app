@@ -52,6 +52,8 @@ async def get_notices(
             "publish_date": notice.publish_date.isoformat() if notice.publish_date else None,
             "created_by_name": creator.full_name,
             "created_by_role": creator.role.value if hasattr(creator.role, "value") else str(creator.role),
+            "publisher_name": creator.full_name,
+            "publisher_role": creator.role.value if hasattr(creator.role, "value") else str(creator.role),
             "category": notice.category,
             "priority": notice.priority,
             "attachment_url": notice.attachment_url,
@@ -116,6 +118,11 @@ async def create_notice(
     if not title or not body:
         raise HTTPException(status_code=400, detail="Title and body are required")
 
+    department_id = payload.get("department_id")
+    if current_user.role == UserRole.HOD:
+        # HODs may only post notices scoped to their own department.
+        department_id = current_user.department_id
+
     notice = Notice(
         created_by=current_user.id,
         title=title,
@@ -125,6 +132,7 @@ async def create_notice(
         publisher_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
         priority=payload.get("priority", "Medium"),
         category=payload.get("category", "General Information"),
+        department_id=department_id,
         status="Active"
     )
     db.add(notice)
@@ -151,6 +159,9 @@ async def delete_notice(
     notice = res.scalar_one_or_none()
     if not notice:
         raise HTTPException(status_code=404, detail="Notice not found")
+
+    if current_user.role == UserRole.HOD and notice.department_id != current_user.department_id:
+        raise HTTPException(status_code=403, detail="You can only delete notices for your own department")
 
     notice.is_deleted = True
     await db.commit()

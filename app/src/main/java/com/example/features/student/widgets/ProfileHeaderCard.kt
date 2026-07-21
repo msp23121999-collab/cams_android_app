@@ -24,10 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 
@@ -37,14 +39,14 @@ fun ProfileHeaderCard(
     fullName: String,
     courseName: String,
     profilePhotoUrl: String? = null,
-    rollNo: String? = "CAMS2021001",
-    semester: Int? = 5,
-    department: String? = "Law",
-    section: String? = "A",
-    mentorName: String? = "Dr. R.K. Menon",
-    mentorEmail: String? = "menon.rk@lexnova.edu",
-    advisorName: String? = "Dr. A. Krishnan",
-    advisorEmail: String? = "krishnan.a@lexnova.edu"
+    rollNo: String? = null,
+    semester: Int? = null,
+    department: String? = null,
+    section: String? = null,
+    mentorName: String? = null,
+    mentorEmail: String? = null,
+    advisorName: String? = null,
+    advisorEmail: String? = null
 ) {
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
@@ -75,8 +77,15 @@ fun ProfileHeaderCard(
                                 .clip(RoundedCornerShape(16.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (profilePhotoUrl != null) {
-                                // Image loading logic here (e.g. Coil)
+                            if (!profilePhotoUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = profilePhotoUrl,
+                                    contentDescription = "Profile photo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(16.dp))
+                                )
                             } else {
                                 Text(
                                     text = fullName.take(1).uppercase(),
@@ -130,7 +139,7 @@ fun ProfileHeaderCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     DetailBadge(Icons.Filled.School, courseName)
-                    DetailBadge(Icons.Filled.Badge, department ?: "Law")
+                    DetailBadge(Icons.Filled.Badge, department ?: "N/A")
                     DetailBadge(Icons.Filled.CalendarMonth, "Semester ${semester ?: "N/A"}")
                     DetailBadge(Icons.Filled.Group, "Section ${section ?: "N/A"}")
                 }

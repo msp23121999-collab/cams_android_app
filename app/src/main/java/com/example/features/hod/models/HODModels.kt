@@ -1,10 +1,10 @@
 package com.example.features.hod.models
 
 data class HODDashboardMetrics(
-    val totalFaculty: String,
-    val totalStudents: String,
-    val pendingApprovals: String,
-    val activeSubjects: String
+    val departmentHealthIndex: String,
+    val activeFacultyCount: String,
+    val avgWorkloadHours: String,
+    val pendingVerifications: String
 )
 
 data class HODActivity(

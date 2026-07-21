@@ -50,6 +50,7 @@ class StudentListItem(BaseModel):
     total_marks: float
     fee_status: str
     leave_status: str
+    phone: Optional[str] = None
 
 class LeaveRequestActionPayload(BaseModel):
     status: str
@@ -141,6 +142,11 @@ async def assign_class_advisor(
 ):
     if not current_user.department_id:
         raise HTTPException(status_code=400, detail="HOD not assigned to a department")
+
+    # Verify the faculty belongs to the HOD's department
+    fac = await db.get(User, payload.faculty_id)
+    if not fac or fac.department_id != current_user.department_id:
+        raise HTTPException(status_code=400, detail="Faculty member not found or is in a different department")
 
     # Check if assignment already exists
     stmt = select(ClassAdvisor).where(
@@ -478,6 +484,35 @@ async def action_advisor_student_leave(
     leave = await db.get(LeaveRequest, leave_id)
     if not leave:
         raise HTTPException(status_code=404, detail="Leave request not found")
+
+    # Verify the leave belongs to a student of this advisor's own class
+    adv_stmt = select(ClassAdvisor).where(ClassAdvisor.faculty_id == current_user.id)
+    adv_res = await db.execute(adv_stmt)
+    assignment = adv_res.scalars().first()
+    if not assignment:
+        raise HTTPException(status_code=403, detail="You are not assigned as a Class Advisor")
+
+    try:
+        batch_year = int(assignment.batch.split("-")[0])
+    except Exception:
+        batch_year = 2026
+
+    owner_stmt = (
+        select(Student.user_id)
+        .outerjoin(Section, Student.section_id == Section.id)
+        .where(
+            Student.user_id == leave.user_id,
+            Student.department_id == assignment.department_id,
+            Student.batch_year == batch_year,
+            Student.is_deleted.is_(False)
+        )
+    )
+    if assignment.section_name:
+        owner_stmt = owner_stmt.where(Section.section_name == assignment.section_name)
+
+    owner_res = await db.execute(owner_stmt)
+    if not owner_res.scalars().first():
+        raise HTTPException(status_code=403, detail="This leave request does not belong to your class")
 
     action = payload.status.upper()
     if "REJECT" in action:

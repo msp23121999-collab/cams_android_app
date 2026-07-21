@@ -17,21 +17,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.core.ui.CamsScreen
+import com.example.features.parent.providers.ContactCollegeViewModel
 import com.example.features.parent.widgets.ParentDrawer
 import kotlinx.coroutines.launch
 
 @Composable
-fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
+fun ContactCollegeScreen(viewModel: ContactCollegeViewModel, onNavigate: (String) -> Unit) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
+
+    LaunchedEffect(uiState.successMsg) {
+        if (uiState.successMsg != null) {
+            name = ""; email = ""; subject = ""; message = ""
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -61,25 +71,32 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text("Emergency Contacts", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            
+
+            fun iconForRole(role: String): ImageVector = when (role) {
+                "Principal" -> Icons.Filled.Person
+                "Registrar" -> Icons.Filled.Badge
+                "Exam Cell" -> Icons.Filled.Description
+                "Admissions" -> Icons.Filled.School
+                else -> Icons.Filled.Phone
+            }
+
             BoxWithConstraints {
                 val isTablet = maxWidth > 600.dp
                 if (isTablet) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        ContactSmallCard("Principal", "+91 98765 43210", Icons.Filled.Person, Modifier.weight(1f))
-                        ContactSmallCard("Registrar", "+91 98765 01234", Icons.Filled.Badge, Modifier.weight(1f))
-                        ContactSmallCard("Exam Cell", "+91 98765 99999", Icons.Filled.Description, Modifier.weight(1f))
-                        ContactSmallCard("Admissions", "+91 98765 88888", Icons.Filled.School, Modifier.weight(1f))
+                        uiState.contacts.forEach { contact ->
+                            ContactSmallCard(contact.role, contact.phone, iconForRole(contact.role), Modifier.weight(1f))
+                        }
                     }
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            ContactSmallCard("Principal", "+91 98765 43210", Icons.Filled.Person, Modifier.weight(1f))
-                            ContactSmallCard("Registrar", "+91 98765 01234", Icons.Filled.Badge, Modifier.weight(1f))
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            ContactSmallCard("Exam Cell", "+91 98765 99999", Icons.Filled.Description, Modifier.weight(1f))
-                            ContactSmallCard("Admissions", "+91 98765 88888", Icons.Filled.School, Modifier.weight(1f))
+                        uiState.contacts.chunked(2).forEach { rowContacts ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                rowContacts.forEach { contact ->
+                                    ContactSmallCard(contact.role, contact.phone, iconForRole(contact.role), Modifier.weight(1f))
+                                }
+                                if (rowContacts.size == 1) Spacer(Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -119,12 +136,15 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
                         shape = RoundedCornerShape(12.dp)
                     )
                     Button(
-                        onClick = { /* Submit */ },
+                        onClick = {
+                            viewModel.submitInquiry(name, email, subject, message)
+                        },
+                        enabled = !uiState.isSubmitting && name.isNotBlank() && email.isNotBlank() && subject.isNotBlank() && message.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Send Message", fontWeight = FontWeight.Bold)
+                        Text(if (uiState.isSubmitting) "Sending..." else "Send Message", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -138,14 +158,25 @@ fun ContactCollegeScreen(onNavigate: (String) -> Unit) {
                         }
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("LexNova University Campus", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        Text("Sector 44, Academic District, New Delhi - 110001", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(uiState.campusName, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(uiState.campusAddress, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
                 }
             }
             
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (uiState.successMsg != null || uiState.errorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessages() },
+            title = { Text(if (uiState.errorMsg != null) "Error" else "Success") },
+            text = { Text(uiState.errorMsg ?: uiState.successMsg ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessages() }) { Text("OK") }
+            }
+        )
     }
 }
 

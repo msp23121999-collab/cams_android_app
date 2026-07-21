@@ -253,6 +253,11 @@ fun ParentChildProfileScreen(
                         }
                     }
                 }
+            } else {
+                com.example.core.ui.NetworkErrorView(
+                    message = uiState.error ?: "Failed to load child profile",
+                    onRetry = { viewModel.loadData() }
+                )
             }
         }
     }

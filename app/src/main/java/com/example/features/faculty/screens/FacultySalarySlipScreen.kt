@@ -1,5 +1,6 @@
 package com.example.features.faculty.screens
 
+import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,7 +29,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.core.repository.FacultyRepositoryImpl
 import com.example.features.faculty.providers.FacultySalaryViewModel
 import com.example.features.faculty.providers.FacultySalaryViewModelFactory
-import com.example.core.network.ApiClient
 import java.text.DateFormatSymbols
 
 @Composable
@@ -59,8 +60,8 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
                     Text("Total Net Pay (Last Month)", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
                         val lastSlip = uiState.slips.firstOrNull()
                         val netPay = lastSlip?.netSalary ?: 0.0
-                        val earnings = lastSlip?.baseSalary ?: 0.0
-                        val deductions = lastSlip?.deductions ?: 0.0
+                        val earnings = lastSlip?.basic ?: 0.0
+                        val deductions = lastSlip?.totalDeductions ?: 0.0
                     Text("₹ %,.2f".format(netPay), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
@@ -78,9 +79,23 @@ fun FacultySalarySlipScreen(onNavigate: (String) -> Unit) {
             Text("Payment History", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(uiState.slips) { slip ->
-                    SalarySlipItem(slip)
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else if (uiState.error != null) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Text(uiState.error ?: "Failed to load salary slips", color = Color(0xFFB91C1C))
+                }
+            } else if (uiState.slips.isEmpty()) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Text("No salary slips available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.slips) { slip ->
+                        SalarySlipItem(slip)
+                    }
                 }
             }
         }
@@ -106,6 +121,7 @@ private fun SummaryItem(label: String, value: String, icon: ImageVector) {
 
 @Composable
 private fun SalarySlipItem(slip: com.example.core.network.FacultySalarySlipDto) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -128,11 +144,25 @@ private fun SalarySlipItem(slip: com.example.core.network.FacultySalarySlipDto) 
                 }
                     val monthName = DateFormatSymbols().months.getOrNull(slip.month - 1) ?: "Unknown"
                     Text("$monthName ${slip.year}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text(slip.status, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             Column(horizontalAlignment = Alignment.End) {
                 Text("₹ %,.2f".format(slip.netSalary), fontWeight = FontWeight.Black, color = CamsNavy)
-                IconButton(onClick = { /* Download PDF */ }, modifier = Modifier.size(24.dp)) {
+                IconButton(
+                    onClick = {
+                        val url = slip.pdfUrl
+                        if (url.isNullOrBlank()) {
+                            Toast.makeText(context, "No PDF available for this slip", Toast.LENGTH_SHORT).show()
+                            return@IconButton
+                        }
+                        val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                        val base = com.example.core.config.AppConfig.BASE_URL
+                        val origin = base.substringBefore("/api/v1")
+                        val fullUrl = if (url.startsWith("http")) url else origin + url
+                        val monthName = DateFormatSymbols().months.getOrNull(slip.month - 1) ?: "slip"
+                        com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, "Salary_${monthName}_${slip.year}", token)
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
                     Icon(Icons.Filled.Download, "Download", tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
                 }
             }

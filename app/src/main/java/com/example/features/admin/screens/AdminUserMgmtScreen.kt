@@ -65,6 +65,13 @@ fun AdminUserMgmtScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = CamsNavy)
             }
+        } else if (uiState.error != null) {
+            // Without this the screen rendered empty on failure — no message,
+            // no retry — indistinguishable from genuinely having no data.
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load users",
+                onRetry = { viewModel.fetchUsers() }
+            )
         } else if (uiState.users.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -121,7 +128,7 @@ private fun UserListItem(user: com.example.features.admin.models.AdminUser, onDe
         )
         Spacer(Modifier.width(8.dp))
         IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, null, tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+            Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
         }
     }
 }

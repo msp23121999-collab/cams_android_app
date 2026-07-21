@@ -29,6 +29,7 @@ import com.example.features.hod.widgets.HODBaseScreen
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.hod.providers.HODApprovalsViewModel
+import com.example.features.leave.models.LeaveStatuses
 
 @Composable
 fun HODApprovalsScreen(
@@ -53,12 +54,11 @@ fun HODApprovalsScreen(
         ) {
             // KPI Cards
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                KpiCard("Pending Faculty Leaves", "5", Icons.Filled.EventBusy, Color(0xFFE11D48), Color(0xFFFFF1F2), Modifier.weight(1f))
-                KpiCard("Pending Mark Approvals", "8", Icons.AutoMirrored.Filled.FactCheck, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                KpiCard("Pending Faculty Leaves", "${uiState.pendingLeaves.size}", Icons.Filled.EventBusy, Color(0xFFE11D48), Color(0xFFFFF1F2), Modifier.weight(1f))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                KpiCard("Student Shortages", "15", Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
-                KpiCard("Syllabus Revisions", "2", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
+
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp)
             }
 
             Card(
@@ -93,18 +93,6 @@ fun HODApprovalsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Recent Approval Requests", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text("Review and take action on pending requests", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Button(
-                            onClick = { },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = CamsTextPrimary),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Filled.FilterList, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Filter", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
@@ -146,16 +134,16 @@ fun HODApprovalsScreen(
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         IconButton(
-                                            onClick = { viewModel.approveLeave(approval.id, "REJECTED", null) },
+                                            onClick = { viewModel.approveLeave(approval.id, LeaveStatuses.REJECTED_BY_HOD, LeaveStatuses.REMARK_HOD_REJECTED) },
                                             modifier = Modifier.size(32.dp).background(Color(0xFFFFF1F2), RoundedCornerShape(8.dp))
                                         ) {
-                                            Icon(Icons.Filled.Close, null, tint = Color(0xFFE11D48), modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color(0xFFE11D48), modifier = Modifier.size(16.dp))
                                         }
                                         IconButton(
-                                            onClick = { viewModel.approveLeave(approval.id, "APPROVED", null) },
+                                            onClick = { viewModel.approveLeave(approval.id, LeaveStatuses.APPROVED_BY_HOD, LeaveStatuses.REMARK_HOD_APPROVED) },
                                             modifier = Modifier.size(32.dp).background(Color(0xFFECFDF5), RoundedCornerShape(8.dp))
                                         ) {
-                                            Icon(Icons.Filled.Check, null, tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Filled.Check, contentDescription = "Confirm", tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
                                         }
                                     }
                                 }

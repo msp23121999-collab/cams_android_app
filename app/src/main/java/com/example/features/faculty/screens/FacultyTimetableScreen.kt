@@ -66,6 +66,11 @@ fun FacultyTimetableScreen(
             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = CamsNavy)
             }
+        } else if (uiState.error != null && uiState.timetable.isEmpty()) {
+            com.example.core.ui.NetworkErrorView(
+                message = uiState.error ?: "Failed to load timetable",
+                onRetry = { viewModel.loadTimetable() }
+            )
         } else {
             val timetableForDay = uiState.timetable.find { d -> d.dayName == selectedDay }
             if (timetableForDay == null || timetableForDay.periods.isEmpty()) {

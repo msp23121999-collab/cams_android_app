@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.core.theme.*
 import com.example.core.navigation.AppRoutes
@@ -34,6 +36,11 @@ import com.example.features.campus_life.models.CommunityServiceOpportunity
 import com.example.features.campus_life.providers.CommunityServiceViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.example.core.network.MultipartUploadHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +49,8 @@ fun CommunityServiceScreen(
     viewModel: CommunityServiceViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showAllLogs by remember { mutableStateOf(false) }
+    var showLogHoursDialog by remember { mutableStateOf(false) }
 
     CamsScreen(scrollable = true,
         title = "Community Service",
@@ -51,27 +60,27 @@ fun CommunityServiceScreen(
     ) {
         // Stats
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ServiceStatCard(Modifier.weight(1f), "Service Hours", "145h", Icons.Filled.Schedule, Color(0xFF10B981))
-                ServiceStatCard(Modifier.weight(1f), "NGO Collabs", "4", Icons.Filled.Language, Color(0xFF3B82F6))
+                ServiceStatCard(Modifier.weight(1f), "Service Hours", "${uiState.totalHours}h", Icons.Filled.Schedule, Color(0xFF10B981))
+                ServiceStatCard(Modifier.weight(1f), "NGO Collabs", "${uiState.ngoCollabs}", Icons.Filled.Language, Color(0xFF3B82F6))
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ServiceStatCard(Modifier.weight(1f), "Legal Aid", "6", Icons.Filled.Balance, CamsNavy)
-                ServiceStatCard(Modifier.weight(1f), "Certificates", "3", Icons.Filled.Verified, Color(0xFFF59E0B))
+                ServiceStatCard(Modifier.weight(1f), "Legal Aid", "${uiState.legalAidCount}", Icons.Filled.Balance, CamsNavy)
+                ServiceStatCard(Modifier.weight(1f), "Certificates", "${uiState.certificateCount}", Icons.Filled.Verified, Color(0xFFF59E0B))
             }
 
             // Upcoming Opportunities
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Text("UPCOMING OPPORTUNITIES", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
-                    TextButton(onClick = {}) { Text("Browse All", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFF10B981))) }
+                    TextButton(onClick = { showLogHoursDialog = true }) { Text("Log Hours", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFF10B981))) }
                 }
-                
-                
+
+
                 if (uiState.opportunities.isEmpty()) {
                     Text("No upcoming opportunities at the moment.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     uiState.opportunities.forEach { opp ->
-                        ServiceOpportunityItem(opp)
+                        ServiceOpportunityItem(opp, onApply = { viewModel.applyToOpportunity(opp.id) })
                     }
                 }
             }
@@ -79,33 +88,149 @@ fun CommunityServiceScreen(
             // Recent Service Log
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("RECENT SERVICE LOG", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp))
-                
+
                 CamsCard(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (uiState.logs.isEmpty()) {
                             Text("No service logs recorded yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 12.dp))
                         } else {
-                            uiState.logs.forEachIndexed { index, log ->
-                                ServiceLogItem(log)
-                                if (index < uiState.logs.size - 1) {
+                            val visibleLogs = if (showAllLogs) uiState.logs else uiState.logs.take(3)
+                            visibleLogs.forEachIndexed { index, log ->
+                                ServiceLogItem(log, onDelete = { viewModel.deleteLog(it) })
+                                if (index < visibleLogs.size - 1) {
                                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                                 }
                             }
                         }
-                        
-                        Button(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("View Full Log", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold))
+
+                        if (uiState.logs.size > 3) {
+                            Button(
+                                onClick = { showAllLogs = !showAllLogs },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(if (showAllLogs) "Show Less" else "View Full Log", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold))
+                            }
                         }
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(20.dp))
+    }
+
+    if (showLogHoursDialog) {
+        LogHoursDialog(
+            onDismiss = { showLogHoursDialog = false },
+            onSubmit = { title, org, category, date, hours, description, filePart ->
+                viewModel.logHours(title, org, category, date, hours, description, filePart)
+                showLogHoursDialog = false
+            }
+        )
+    }
+
+    if (uiState.errorMsg != null || uiState.successMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessages() },
+            title = { Text(if (uiState.errorMsg != null) "Error" else "Success") },
+            text = { Text(uiState.errorMsg ?: uiState.successMsg ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessages() }) { Text("OK") }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LogHoursDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (title: String, organization: String, category: String, date: String, hours: Double, description: String, filePart: okhttp3.MultipartBody.Part?) -> Unit
+) {
+    val context = LocalContext.current
+    var title by remember { mutableStateOf("") }
+    var organization by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("legal_aid") }
+    var date by remember { mutableStateOf("") }
+    var hours by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf<String?>(null) }
+
+    val categories = listOf("legal_aid", "outreach", "human_rights", "clinic", "general")
+
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        selectedFileUri = uri
+        selectedFileName = uri?.lastPathSegment ?: "document.pdf"
+    }
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = Color.White
+        ) {
+            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Filled.VolunteerActivism, contentDescription = null, tint = CamsNavy)
+                    Text("Log Service Hours", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black))
+                }
+
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Activity Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = organization, onValueChange = { organization = it }, label = { Text("Organization / NGO") }, modifier = Modifier.fillMaxWidth())
+
+                Column {
+                    Text("Category", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        categories.forEach { c ->
+                            FilterChip(
+                                selected = category == c,
+                                onClick = { category = c },
+                                label = { Text(c.replace("_", " ").uppercase()) }
+                            )
+                        }
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(value = hours, onValueChange = { hours = it }, label = { Text("Hours") }, modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date (YYYY-MM-DD)") }, modifier = Modifier.weight(1f))
+                }
+
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+
+                Surface(
+                    onClick = { filePickerLauncher.launch("*/*") },
+                    modifier = Modifier.fillMaxWidth().height(80.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = CamsBackground,
+                    border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(if (selectedFileUri != null) Icons.Filled.InsertDriveFile else Icons.Filled.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(selectedFileName ?: "Upload Proof Document", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+                        }
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Button(
+                        onClick = {
+                            val filePart = selectedFileUri?.let { MultipartUploadHelper.prepareFilePart("file", it, context) }
+                            onSubmit(title, organization, category, date, hours.toDoubleOrNull() ?: 0.0, description, filePart)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Submit")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -124,7 +249,7 @@ fun ServiceStatCard(modifier: Modifier = Modifier, label: String, value: String,
 }
 
 @Composable
-fun ServiceOpportunityItem(opp: CommunityServiceOpportunity) {
+fun ServiceOpportunityItem(opp: CommunityServiceOpportunity, onApply: () -> Unit) {
     CamsCard(modifier = Modifier.fillMaxWidth()) {
         Column {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -167,7 +292,7 @@ fun ServiceOpportunityItem(opp: CommunityServiceOpportunity) {
                 }
                 
                 Button(
-                    onClick = {},
+                    onClick = onApply,
                     modifier = Modifier.height(32.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                     shape = RoundedCornerShape(8.dp),
@@ -181,7 +306,8 @@ fun ServiceOpportunityItem(opp: CommunityServiceOpportunity) {
 }
 
 @Composable
-fun ServiceLogItem(log: CommunityServiceLog) {
+fun ServiceLogItem(log: CommunityServiceLog, onDelete: (String) -> Unit) {
+    val context = LocalContext.current
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
         Surface(
             modifier = Modifier.size(8.dp).padding(top = 8.dp),
@@ -197,9 +323,14 @@ fun ServiceLogItem(log: CommunityServiceLog) {
                 Text(log.status.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, color = if (log.status == "Verified") Color(0xFF10B981) else Color(0xFFF59E0B), fontSize = 12.sp))
             }
             
-            if (log.certificate) {
+            if (log.certificate && log.certificateUrl != null) {
                 Surface(
-                    onClick = {},
+                    onClick = {
+                        val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                        val origin = com.example.core.config.AppConfig.BASE_URL.substringBefore("/api/v1")
+                        val fullUrl = if (log.certificateUrl.startsWith("http")) log.certificateUrl else origin + log.certificateUrl
+                        com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, log.title, token)
+                    },
                     modifier = Modifier.padding(top = 8.dp),
                     color = CamsBackground,
                     shape = RoundedCornerShape(6.dp)
@@ -211,6 +342,10 @@ fun ServiceLogItem(log: CommunityServiceLog) {
                     }
                 }
             }
+        }
+
+        IconButton(onClick = { onDelete(log.id) }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
         }
     }
 }

@@ -58,14 +58,16 @@ fun InternalMarksScreen(
         actions = {
             IconButton(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com/marks-report.pdf"))
-                    context.startActivity(intent)
+                    val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                    val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                    val url = "$base/marks/internal/student/me/export-pdf"
+                    com.example.core.utils.DownloadHelper.downloadPdf(context, url, "internal_marks", token)
                 },
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
             ) {
-                Icon(Icons.Filled.FileDownload, contentDescription = "Download Report", tint = Color.White)
+                Icon(Icons.Filled.FileDownload, contentDescription = "Download marks report", tint = Color.White)
             }
         }
     ) {
@@ -81,7 +83,12 @@ fun InternalMarksScreen(
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                StudentProfileCard()
+                StudentProfileCard(
+                    studentName = uiState.studentName,
+                    rollNo = uiState.rollNo,
+                    degree = uiState.degree,
+                    semester = uiState.semester
+                )
                 InternalMarksSummary(uiState.marks)
                 if (uiState.marks.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -96,7 +103,13 @@ fun InternalMarksScreen(
 }
 
 @Composable
-fun StudentProfileCard() {
+fun StudentProfileCard(
+    studentName: String = "",
+    rollNo: String = "",
+    degree: String = "",
+    semester: Int = 0
+) {
+    val initials = studentName.split(" ").filter { it.isNotBlank() }.take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("").ifBlank { "?" }
     CamsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -113,19 +126,19 @@ fun StudentProfileCard() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "JS",
+                    initials,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                     color = CamsNavy
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "John Smith",
+                    studentName.ifBlank { "Student" },
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "Reg No: 2024LAW001 • Sem IV",
+                    "Reg No: ${rollNo.ifBlank { "N/A" }} • Sem ${if (semester > 0) semester else "-"}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -137,7 +150,7 @@ fun StudentProfileCard() {
                         .padding(horizontal = 10.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        "B.A. LL.B (Hons.)",
+                        degree.ifBlank { "N/A" },
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = CamsNavy
                     )
@@ -149,8 +162,9 @@ fun StudentProfileCard() {
 
 @Composable
 fun InternalMarksSummary(marks: List<InternalMarkRecord>) {
-    val totalObtained = marks.sumOf { it.totalScore }
-    val totalMax = marks.size * 100.0 // Assuming each is out of 100
+    val approvedMarks = marks.filter { it.isApproved }
+    val totalObtained = approvedMarks.sumOf { it.totalScore }
+    val totalMax = approvedMarks.sumOf { it.maxMark }
     val percentage = if (totalMax > 0) (totalObtained / totalMax * 100).toInt() else 0
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -238,10 +252,13 @@ fun MarksTable(marks: List<InternalMarkRecord>) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     TableHeaderCell("Subject", 160.dp)
-                    TableHeaderCell("Component", 100.dp)
-                    TableHeaderCell("Score", 80.dp)
-                    TableHeaderCell("Max", 80.dp)
-                    TableHeaderCell("Percentage", 100.dp)
+                    TableHeaderCell("Exam", 70.dp)
+                    TableHeaderCell("Assign.", 70.dp)
+                    TableHeaderCell("Present.", 70.dp)
+                    TableHeaderCell("Viva", 70.dp)
+                    TableHeaderCell("Attend.", 70.dp)
+                    TableHeaderCell("Total", 80.dp)
+                    TableHeaderCell("Status", 100.dp)
                 }
 
                 marks.forEach { mark ->
@@ -259,29 +276,35 @@ fun MarksTable(marks: List<InternalMarkRecord>) {
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Text(
-                                    "Semester IV",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (mark.facultyReply != null) {
+                                    Text(
+                                        mark.facultyReply,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
-                            TableBodyCell("Final", 100.dp)
-                            TableBodyCell("${mark.totalScore.toInt()}", 80.dp)
-                            TableBodyCell("100", 80.dp)
-                            
-                            val pct = mark.totalScore.toInt()
+                            TableBodyCell(if (mark.isApproved) "${mark.examScore.toInt()}" else "-", 70.dp)
+                            TableBodyCell(if (mark.isApproved) "${mark.assignmentScore.toInt()}" else "-", 70.dp)
+                            TableBodyCell(if (mark.isApproved) "${mark.presentationScore.toInt()}" else "-", 70.dp)
+                            TableBodyCell(if (mark.isApproved) "${mark.vivaScore.toInt()}" else "-", 70.dp)
+                            TableBodyCell(if (mark.isApproved) "${mark.attendanceScore.toInt()}" else "-", 70.dp)
+                            TableBodyCell(if (mark.isApproved) "${mark.totalScore.toInt()}" else "-", 80.dp)
+
                             Box(
                                 modifier = Modifier
                                     .width(100.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(CamsNavy.copy(alpha = 0.1f))
+                                    .background((if (mark.isApproved) Color(0xFF10B981) else Color(0xFFF59E0B)).copy(alpha = 0.1f))
                                     .padding(vertical = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "$pct%",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Black),
-                                    color = CamsNavy
+                                    if (mark.isApproved) "Approved" else "Pending",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                    color = if (mark.isApproved) Color(0xFF047857) else Color(0xFFB45309)
                                 )
                             }
                         }

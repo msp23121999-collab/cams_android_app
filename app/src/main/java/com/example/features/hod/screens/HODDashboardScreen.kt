@@ -52,14 +52,18 @@ fun HODDashboardScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            uiState.error?.let {
+                Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp)
+            }
+
             // Quick Stats Grid
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                DashboardStatCard("Total Faculty", uiState.metrics.totalFaculty, Icons.Filled.Group, Color(0xFF7C3AED), MaterialTheme.colorScheme.secondaryContainer, Modifier.weight(1f))
-                DashboardStatCard("Total Students", uiState.metrics.totalStudents, Icons.Filled.School, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
+                DashboardStatCard("Department Health", uiState.metrics.departmentHealthIndex, Icons.Filled.Group, Color(0xFF7C3AED), MaterialTheme.colorScheme.secondaryContainer, Modifier.weight(1f))
+                DashboardStatCard("Active Faculty", uiState.metrics.activeFacultyCount, Icons.Filled.School, Color(0xFF2563EB), Color(0xFFEFF6FF), Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                DashboardStatCard("Pending Approvals", uiState.metrics.pendingApprovals, Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
-                DashboardStatCard("Active Subjects", uiState.metrics.activeSubjects, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
+                DashboardStatCard("Pending Verifications", uiState.metrics.pendingVerifications, Icons.Filled.Warning, Color(0xFFD97706), Color(0xFFFFFBEB), Modifier.weight(1f))
+                DashboardStatCard("Avg Workload", uiState.metrics.avgWorkloadHours, Icons.AutoMirrored.Filled.MenuBook, Color(0xFF059669), Color(0xFFECFDF5), Modifier.weight(1f))
             }
 
             // Academic Operations
@@ -88,11 +92,15 @@ fun HODDashboardScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Recent Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(16.dp))
-                    
-                    uiState.activities.forEachIndexed { index, activity ->
-                        ActivityItem(activity.title, activity.time, Icons.Filled.Circle, Color(0xFF3B82F6))
-                        if (index < uiState.activities.size - 1) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 12.dp))
+
+                    if (uiState.activities.isEmpty()) {
+                        Text("No recent activity", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        uiState.activities.forEachIndexed { index, activity ->
+                            ActivityItem(activity.title, activity.time, Icons.Filled.Circle, Color(0xFF3B82F6))
+                            if (index < uiState.activities.size - 1) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 12.dp))
+                            }
                         }
                     }
                 }

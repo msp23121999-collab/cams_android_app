@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.features.leave.models.LeaveStatuses
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.hod.widgets.HODBaseScreen
@@ -30,11 +31,12 @@ fun HODLeaveApprovalsScreen(
     viewModel: HODLeaveApprovalsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var activeTab by remember { mutableStateOf("faculty") }
-    
-    val filteredLeaves = uiState.pendingLeaves.filter { 
-        if (activeTab == "faculty") true else true
-    }
+
+    // Note: the backend's HOD leave-approval endpoints only ever return leave
+    // requests from faculty who report to (or share a department with) this HOD
+    // — there is no "student leave" concept in this data source, so this screen
+    // shows a single faculty-leave list rather than a fake student/faculty tab split.
+    val filteredLeaves = uiState.pendingLeaves
 
     HODBaseScreen(
         title = "Leave Approvals",
@@ -43,8 +45,8 @@ fun HODLeaveApprovalsScreen(
         onNavigate = onNavigate
     ) {
         val totalPending = uiState.pendingLeaves.count { it.status == "PENDING_HOD" || it.status == "PENDING" }
-        val totalApproved = uiState.pendingLeaves.count { it.status == "APPROVED" || it.status == "APPROVED_BY_HOD" }
-        val totalRejected = uiState.pendingLeaves.count { it.status == "REJECTED" || it.status == "REJECTED_BY_HOD" }
+        val totalApproved = uiState.pendingLeaves.count { it.status in LeaveStatuses.HOD_APPROVED_SET }
+        val totalRejected = uiState.pendingLeaves.count { it.status in LeaveStatuses.HOD_REJECTED_SET }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             KpiCard("Pending", "$totalPending", Icons.Filled.Schedule, Color(0xFFD97706), Modifier.weight(1f))
@@ -55,12 +57,9 @@ fun HODLeaveApprovalsScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).padding(4.dp)) {
-            TabButton("Faculty Leaves", activeTab == "faculty", Modifier.weight(1f)) { activeTab = "faculty" }
-            TabButton("Student Leaves", activeTab == "student", Modifier.weight(1f)) { activeTab = "student" }
+        uiState.error?.let {
+            Text(it, color = Color(0xFFB91C1C), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
         }
-
-        Spacer(Modifier.height(16.dp))
 
         if (uiState.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -68,7 +67,7 @@ fun HODLeaveApprovalsScreen(
             }
         } else if (filteredLeaves.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No leave requests found for ${activeTab}.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No leave requests found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
@@ -99,7 +98,7 @@ fun HODLeaveApprovalsScreen(
                                 Spacer(Modifier.height(16.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(
-                                        onClick = { viewModel.approveLeave(leave.id, "REJECTED_BY_HOD", "Rejected by HOD") }, 
+                                        onClick = { viewModel.approveLeave(leave.id, LeaveStatuses.REJECTED_BY_HOD, LeaveStatuses.REMARK_HOD_REJECTED) }, 
                                         modifier = Modifier.weight(1f), 
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEF2F2), contentColor = Color(0xFFE11D48)), 
                                         shape = RoundedCornerShape(8.dp)
@@ -109,7 +108,7 @@ fun HODLeaveApprovalsScreen(
                                         Text("Reject", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Button(
-                                        onClick = { viewModel.approveLeave(leave.id, "APPROVED_BY_HOD", "Approved by HOD") }, 
+                                        onClick = { viewModel.approveLeave(leave.id, LeaveStatuses.APPROVED_BY_HOD, LeaveStatuses.REMARK_HOD_APPROVED) }, 
                                         modifier = Modifier.weight(1f), 
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)), 
                                         shape = RoundedCornerShape(8.dp)
@@ -143,18 +142,3 @@ private fun KpiCard(label: String, value: String, icon: androidx.compose.ui.grap
     }
 }
 
-@Composable
-private fun TabButton(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) Color(0xFFEEF2FF) else Color.Transparent,
-            contentColor = if (selected) Color(0xFF4338CA) else Color(0xFF64748B)
-        ),
-        shape = RoundedCornerShape(8.dp),
-        elevation = null
-    ) {
-        Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-    }
-}

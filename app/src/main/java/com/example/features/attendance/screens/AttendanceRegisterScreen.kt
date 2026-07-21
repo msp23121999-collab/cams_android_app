@@ -178,7 +178,12 @@ fun AttendanceRegisterScreen(
 
                             val context = androidx.compose.ui.platform.LocalContext.current
                             Button(
-                                onClick = { android.widget.Toast.makeText(context, "Attendance report exported to Downloads", android.widget.Toast.LENGTH_SHORT).show() },
+                                onClick = {
+                                    val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                    val base = com.example.core.config.AppConfig.BASE_URL.trimEnd('/')
+                                    val url = "$base/students/attendance/export-pdf"
+                                    com.example.core.utils.DownloadHelper.downloadPdf(context, url, "attendance_register", token)
+                                },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -306,7 +311,12 @@ fun MarginBanner(summary: com.example.core.network.AttendanceSummaryResponse?) {
 fun SubjectsTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
     val records = summary?.records ?: emptyList()
     val subjectGroups = records.groupBy { it.subjectCode }.entries.toList()
-    
+
+    if (subjectGroups.isEmpty()) {
+        EmptyTabState("No attendance records available yet.")
+        return
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -398,6 +408,11 @@ fun TrendsTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
         val pct = (attended.toDouble() / total * 100).toInt()
         Triple(monthName, pct, "$attended / $total")
     }.sortedByDescending { it.first } // Simple sort
+
+    if (monthlyData.isEmpty()) {
+        EmptyTabState("No attendance trend data available yet.")
+        return
+    }
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Month-wise Attendance", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
@@ -498,6 +513,20 @@ fun HeatmapTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
 }
 
 @Composable
+fun EmptyTabState(message: String) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Filled.EventBusy, contentDescription = null, tint = CamsTextSecondary, modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium.copy(color = CamsTextSecondary), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
 fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
@@ -526,6 +555,11 @@ fun LogsTab(summary: com.example.core.network.AttendanceSummaryResponse?) {
             shape = RoundedCornerShape(12.dp)
         )
         
+        if (filtered.isEmpty()) {
+            EmptyTabState(if (records.isEmpty()) "No attendance records available yet." else "No records match your search.")
+            return
+        }
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)

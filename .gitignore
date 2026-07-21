@@ -1,65 +1,72 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+# ─── Secrets — NEVER commit ──────────────────────────────────────────────────
 .env
-debug.keystore
-debug.keystore.base64
+.env.local
+*.env
+!.env.example
+local.properties
+!local.properties.example
+secrets.properties
 
-# Android Studio / IntelliJ IDEA
-.idea/
-*.ipr
-*.iws
-
-# Gradle
-.gradle/
-build/
-app/build/
-gradle/wrapper/gradle-wrapper.jar
-
-# Built variants
-*.apk
-*.ap_
-*.aab
-
-# Keystore files
+# Signing keys
 *.jks
 *.keystore
+debug.keystore
+keystore.properties
 
-# Log files
-*.log
+# ─── Reference web app — must never enter this repo ──────────────────────────
+# The CAMS web app is a REFERENCE ONLY for schema/API contract.
+# It is never copied into this deliverable.
+cams-web-app/
+repo_clone/
+frontend/
+*.tsx
+*.jsx
+node_modules/
+package-lock.json
+vite.config.*
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# ─── Android build output ────────────────────────────────────────────────────
+build/
+.gradle/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
 
-# Scratch and Temp Files
-/*.py
-/*.txt
-/*.json
-.agents/
-implementation_plan*.md
-taste_audit.json
-
-# Backend caches
+# ─── Python / backend ────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*.class
-.kotlin/
-repo_clone/
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local database files and dumps — schema lives in backend/alembic/
+*.db
+*.db.bak*
+*.db.backup*
+*.sqlite
+*.sqlite3
+backups/
+
+# Uploaded user files (runtime data, not source)
+backend/app/static/uploads/
+
+# ─── IDE / OS ────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ─── Scratch / logs ──────────────────────────────────────────────────────────
+*.log
+crash*.txt
+scratch*

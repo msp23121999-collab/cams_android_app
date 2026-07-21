@@ -21,10 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.hod.widgets.HODBaseScreen
 import com.example.core.navigation.AppRoutes
+import com.example.core.network.HODCourseDto
 import com.example.features.hod.providers.HODSyllabusManagementViewModel
 
 @Composable
@@ -32,8 +35,15 @@ fun HODSyllabusManagementScreen(
     onNavigate: (String) -> Unit,
     viewModel: HODSyllabusManagementViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedSemester by remember { mutableStateOf(1) }
+
+    LaunchedEffect(uiState.savePlanSuccess) {
+        if (uiState.savePlanSuccess) {
+            Toast.makeText(context, "Unit plan saved", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     HODBaseScreen(
         title = "Configure Department Syllabus",
@@ -103,11 +113,11 @@ fun HODSyllabusManagementScreen(
                                     Text("Code: ${course.code} • ${course.credits} Credits", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Button(
-                                    onClick = { },
+                                    onClick = { viewModel.openCoursePlan(course) },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text("Manage Unit", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text("Manage Units", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -116,4 +126,80 @@ fun HODSyllabusManagementScreen(
             }
         }
     }
+
+    uiState.selectedCourse?.let { course ->
+        ManageUnitsDialog(
+            course = course,
+            unitPlan = uiState.unitPlan,
+            isLoading = uiState.isLoadingPlan,
+            isSaving = uiState.isSavingPlan,
+            error = uiState.planError,
+            onDismiss = { viewModel.closeCoursePlan() },
+            onSave = { units -> viewModel.saveCoursePlan(units) }
+        )
+    }
+}
+
+@Composable
+private fun ManageUnitsDialog(
+    course: HODCourseDto,
+    unitPlan: Map<String, List<String>>,
+    isLoading: Boolean,
+    isSaving: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSave: (Map<String, List<String>>) -> Unit
+) {
+    var units by remember(unitPlan) {
+        mutableStateOf(
+            if (unitPlan.isEmpty()) listOf("Unit 1" to "") else unitPlan.map { (k, v) -> k to v.joinToString("\n") }
+        )
+    }
+
+    LaunchedEffect(unitPlan) {
+        units = if (unitPlan.isEmpty()) listOf("Unit 1" to "") else unitPlan.map { (k, v) -> k to v.joinToString("\n") }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Manage Units — ${course.name}") },
+        text = {
+            if (isLoading) {
+                Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    error?.let { Text(it, color = Color(0xFFB91C1C), fontSize = 12.sp) }
+                    units.forEachIndexed { index, (unitName, topics) ->
+                        OutlinedTextField(
+                            value = topics,
+                            onValueChange = { newVal ->
+                                units = units.toMutableList().also { it[index] = unitName to newVal }
+                            },
+                            label = { Text("$unitName (one topic per line)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    TextButton(onClick = {
+                        units = units + ("Unit ${units.size + 1}" to "")
+                    }) { Text("+ Add Unit") }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isLoading && !isSaving,
+                onClick = {
+                    val payload = units.associate { (name, topics) ->
+                        name to topics.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+                    }
+                    onSave(payload)
+                }
+            ) { Text(if (isSaving) "Saving..." else "Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }

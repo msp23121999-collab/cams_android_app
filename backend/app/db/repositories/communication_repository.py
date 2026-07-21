@@ -78,6 +78,23 @@ class CommunicationRepository:
         )
         await self.db.flush()
 
+    async def mark_notification_read(self, notification_id: str, user_id: str) -> None:
+        await self.db.execute(
+            update(Notification)
+            .where(Notification.id == notification_id, Notification.user_id == user_id)
+            .values(is_read=True)
+        )
+        await self.db.flush()
+
+    async def soft_delete_notification(self, notification_id: str, user_id: str) -> None:
+        from datetime import datetime, timezone
+        await self.db.execute(
+            update(Notification)
+            .where(Notification.id == notification_id, Notification.user_id == user_id)
+            .values(is_deleted=True, deleted_at=datetime.now(timezone.utc))
+        )
+        await self.db.flush()
+
     async def get_grievances_by_user(self, user_id: str) -> list[Grievance]:
         result = await self.db.execute(
             select(Grievance).where(Grievance.raised_by == user_id, Grievance.is_deleted.is_(False))
@@ -90,8 +107,8 @@ class CommunicationRepository:
         )
         return list(result.scalars().all())
 
-    async def create_grievance(self, raised_by: str, category: str, description: str, assigned_to: str | None = None) -> Grievance:
-        g = Grievance(raised_by=raised_by, category=category, description=description, status="PENDING", assigned_to=assigned_to)
+    async def create_grievance(self, raised_by: str, category: str, description: str, subject: str = "General", priority: str = "Medium", assigned_to: str | None = None) -> Grievance:
+        g = Grievance(raised_by=raised_by, category=category, subject=subject, priority=priority, description=description, status="PENDING", assigned_to=assigned_to)
         self.db.add(g)
         await self.db.flush()
         return g

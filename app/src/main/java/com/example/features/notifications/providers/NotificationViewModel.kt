@@ -37,7 +37,11 @@ data class NotificationState(
     val typeFilter: String = "all",
     val searchQuery: String = "",
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    // Local overrides applied on top of paged server data so mark-read/delete
+    // actions reflect immediately without waiting for a full page refetch.
+    val locallyReadIds: Set<String> = emptySet(),
+    val locallyDeletedIds: Set<String> = emptySet()
 )
 
 class NotificationViewModel(private val repository: StudentRepository) : ViewModel() {
@@ -52,25 +56,30 @@ class NotificationViewModel(private val repository: StudentRepository) : ViewMod
             pagingData.map { dto ->
                 NotificationRecord(
                     id = dto.id,
-                    type = dto.title,
+                    type = dto.title ?: "notification",
                     message = dto.message,
                     isRead = dto.isRead,
-                    createdAt = dto.date
+                    createdAt = dto.date ?: ""
                 )
             }
         }
         .cachedIn(viewModelScope)
         .combine(_uiState) { pagingData, state ->
-            pagingData.filter { notif ->
-                val matchesTab = when (state.activeTab) {
-                    "unread" -> !notif.isRead
-                    "read" -> notif.isRead
-                    else -> true
+            pagingData
+                .map { notif ->
+                    if (notif.id in state.locallyReadIds) notif.copy(isRead = true) else notif
                 }
-                val matchesType = state.typeFilter == "all" || notif.type == state.typeFilter
-                val matchesSearch = state.searchQuery.isEmpty() || notif.message.contains(state.searchQuery, ignoreCase = true)
-                matchesTab && matchesType && matchesSearch
-            }
+                .filter { notif -> notif.id !in state.locallyDeletedIds }
+                .filter { notif ->
+                    val matchesTab = when (state.activeTab) {
+                        "unread" -> !notif.isRead
+                        "read" -> notif.isRead
+                        else -> true
+                    }
+                    val matchesType = state.typeFilter == "all" || notif.type == state.typeFilter
+                    val matchesSearch = state.searchQuery.isEmpty() || notif.message.contains(state.searchQuery, ignoreCase = true)
+                    matchesTab && matchesType && matchesSearch
+                }
         }
 
     init {
@@ -85,10 +94,10 @@ class NotificationViewModel(private val repository: StudentRepository) : ViewMod
                 val data = dtos.map { dto ->
                     NotificationRecord(
                         id = dto.id,
-                        type = dto.title, // "title" in DTO acts as type/title
+                        type = dto.title ?: "notification", // "title" in DTO acts as type/title
                         message = dto.message,
                         isRead = dto.isRead,
-                        createdAt = dto.date
+                        createdAt = dto.date ?: ""
                     )
                 }
                 _uiState.update { it.copy(notifications = data, isLoading = false) }
@@ -111,32 +120,52 @@ class NotificationViewModel(private val repository: StudentRepository) : ViewMod
     }
 
     fun markAsRead(id: String) {
+        // Optimistic local update so the UI reflects it immediately.
         _uiState.update { state ->
-            val updated = state.notifications.map {
-                if (it.id == id) it.copy(isRead = true) else it
-            }
-            state.copy(notifications = updated)
+            state.copy(
+                locallyReadIds = state.locallyReadIds + id,
+                notifications = state.notifications.map { if (it.id == id) it.copy(isRead = true) else it }
+            )
+        }
+        viewModelScope.launch {
+            repository.markNotificationRead(id)
         }
     }
 
     fun markAllAsRead() {
         _uiState.update { state ->
-            val updated = state.notifications.map { it.copy(isRead = true) }
-            state.copy(notifications = updated)
+            state.copy(
+                locallyReadIds = state.locallyReadIds + state.notifications.map { it.id },
+                notifications = state.notifications.map { it.copy(isRead = true) }
+            )
+        }
+        viewModelScope.launch {
+            repository.markAllNotificationsRead()
         }
     }
 
     fun deleteNotification(id: String) {
         _uiState.update { state ->
-            val updated = state.notifications.filter { it.id != id }
-            state.copy(notifications = updated)
+            state.copy(
+                locallyDeletedIds = state.locallyDeletedIds + id,
+                notifications = state.notifications.filter { it.id != id }
+            )
+        }
+        viewModelScope.launch {
+            repository.deleteNotification(id)
         }
     }
 
     fun deleteAllRead() {
+        val readIds = _uiState.value.notifications.filter { it.isRead }.map { it.id }
         _uiState.update { state ->
-            val updated = state.notifications.filter { !it.isRead }
-            state.copy(notifications = updated)
+            state.copy(
+                locallyDeletedIds = state.locallyDeletedIds + readIds,
+                notifications = state.notifications.filter { !it.isRead }
+            )
+        }
+        viewModelScope.launch {
+            readIds.forEach { id -> repository.deleteNotification(id) }
         }
     }
 }

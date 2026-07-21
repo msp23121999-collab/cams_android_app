@@ -95,7 +95,7 @@ fun StudentAcademicsScreen(
             if (activeTab == "timetable") {
                 TimetableContent(uiState.timetable)
             } else {
-                SubjectsContent()
+                SubjectsContent(uiState.courses)
             }
         }
     }
@@ -127,14 +127,16 @@ private fun TabButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
 @Composable
 private fun TimetableContent(timetable: List<com.example.core.network.TimetableSlotDto>) {
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
-    val periods = listOf(
-        "09:00 - 10:00",
-        "10:00 - 11:00",
-        "11:15 - 12:15",
-        "12:15 - 13:15",
-        "14:00 - 15:00",
-        "15:00 - 16:00"
-    )
+    fun toMinutes(time: String): Int {
+        val parts = time.split(":")
+        return try { parts[0].trim().toInt() * 60 + parts[1].trim().toInt() } catch (e: Exception) { 0 }
+    }
+    val periods = if (timetable.isNotEmpty()) {
+        timetable.map { "${it.startTime} - ${it.endTime}" }.distinct()
+            .sortedBy { toMinutes(it.substringBefore(" - ")) }
+    } else {
+        listOf("09:00 - 10:00", "10:00 - 11:00", "11:15 - 12:15", "12:15 - 13:15", "14:00 - 15:00", "15:00 - 16:00")
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
@@ -144,15 +146,26 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Weekly Class Schedule", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Academic Year 2025-26", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+                val academicYearLabel = run {
+                    val calendar = java.util.Calendar.getInstance()
+                    val year = calendar.get(java.util.Calendar.YEAR)
+                    val month = calendar.get(java.util.Calendar.MONTH)
+                    if (month >= java.util.Calendar.JUNE) "$year-${(year + 1) % 100}" else "${year - 1}-${year % 100}"
+                }
+                Text("Academic Year $academicYearLabel", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
             }
             Spacer(Modifier.width(8.dp))
-            Surface(
-                color = Color(0xFF10B981).copy(alpha = 0.1f),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.2f))
-            ) {
-                Text("APPROVED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+            // Only show the approval badge when the timetable is genuinely approved.
+            val isTimetableApproved = timetable.isNotEmpty() &&
+                timetable.all { it.status.equals("APPROVED", ignoreCase = true) }
+            if (isTimetableApproved) {
+                Surface(
+                    color = Color(0xFF10B981).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.2f))
+                ) {
+                    Text("APPROVED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                }
             }
         }
         
@@ -189,7 +202,9 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
                             Text(day, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                         periods.forEachIndexed { pIndex, period ->
-                            val slot = timetable.find { it.dayOfWeek == dayFullName && it.startTime == period }
+                            val slot = timetable.find { 
+                                it.dayOfWeek.equals(dayFullName, ignoreCase = true) && "${it.startTime} - ${it.endTime}" == period 
+                            }
                             Box(modifier = Modifier.width(120.dp).padding(horizontal = 8.dp)) {
                                 if (slot != null) {
                                     Surface(
@@ -201,8 +216,8 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
                                             modifier = Modifier.padding(8.dp),
                                             verticalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(slot.subjectName, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = LexNovaPurple, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                            Text(slot.roomNo, fontSize = 12.sp, color = LexNovaPurple.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(slot.subjectName ?: "Not assigned", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = LexNovaPurple, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            Text(slot.roomNo.orEmpty(), fontSize = 12.sp, color = LexNovaPurple.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
                                     }
                                 } else {
@@ -223,12 +238,13 @@ private fun TimetableContent(timetable: List<com.example.core.network.TimetableS
 }
 
 @Composable
-private fun SubjectsContent() {
+private fun SubjectsContent(courses: List<com.example.features.student.models.Course>) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Summary Cards
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Total Subjects", "6", Icons.Filled.Book, LexNovaPurple, Modifier.weight(1f))
-            StatCard("Total Credits", "24", Icons.Filled.Star, Color(0xFFF59E0B), Modifier.weight(1f))
+            val totalCredits = courses.sumOf { it.credits }
+            StatCard("Total Subjects", "${courses.size}", Icons.Filled.Book, LexNovaPurple, Modifier.weight(1f))
+            StatCard("Total Credits", "$totalCredits", Icons.Filled.Star, Color(0xFFF59E0B), Modifier.weight(1f))
         }
         
         Card(
@@ -241,33 +257,32 @@ private fun SubjectsContent() {
                 Text("Enrolled Subjects", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(16.dp))
                 
-                val subjects = listOf(
-                    "LAW101 - Introduction to Law & Legal System" to "4 Cr",
-                    "BALL8105 - Criminal Law" to "4 Cr",
-                    "LAW205 - Law of Contracts" to "4 Cr",
-                    "LAW301 - Jurisprudence" to "3 Cr"
-                )
-                
-                subjects.forEachIndexed { index, (name, credits) ->
-                    if (index > 0) HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Box(modifier = Modifier.size(32.dp).background(LexNovaPurple.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                                Text("${index+1}", color = LexNovaPurple, fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Surface(
-                            color = CamsBackground,
-                            shape = RoundedCornerShape(8.dp)
+                if (courses.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No subjects enrolled.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    courses.forEachIndexed { index, course ->
+                        if (index > 0) HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(credits, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(modifier = Modifier.size(32.dp).background(LexNovaPurple.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                                    Text("${index+1}", color = LexNovaPurple, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text("${course.code} - ${course.name}", fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Surface(
+                                color = CamsBackground,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("${course.credits} Cr", fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            }
                         }
                     }
                 }

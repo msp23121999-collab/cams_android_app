@@ -7,7 +7,8 @@ data class AdminUser(
     val fullName: String,
     val role: String,
     val isActive: Boolean,
-    val departmentId: String?
+    val departmentId: String?,
+    val departmentName: String? = null
 )
 
 data class AdminMetric(
@@ -34,7 +35,8 @@ data class AdminDepartment(
     val id: String,
     val code: String,
     val name: String,
-    val hodId: String? = null
+    val courseName: String? = null,
+    val programLevel: String? = null
 )
 
 data class AdminDegree(
@@ -70,54 +72,78 @@ data class AdminBackup(
 data class AdminAttendanceDefaulter(
     val studentId: String,
     val studentName: String,
+    val rollNo: String,
     val department: String,
+    val semester: Int,
+    val section: String,
     val attendancePercentage: Double,
-    val status: String
+    val finePaid: Boolean
 )
 
 data class AdminFeeStructure(
     val id: String,
-    val name: String,
+    val feeType: String,
     val amount: Double,
     val semester: Int,
-    val departmentId: String
+    val deptName: String
 )
 
 data class AdminScholarshipType(
     val id: String,
     val name: String,
-    val percentage: Double
+    val description: String,
+    val reductionType: String,
+    val reductionValue: Double
 )
 
 data class AdminPayroll(
     val id: String,
     val facultyId: String,
     val facultyName: String,
+    val designation: String,
+    val departmentName: String,
     val month: String,
-    val amount: Double,
-    val status: String
+    val amount: Double
 )
 
 data class AdminSystemSettings(
-    val institutionName: String,
-    val academicYear: String,
-    val semester: Int
+    val collegeName: String,
+    val address: String,
+    val affiliationNumber: String,
+    val aicteUgcCode: String,
+    val accreditationBody: String,
+    val bankName: String,
+    val bankAccountNo: String,
+    val bankIfsc: String,
+    val bankBranch: String
 )
 
 data class AdminAuditLog(
     val id: String,
-    val userId: String,
+    val userName: String,
     val action: String,
-    val details: String,
+    val entityId: String,
     val timestamp: String
 )
 
 data class AdminFeeStudent(
     val studentId: String,
+    // The backend user account id — required by any endpoint (e.g. library
+    // issue) whose foreign key points at users.id rather than students.id.
+    val userId: String?,
     val studentName: String,
+    val rollNo: String,
     val department: String,
     val currentSemester: Int,
-    val totalFees: Double,
-    val paidFees: Double,
-    val dueFees: Double
+    val batchYear: Int
+)
+
+data class AdminStudentFeeRecord(
+    val recordId: String,
+    val feeType: String,
+    val semester: Int,
+    val amount: Double,
+    val paidAmount: Double,
+    val remainingAmount: Double,
+    val status: String
 )

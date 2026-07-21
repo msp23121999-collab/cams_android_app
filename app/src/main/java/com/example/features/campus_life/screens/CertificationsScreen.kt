@@ -37,6 +37,12 @@ import com.example.features.campus_life.models.CertificationRecord
 import com.example.features.campus_life.providers.CertificationsViewModel
 import com.example.features.student.widgets.StudentDrawer
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.example.core.network.MultipartUploadHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,9 +151,20 @@ fun CertificationsScreen(
     if (showUploadModal) {
         UploadCertDialog(
             onDismiss = { showUploadModal = false },
-            onUpload = {
-                viewModel.addCertification(it)
+            onUpload = { cert, filePart ->
+                viewModel.addCertification(cert, filePart)
                 showUploadModal = false
+            }
+        )
+    }
+
+    if (uiState.errorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Error") },
+            text = { Text(uiState.errorMsg!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) { Text("OK") }
             }
         )
     }
@@ -172,6 +189,7 @@ fun CertMetricCard(modifier: Modifier = Modifier, label: String, value: String, 
 
 @Composable
 fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
+    val context = LocalContext.current
     CamsCard(modifier = Modifier.fillMaxWidth()) {
         Column {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -243,18 +261,25 @@ fun CertItemCard(cert: CertificationRecord, onDelete: (String) -> Unit) {
             ) {
                 Text("ID: ${cert.id}", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = { onDelete(cert.id) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
+                    IconButton(onClick = { onDelete(cert.id) }, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.3f), modifier = Modifier.size(16.dp))
                     }
-                    Surface(
-                        onClick = {},
-                        modifier = Modifier.size(32.dp),
-                        color = Color.White,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    if (cert.fileUrl != null) {
+                        Surface(
+                            onClick = {
+                                val token = com.example.core.network.AuthManagerImpl(context).getToken() ?: ""
+                                val origin = com.example.core.config.AppConfig.BASE_URL.substringBefore("/api/v1")
+                                val fullUrl = if (cert.fileUrl.startsWith("http")) cert.fileUrl else origin + cert.fileUrl
+                                com.example.core.utils.DownloadHelper.downloadPdf(context, fullUrl, cert.title, token)
+                            },
+                            modifier = Modifier.size(32.dp),
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            }
                         }
                     }
                 }
@@ -311,13 +336,30 @@ fun EmptyCertsView() {
     }
 }
 
+private val certCategoryToType = mapOf(
+    "Professional Training" to "training",
+    "Internship" to "internship",
+    "Moot Court" to "moot_court",
+    "Research Publication" to "publication",
+    "Legal Aid" to "legal_aid",
+    "Value-Added Course" to "course"
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord) -> Unit) {
+fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord, okhttp3.MultipartBody.Part?) -> Unit) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var authority by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Professional Training") }
+    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf<String?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        selectedFileUri = uri
+        selectedFileName = uri?.lastPathSegment ?: "certificate.pdf"
+    }
 
     val categories = listOf("Professional Training", "Internship", "Moot Court", "Research Publication", "Legal Aid", "Value-Added Course")
 
@@ -352,15 +394,15 @@ fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord) -> U
                 OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Completion Date (e.g. May 2026)") }, modifier = Modifier.fillMaxWidth())
 
                 Surface(
-                    onClick = {},
+                    onClick = { filePickerLauncher.launch("*/*") },
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     shape = RoundedCornerShape(16.dp),
                     color = Slate50,
                     border = BorderStroke(1.dp, Slate200)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = Slate400)
-                        Text("Tap to select file", style = MaterialTheme.typography.labelSmall.copy(color = Slate500))
+                        Icon(if (selectedFileUri != null) Icons.Filled.InsertDriveFile else Icons.Filled.CloudUpload, contentDescription = null, tint = Slate400)
+                        Text(selectedFileName ?: "Tap to select file", style = MaterialTheme.typography.labelSmall.copy(color = Slate500))
                     }
                 }
 
@@ -368,7 +410,9 @@ fun UploadCertDialog(onDismiss: () -> Unit, onUpload: (CertificationRecord) -> U
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
                     Button(
                         onClick = {
-                            onUpload(CertificationRecord("LXC-${System.currentTimeMillis().toString().takeLast(4)}", title, authority, date, category, false, "training"))
+                            val filePart = selectedFileUri?.let { MultipartUploadHelper.prepareFilePart("file", it, context) }
+                            val type = certCategoryToType[category] ?: "training"
+                            onUpload(CertificationRecord("LXC-${System.currentTimeMillis().toString().takeLast(4)}", title, authority, date, category, false, type), filePart)
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Purple600),

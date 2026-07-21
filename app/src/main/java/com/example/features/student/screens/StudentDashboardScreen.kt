@@ -35,6 +35,7 @@ import com.example.features.student.providers.DashboardViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.features.student.models.*
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 // UI Design System Colors
 private val ColorPrimary = Color(0xFF1A365D)
@@ -105,10 +106,20 @@ fun StudentDashboardScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                        item { uiState.profile?.let { ProfileCard(it, onNavigate) } }
+                        item { uiState.profile?.let { ProfileCard(it, uiState.dashboardData, onNavigate) } }
                         item { QuickActions(onNavigate) }
                         item { LawSubjectsDashboard(uiState.courses) }
-                        item { MootCourtAndResearchHub(uiState.calendarEvents) }
+                        item {
+                            MootCourtAndResearchHub(
+                                events = uiState.calendarEvents,
+                                citations = uiState.citations,
+                                isCitationsLoading = uiState.isCitationsLoading,
+                                citationsError = uiState.citationsError,
+                                onMemorialDraftsClick = { onNavigate(AppRoutes.MOOT_COURT_MEMORIALS) },
+                                onAddCitation = { caseName, citationText, note -> viewModel.addCitation(caseName, citationText, note) },
+                                onDeleteCitation = { id -> viewModel.deleteCitation(id) }
+                            )
+                        }
                         item { QuickWidgets(uiState.borrowedBooks, uiState.dashboardData, onNavigate) }
                         item { RecentNotices(uiState.notices, onNavigate) }
                     }
@@ -119,7 +130,7 @@ fun StudentDashboardScreen(
 
 
 @Composable
-private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) -> Unit) {
+private fun ProfileCard(profile: StudentProfileResponse, dashboard: DashboardResponse?, onNavigate: (String) -> Unit) {
     CamsCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -134,7 +145,7 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                             .background(ColorSurface, RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(profile.fullName.take(1), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Purple650)
+                        Text(profile.fullName.take(1).uppercase(), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Purple650)
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -155,11 +166,11 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                                 .background(Purple650.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text("VERIFIED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(profile.verificationStatus ?: "VERIFIED", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     Text(
-                        text = "Reg: ${profile.rollNo} • ${profile.courseName} • Sem ${profile.semester}",
+                        text = "Reg: ${profile.rollNo} • ${profile.courseName ?: "Law"} • Sem ${profile.semester}",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
@@ -168,12 +179,34 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PillBadge(icon = Icons.Filled.CheckCircle, text = "88% Attendance", color = Emerald500) { onNavigate(AppRoutes.ATTENDANCE) }
-                        PillBadge(icon = Icons.Filled.Star, text = "CGPA: ${profile.cgpa}", color = Purple650) { onNavigate(AppRoutes.INTERNAL_MARKS) }
+                        val attendance = dashboard?.metrics?.firstOrNull { it.id == "attendance" }?.value ?: "N/A"
+                        PillBadge(icon = Icons.Filled.CheckCircle, text = "$attendance Attendance", color = Emerald500) { onNavigate(AppRoutes.ATTENDANCE) }
+                        PillBadge(icon = Icons.Filled.Star, text = "CGPA: ${profile.cgpa ?: "N/A"}", color = Purple650) { onNavigate(AppRoutes.INTERNAL_MARKS) }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+            val profileCompletionFraction = remember(profile) {
+                val fields = listOf(
+                    profile.fullName,
+                    profile.rollNo,
+                    profile.email,
+                    profile.dateOfBirth,
+                    profile.gender,
+                    profile.bloodGroup,
+                    profile.nationality,
+                    profile.mobileNumber,
+                    profile.currentAddress,
+                    profile.permanentAddress,
+                    profile.aadhaarNumber,
+                    profile.communityCategory,
+                    profile.fatherName,
+                    profile.motherName,
+                    profile.courseName
+                )
+                val filled = fields.count { !it.isNullOrBlank() }
+                if (fields.isEmpty()) 0f else filled.toFloat() / fields.size
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -184,11 +217,11 @@ private fun ProfileCard(profile: StudentProfileResponse, onNavigate: (String) ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("PROFILE COMPLETION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("85%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Indigo600, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${(profileCompletionFraction * 100).roundToInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Indigo600, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     LinearProgressIndicator(
-                        progress = { 0.85f },
+                        progress = { profileCompletionFraction },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
@@ -263,9 +296,15 @@ private fun LawSubjectsDashboard(courses: List<Course>) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Current Semester Subjects", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(courses) { course ->
-                    SubjectCard(course.code, course.name, "${course.credits} Credits", course.overallCompletion / 100f, Indigo600)
+            if (courses.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                    Text("No subjects found.", style = MaterialTheme.typography.bodySmall, color = ColorTextSecondary)
+                }
+            } else {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(courses) { course ->
+                        SubjectCard(course.code, course.name, "${course.credits} Credits", course.overallCompletion / 100f, Indigo600)
+                    }
                 }
             }
         }
@@ -304,7 +343,18 @@ private fun SubjectCard(code: String, name: String, credits: String, coverage: F
 }
 
 @Composable
-private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
+private fun MootCourtAndResearchHub(
+    events: List<CalendarEvent>,
+    citations: List<com.example.core.network.SavedCitationDto>,
+    isCitationsLoading: Boolean,
+    citationsError: String?,
+    onMemorialDraftsClick: () -> Unit,
+    onAddCitation: (String, String, String?) -> Unit,
+    onDeleteCitation: (String) -> Unit
+) {
+    var showAddCitationDialog by remember { mutableStateOf(false) }
+    var selectedCitation by remember { mutableStateOf<com.example.core.network.SavedCitationDto?>(null) }
+
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         CamsCard(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
@@ -313,34 +363,36 @@ private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
                     Text("Moot Court Center", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 val mootEvent = events.firstOrNull { !it.isHoliday }
-                mootEvent?.let { event ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Purple650.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                            .border(1.dp, Purple650.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Purple650.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .border(1.dp, Purple650.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        if (mootEvent != null) {
                             Box(
                                 modifier = Modifier
                                     .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
                                     .border(1.dp, Purple650.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
                                     .padding(horizontal = 4.dp, vertical = 2.dp)
                             ) {
-                                Text("Upcoming • ${event.startDate}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650)
+                                Text("Upcoming • ${mootEvent.startDate}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Purple650)
                             }
-                            Text(event.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
+                            Text(mootEvent.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
                             Text("Campus Center", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
-                            Button(
-                                onClick = { },
-                                colors = ButtonDefaults.buttonColors(containerColor = Purple650),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth().height(32.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Memorial Drafts", fontSize = 12.sp, fontWeight = FontWeight.Black)
-                            }
+                        } else {
+                            Text("Draft and manage your moot court memorials.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                        }
+                        Button(
+                            onClick = onMemorialDraftsClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = Purple650),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth().height(32.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Memorial Drafts", fontSize = 12.sp, fontWeight = FontWeight.Black)
                         }
                     }
                 }
@@ -351,25 +403,146 @@ private fun MootCourtAndResearchHub(events: List<CalendarEvent>) {
                     Icon(Icons.Filled.AccountTree, null, tint = Indigo600, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Legal Research", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { showAddCitationDialog = true }, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Filled.Add, contentDescription = "Add Citation", tint = Indigo600, modifier = Modifier.size(18.dp))
+                    }
                 }
                 Text("Saved Citations", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
                 Spacer(modifier = Modifier.height(8.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                        Text("No saved citations yet.", style = MaterialTheme.typography.bodySmall, color = ColorTextSecondary)
+                when {
+                    isCitationsLoading && citations.isEmpty() -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(modifier = Modifier.fillMaxWidth().height(28.dp).shimmerEffect())
+                            Box(modifier = Modifier.fillMaxWidth().height(28.dp).shimmerEffect())
+                        }
+                    }
+                    citationsError != null && citations.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            Text(citationsError, style = MaterialTheme.typography.bodySmall, color = ColorTextSecondary)
+                        }
+                    }
+                    citations.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            Text("No saved citations yet.", style = MaterialTheme.typography.bodySmall, color = ColorTextSecondary)
+                        }
+                    }
+                    else -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            citations.take(4).forEach { citation ->
+                                CitationItem(citation.caseName, onClick = { selectedCitation = citation })
+                            }
+                        }
                     }
                 }
         }
     }
+
+    if (showAddCitationDialog) {
+        AddCitationDialog(
+            onDismiss = { showAddCitationDialog = false },
+            onSave = { caseName, citationText, note ->
+                onAddCitation(caseName, citationText, note)
+                showAddCitationDialog = false
+            }
+        )
+    }
+
+    selectedCitation?.let { citation ->
+        AlertDialog(
+            onDismissRequest = { selectedCitation = null },
+            title = { Text(citation.caseName, fontWeight = FontWeight.Black, fontSize = 16.sp) },
+            text = {
+                Column {
+                    Text(citation.citationText, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (!citation.note.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Note: ${citation.note}", fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = ColorTextSecondary)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteCitation(citation.id)
+                    selectedCitation = null
+                }) {
+                    Text("Delete", color = Color(0xFFE11D48), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedCitation = null }) {
+                    Text("Close", color = Indigo600, fontWeight = FontWeight.Bold)
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 }
 
 @Composable
-private fun CitationItem(text: String) {
+private fun AddCitationDialog(onDismiss: () -> Unit, onSave: (String, String, String?) -> Unit) {
+    var caseName by remember { mutableStateOf("") }
+    var citationText by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save Citation", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = caseName,
+                    onValueChange = { caseName = it },
+                    label = { Text("Case Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                OutlinedTextField(
+                    value = citationText,
+                    onValueChange = { citationText = it },
+                    label = { Text("Citation") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Note (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(caseName, citationText, note.ifBlank { null }) },
+                enabled = caseName.isNotBlank() && citationText.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Indigo600),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Save", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Indigo600, fontWeight = FontWeight.Bold)
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
+}
+
+@Composable
+private fun CitationItem(text: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(ColorBackground, RoundedCornerShape(8.dp))
             .border(1.dp, ColorTextSecondary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

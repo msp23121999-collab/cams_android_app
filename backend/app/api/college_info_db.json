@@ -1,0 +1,22 @@
+{
+  "contacts": [
+    {
+      "role": "Principal",
+      "phone": "+91 98765 43210"
+    },
+    {
+      "role": "Registrar",
+      "phone": "+91 98765 01234"
+    },
+    {
+      "role": "Exam Cell",
+      "phone": "+91 98765 99999"
+    },
+    {
+      "role": "Admissions",
+      "phone": "+91 98765 88888"
+    }
+  ],
+  "campus_name": "LexNova University Campus",
+  "campus_address": "Sector 44, Academic District, New Delhi - 110001"
+}

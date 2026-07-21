@@ -52,12 +52,12 @@ class CareerViewModel(private val repository: StudentRepository) : ViewModel() {
                 val drives = drivesDtos.map { dto ->
                     InternshipDrive(
                         id = dto.id,
-                        companyName = dto.company,
+                        companyName = dto.companyName,
                         role = dto.role,
                         location = "Remote/Hybrid", // Using a default as backend doesn't provide location yet
                         applicationStatus = dto.status,
-                        description = "Check application portal for details",
-                        stipend = dto.stipend
+                        description = dto.description ?: "Check application portal for details",
+                        stipend = dto.`package` ?: "N/A"
                     )
                 }
 
@@ -79,7 +79,7 @@ class CareerViewModel(private val repository: StudentRepository) : ViewModel() {
                         activityName = dto.title,
                         category = dto.category,
                         date = dto.date,
-                        pointsClaimed = dto.pointsClaimed,
+                        pointsClaimed = dto.claimedPoints.toInt(),
                         status = dto.status
                     )
                 }

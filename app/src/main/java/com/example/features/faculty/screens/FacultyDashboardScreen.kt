@@ -3,20 +3,12 @@ package com.example.features.faculty.screens
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.material3.MaterialTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.features.faculty.providers.FacultyDashboardViewModel
-import com.example.features.faculty.models.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,7 +20,10 @@ import com.example.core.theme.*
 import com.example.core.ui.CamsCard
 import com.example.features.faculty.widgets.FacultyBaseScreen
 import com.example.core.navigation.AppRoutes
+import com.example.features.faculty.providers.FacultyDashboardViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FacultyDashboardScreen(
     onNavigate: (String) -> Unit,
@@ -37,68 +32,154 @@ fun FacultyDashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val metrics = uiState.metrics
     val subjects = uiState.assignedSubjects
-    // For now, since recentActivities and upcomingEvents were hardcoded in the old VM and not in current state, 
-    // I will use empty lists or maintain them if they are important. 
-    // Actually, I'll update the State to include them for consistency if they are used in UI.
     val activities = uiState.recentActivities
     val events = uiState.upcomingEvents
+    
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    FacultyBaseScreen(scrollable = true, 
-        title = "Faculty Portal",
-        subtitle = "Manage your classes and assessments",
-        currentRoute = AppRoutes.FACULTY_DASHBOARD,
-        onNavigate = onNavigate
-    ) {
-        // Stats Row
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Classes Today", metrics.classesToday, Icons.Filled.Event, CamsNavy, Modifier.weight(1f))
-            StatCard("Assignments", metrics.pendingAssignments, Icons.AutoMirrored.Filled.Assignment, Color(0xFF8B5CF6), Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Attendance Due", metrics.pendingAttendance, Icons.Filled.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
-            StatCard("Leaves Left", metrics.leaveBalance, Icons.Filled.FlightTakeoff, Color(0xFFF59E0B), Modifier.weight(1f))
-        }
-
-        Text("Today's Schedule", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
-        CamsCard {
-            if (subjects.isEmpty()) {
-                Text("No classes scheduled for today", modifier = Modifier.padding(16.dp))
-            } else {
-                subjects.take(3).forEach { subject ->
-                    ScheduleItem("09:00 AM", subject.subjectName, "Room ${subject.subjectCode.takeLast(3)}")
-                }
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+                viewModel.clearError()
             }
         }
+    }
 
-        Text("Upcoming Events", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
-        CamsCard {
-            events.forEach { event ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(8.dp).background(event.color, CircleShape))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(event.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("${event.date} • ${event.time}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-
-        Text("Recent Activities", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
-        CamsCard {
-            activities.forEach { activity ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(activity.icon, null, tint = activity.color, modifier = Modifier.size(20.dp))
-                        Column {
-                            Text(activity.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text(activity.time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { paddingValues ->
+        FacultyBaseScreen(
+            scrollable = true, 
+            title = "Faculty Portal",
+            subtitle = "Manage your classes and assessments",
+            currentRoute = AppRoutes.FACULTY_DASHBOARD,
+            onNavigate = onNavigate
+        ) {
+            Box(modifier = Modifier.padding(paddingValues)) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Offline Banner
+                    if (uiState.isOffline) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFEF4444))
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.CloudOff, contentDescription = "Offline", tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("No internet connection", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
-                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    // Refresh Button (Fallback for Pull-to-Refresh)
+                    if (uiState.isLoading || uiState.isRefreshing) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = CamsNavy)
+                    } else {
+                        TextButton(
+                            onClick = { viewModel.refresh() },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Filled.Refresh, contentDescription = "Refresh", modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Refresh")
+                        }
+                    }
+
+                    if (uiState.isLoading && metrics.classesToday.isEmpty()) {
+                        // Skeleton Loader
+                        repeat(3) {
+                            CamsCard {
+                                Box(modifier = Modifier.fillMaxWidth().height(100.dp).background(Color.LightGray.copy(alpha = 0.3f)))
+                            }
+                        }
+                    } else {
+                        // Stats Row
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard("Classes Today", metrics.classesToday, Icons.Filled.Event, CamsNavy, Modifier.weight(1f))
+                            StatCard("Assignments", metrics.pendingAssignments, Icons.AutoMirrored.Filled.Assignment, Color(0xFF8B5CF6), Modifier.weight(1f))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            StatCard("Attendance Due", metrics.pendingAttendance, Icons.Filled.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
+                            StatCard("Leaves Left", metrics.leaveBalance, Icons.Filled.FlightTakeoff, Color(0xFFF59E0B), Modifier.weight(1f))
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        Text("Today's Schedule", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
+                        CamsCard {
+                            if (subjects.isEmpty()) {
+                                EmptyState("No classes scheduled for today")
+                            } else {
+                                subjects.take(3).forEach { subject ->
+                                    ScheduleItem("09:00 AM", subject.subjectName, "Room ${subject.subjectCode.takeLast(3)}")
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        Text("Upcoming Events", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
+                        CamsCard {
+                            if (events.isEmpty()) {
+                                EmptyState("No upcoming events")
+                            } else {
+                                events.forEach { event ->
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Box(Modifier.size(8.dp).background(event.color, CircleShape))
+                                        Spacer(Modifier.width(12.dp))
+                                        Column {
+                                            Text(event.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                            if (event.date.isNotEmpty()) {
+                                                Text(event.date, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        Text("Recent Activities", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
+                        CamsCard {
+                            if (activities.isEmpty()) {
+                                EmptyState("No recent activities")
+                            } else {
+                                activities.forEach { activity ->
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(activity.icon, null, tint = activity.color, modifier = Modifier.size(20.dp))
+                                            Column {
+                                                Text(activity.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                                Text(activity.time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyState(message: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Filled.Inbox, contentDescription = "Empty", tint = Color.LightGray, modifier = Modifier.size(48.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(message, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -127,16 +208,5 @@ private fun ScheduleItem(time: String, subject: String, room: String) {
             Text(subject, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
             Text(room, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-@Composable
-private fun TaskItem(title: String, subtitle: String) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Column {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

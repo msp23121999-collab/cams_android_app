@@ -21,6 +21,7 @@ data class CalendarEventModel(
 
 data class AcademicCalendarState(
     val events: List<CalendarEventModel> = emptyList(),
+    val academicYear: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -40,6 +41,7 @@ class AcademicCalendarViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val dtos = studentRepository.getAcademicCalendar()
+                val academicYear = studentRepository.getAcademicCalendarYear()
                 val events = dtos.map { dto ->
                     CalendarEventModel(
                         id = dto.id ?: "",
@@ -49,7 +51,7 @@ class AcademicCalendarViewModel(
                         color = if (dto.isHoliday == true) Color(0xFFEF4444) else Color(0xFF3B82F6)
                     )
                 }
-                _uiState.update { it.copy(events = events, isLoading = false) }
+                _uiState.update { it.copy(events = events, academicYear = academicYear, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }

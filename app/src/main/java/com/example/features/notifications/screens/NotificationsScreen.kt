@@ -82,6 +82,7 @@ fun NotificationsScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f)
                         .padding(horizontal = 16.dp)
                         .offset(y = (-20).dp),
                     shape = RoundedCornerShape(20.dp),
@@ -89,7 +90,7 @@ fun NotificationsScreen(
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
                     shadowElevation = 4.dp
                 ) {
-                    Column {
+                    Column(modifier = Modifier.fillMaxHeight()) {
                         // Tabs
                         Row(modifier = Modifier.fillMaxWidth()) {
                             TabButton("all", "All (${uiState.notifications.size})", uiState.activeTab == "all") { viewModel.setTab("all") }
@@ -128,7 +129,7 @@ fun NotificationsScreen(
                                     onClick = { viewModel.deleteAllRead() },
                                     modifier = Modifier.size(44.dp).background(Color(0xFFFEF2F2), RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFFEE2E2), RoundedCornerShape(12.dp))
                                 ) {
-                                    Icon(Icons.Filled.DeleteSweep, null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Filled.DeleteSweep, contentDescription = "Clear all", tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -149,7 +150,7 @@ fun NotificationsScreen(
                                 }
                             )
                         } else {
-                            LazyColumn(modifier = Modifier.heightIn(max = 500.dp)) {
+                            LazyColumn(modifier = Modifier.weight(1f)) {
                                 items(pagingItems.itemCount) { index ->
                                     val notif = pagingItems[index]
                                     if (notif != null) {
@@ -197,7 +198,7 @@ private fun NotificationHeader(
         Column(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onMenuClick, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f), RoundedCornerShape(12.dp))) {
-                    Icon(Icons.Filled.Menu, null, tint = Color.White)
+                    Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (unreadCount > 0) {
@@ -214,10 +215,10 @@ private fun NotificationHeader(
                         }
                     }
                     IconButton(onClick = onRefresh, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f), RoundedCornerShape(12.dp))) {
-                        Icon(Icons.Filled.Refresh, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = onLogout, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f), RoundedCornerShape(12.dp))) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log out", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -360,8 +361,8 @@ private fun NotificationRow(notif: NotificationRecord, onMarkRead: () -> Unit, o
                 }
             }
             
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.DeleteOutline, null, tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Filled.DeleteOutline, contentDescription = "Delete", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
             }
         }
     }

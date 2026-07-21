@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Android SDK location + release signing
+#
+#   cp local.properties.example local.properties    then fill in your paths
+#
+# NEVER commit the real local.properties — it contains machine-specific paths
+# and signing passwords. It is excluded by .gitignore.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Path to your Android SDK. Android Studio usually writes this for you.
+#   Windows : C\:\Users\<you>\AppData\Local\Android\Sdk
+#   macOS   : /Users/<you>/Library/Android/sdk
+#   Linux   : /home/<you>/Android/Sdk
+sdk.dir=REPLACE_WITH_YOUR_ANDROID_SDK_PATH
+
+# ── Release signing (only needed for `gradlew assembleRelease`) ──────────────
+# The keystore file itself must NEVER be committed.
+# Debug builds do not need any of these.
+KEYSTORE_PATH=REPLACE_WITH_PATH_TO_YOUR_KEYSTORE.jks
+STORE_PASSWORD=REPLACE_WITH_KEYSTORE_PASSWORD
+KEY_PASSWORD=REPLACE_WITH_KEY_PASSWORD

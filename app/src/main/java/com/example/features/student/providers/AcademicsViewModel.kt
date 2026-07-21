@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.core.network.TimetableSlotDto
 import com.example.core.repository.StudentRepository
+import com.example.features.student.models.Course
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 data class AcademicsState(
     val timetable: List<TimetableSlotDto> = emptyList(),
+    val courses: List<Course> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -31,7 +33,16 @@ class AcademicsViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val timetable = studentRepository.getTimetable()
-                _uiState.update { it.copy(timetable = timetable, isLoading = false) }
+                val courseDtos = studentRepository.getCourses()
+                val courses = courseDtos.map { dto ->
+                    Course(
+                        id = dto.id,
+                        name = dto.subjectName ?: dto.name ?: "Subject",
+                        code = dto.subjectCode ?: dto.code ?: "",
+                        credits = dto.credits ?: 0
+                    )
+                }
+                _uiState.update { it.copy(timetable = timetable, courses = courses, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load academics data") }
             }

@@ -341,7 +341,7 @@ async def get_advisor_students_leaves(
 async def advisor_approve_leave(
     leave_id: str,
     payload: LeaveApprovalRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required([UserRole.FACULTY, UserRole.HOD, UserRole.ADMIN, UserRole.SUPER_ADMIN])),
     db: AsyncSession = Depends(get_db_session)
 ) -> LeaveResponse:
     stmt = select(LeaveRequest).where(LeaveRequest.id == leave_id, LeaveRequest.is_deleted.is_(False))
@@ -352,6 +352,25 @@ async def advisor_approve_leave(
 
     if leave.status != LeaveStatus.PENDING:
         raise HTTPException(status_code=400, detail="This leave request has already been processed")
+
+    if current_user.role == UserRole.FACULTY:
+        from app.db.models.student import Student
+        from app.db.models.academic import Section
+
+        sec_stmt = select(Section.id).where(Section.faculty_id == current_user.id, Section.is_deleted.is_(False))
+        sec_res = await db.execute(sec_stmt)
+        section_ids = [row[0] for row in sec_res.all()]
+
+        student_stmt = select(Student.user_id).where(
+            Student.is_deleted.is_(False),
+            ((Student.mentor_id == current_user.id) |
+             (Student.section_id.in_(section_ids) if section_ids else False))
+        )
+        student_res = await db.execute(student_stmt)
+        advised_user_ids = {row[0] for row in student_res.all()}
+
+        if leave.user_id not in advised_user_ids:
+            raise HTTPException(status_code=403, detail="You can only approve leaves for students you advise or mentor")
 
     if payload.status == LeaveStatus.APPROVED:
         if leave.num_days <= 5:
@@ -447,3 +466,31 @@ async def advisor_approve_leave(
         approved_by_name=current_user.full_name,
         user_name=applicant_name
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CANCEL LEAVE (applicant withdraws their own not-yet-finalized request)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.delete("/{leave_id}")
+async def cancel_leave(
+    leave_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    stmt = select(LeaveRequest).where(LeaveRequest.id == leave_id, LeaveRequest.is_deleted.is_(False))
+    res = await db.execute(stmt)
+    leave = res.scalar_one_or_none()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    if leave.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only cancel your own leave requests")
+
+    non_cancelable = {LeaveStatus.APPROVED, LeaveStatus.REJECTED, LeaveStatus.CANCELLED, LeaveStatus.FINAL_APPROVED, LeaveStatus.REJECTED_BY_PRINCIPAL}
+    if leave.status in non_cancelable:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel a leave request with status {leave.status.value}")
+
+    leave.status = LeaveStatus.CANCELLED
+    await db.commit()
+    return {"detail": "Leave request cancelled"}

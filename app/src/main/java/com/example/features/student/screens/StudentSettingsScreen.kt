@@ -20,9 +20,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.BuildConfig
 import com.example.core.navigation.AppRoutes
 import com.example.core.theme.*
 import com.example.core.ui.CamsScreen
+import com.example.features.auth.providers.AuthViewModel
 import com.example.features.student.providers.StudentProfileViewModel
 import kotlinx.coroutines.launch
 
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun StudentSettingsScreen(
     viewModel: StudentProfileViewModel,
+    authViewModel: AuthViewModel,
     onNavigate: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -42,6 +45,17 @@ fun StudentSettingsScreen(
     var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
     var passwordSuccess by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    var showChangeEmailDialog by rememberSaveable { mutableStateOf(false) }
+    var showAboutDialog by rememberSaveable { mutableStateOf(false) }
+    var newEmail by rememberSaveable { mutableStateOf("") }
+    var currentPasswordForEmail by rememberSaveable { mutableStateOf("") }
+    val emailChangeState by authViewModel.emailChangeState.collectAsStateWithLifecycle()
+    val notificationPrefsState by authViewModel.notificationPreferencesState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        authViewModel.loadNotificationPreferences()
+    }
 
     CamsScreen(
         title = "Settings",
@@ -63,10 +77,29 @@ fun StudentSettingsScreen(
             )
 
             StudentSettingsCard(
+                icon = Icons.Filled.AlternateEmail,
+                title = "Change Email",
+                subtitle = uiState.profile?.email ?: "Update your account email",
+                onClick = {
+                    authViewModel.clearEmailChangeState()
+                    newEmail = ""
+                    currentPasswordForEmail = ""
+                    showChangeEmailDialog = true
+                }
+            )
+
+            StudentSettingsCard(
                 icon = Icons.Filled.Email,
                 title = "Email Notifications",
-                subtitle = "Manage email preferences",
-                onClick = { }
+                subtitle = if (notificationPrefsState.emailNotificationsEnabled) "Enabled" else "Disabled",
+                onClick = { authViewModel.setEmailNotificationsEnabled(!notificationPrefsState.emailNotificationsEnabled) },
+                trailing = {
+                    Switch(
+                        checked = notificationPrefsState.emailNotificationsEnabled,
+                        onCheckedChange = { authViewModel.setEmailNotificationsEnabled(it) },
+                        enabled = !notificationPrefsState.isLoading
+                    )
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -76,15 +109,17 @@ fun StudentSettingsScreen(
             StudentSettingsCard(
                 icon = Icons.Filled.Language,
                 title = "Language",
-                subtitle = "English",
-                onClick = { }
+                subtitle = "Coming soon",
+                onClick = { },
+                enabled = false
             )
 
             StudentSettingsCard(
                 icon = Icons.Filled.DarkMode,
                 title = "Theme",
-                subtitle = "System Default",
-                onClick = { }
+                subtitle = "Coming soon",
+                onClick = { },
+                enabled = false
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -94,15 +129,16 @@ fun StudentSettingsScreen(
             StudentSettingsCard(
                 icon = Icons.Filled.Info,
                 title = "About CAMS",
-                subtitle = "Version 1.0.0 • Enterprise Edition",
-                onClick = { }
+                subtitle = "Version ${BuildConfig.VERSION_NAME} • Enterprise Edition",
+                onClick = { showAboutDialog = true }
             )
 
             StudentSettingsCard(
                 icon = Icons.Filled.Policy,
                 title = "Privacy Policy",
-                subtitle = "View our privacy policy",
-                onClick = { }
+                subtitle = "Coming soon",
+                onClick = { },
+                enabled = false
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -199,9 +235,10 @@ fun StudentSettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        val strengthError = com.example.core.utils.PasswordValidator.validate(newPassword)
                         when {
                             currentPassword.isBlank() -> passwordError = "Current password is required"
-                            newPassword.length < 8 -> passwordError = "Password must be at least 8 characters"
+                            strengthError != null -> passwordError = strengthError
                             newPassword != confirmPassword -> passwordError = "Passwords do not match"
                             else -> {
                                 scope.launch {
@@ -230,6 +267,120 @@ fun StudentSettingsScreen(
             shape = RoundedCornerShape(16.dp)
         )
     }
+
+    if (showChangeEmailDialog) {
+        AlertDialog(
+            onDismissRequest = { showChangeEmailDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.AlternateEmail, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Change Email", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (emailChangeState.success) {
+                        Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFF10B981).copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    emailChangeState.message ?: "Verification email sent to the new address",
+                                    color = Color(0xFF10B981),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            "Current email: ${uiState.profile?.email ?: "—"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = newEmail,
+                            onValueChange = { newEmail = it },
+                            label = { Text("New Email Address") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        OutlinedTextField(
+                            value = currentPasswordForEmail,
+                            onValueChange = { currentPasswordForEmail = it },
+                            label = { Text("Current Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        Text(
+                            "We'll send a verification link to your new address. Your email won't change until you confirm it.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (emailChangeState.error != null) {
+                            Text(emailChangeState.error ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (emailChangeState.success) {
+                    Button(
+                        onClick = { showChangeEmailDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text("Done") }
+                } else {
+                    Button(
+                        onClick = { authViewModel.requestEmailChange(newEmail.trim(), currentPasswordForEmail) },
+                        enabled = !emailChangeState.isLoading && newEmail.isNotBlank() && currentPasswordForEmail.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text(if (emailChangeState.isLoading) "Sending..." else "Send Verification") }
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showChangeEmailDialog = false }, shape = RoundedCornerShape(8.dp)) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("About CAMS", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("CAMS Enterprise Edition", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "A comprehensive college administration and management system for students, parents, faculty, and administrators.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showAboutDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = CamsNavy),
+                    shape = RoundedCornerShape(8.dp)
+                ) { Text("Close") }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 }
 
 @Composable
@@ -246,9 +397,18 @@ private fun SettingsSectionHeader(icon: ImageVector, title: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StudentSettingsCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun StudentSettingsCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val contentAlpha = if (enabled) 1f else 0.5f
     Card(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -258,17 +418,21 @@ private fun StudentSettingsCard(icon: ImageVector, title: String, subtitle: Stri
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(10.dp), color = CamsNavy.copy(alpha = 0.08f)) {
+            Surface(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(10.dp), color = CamsNavy.copy(alpha = 0.08f * contentAlpha)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha))
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha))
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha))
             }
-            Icon(Icons.Filled.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (trailing != null) {
+                trailing()
+            } else {
+                Icon(Icons.Filled.ChevronRight, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha))
+            }
         }
     }
 }

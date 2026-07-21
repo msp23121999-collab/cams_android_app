@@ -173,12 +173,39 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
     val deadlineInfo = getDeadlineInfo(assignment.deadline)
     val typeConfig = getAssignmentTypeConfig(assignment.type)
     var showUploadModal by remember { mutableStateOf(false) }
+    var showSubmissionDetails by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    if (showSubmissionDetails) {
+        val submission = assignment.mySubmission
+        AlertDialog(
+            onDismissRequest = { showSubmissionDetails = false },
+            title = { Text("Submission Details", fontWeight = FontWeight.Black) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Submitted: ${submission?.submissionDate?.let { formatDateTime(it) } ?: "Unknown"}", fontSize = 13.sp)
+                    if (!submission?.submittedFileName.isNullOrBlank()) {
+                        Text("File: ${submission?.submittedFileName} (${submission?.submittedFileSize})", fontSize = 13.sp)
+                    }
+                    if (!submission?.submittedText.isNullOrBlank()) {
+                        Text("Note: ${submission?.submittedText}", fontSize = 13.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSubmissionDetails = false }) { Text("Close") }
+            }
+        )
+    }
 
     if (showUploadModal) {
         com.example.features.academics.widgets.FileUploadModal(
             onDismiss = { showUploadModal = false },
-            onUpload = { _, name ->
-                viewModel.submitAssignment(assignment.id, name, null)
+            onUpload = { uri, _ ->
+                val filePart = com.example.core.network.MultipartUploadHelper.prepareFilePart("file", uri, context)
+                if (filePart != null) {
+                    viewModel.submitAssignmentWithFile(assignment.id, filePart, null)
+                }
                 showUploadModal = false
             }
         )
@@ -272,7 +299,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Faculty: Admin",
+                            "Faculty: ${assignment.facultyName}",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -299,7 +326,7 @@ private fun AssignmentCard(assignment: Assignment, viewModel: AssignmentsViewMod
                             }
                         } else {
                             OutlinedButton(
-                                onClick = { /* View details */ },
+                                onClick = { showSubmissionDetails = true },
                                 shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f)),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

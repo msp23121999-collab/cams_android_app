@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -143,7 +144,7 @@ fun ParentDashboardScreen(
                         )
                         DashboardMetricCard(
                             label = "Cumulative CGPA",
-                            value = "${profile?.cgpa ?: 8.6} / 10",
+                            value = "${profile?.cgpa ?: 0.0} / 10",
                             subtext = "Academic Rating",
                             icon = Icons.Filled.School,
                             color = LexNovaPurple, // Purple
@@ -185,7 +186,7 @@ fun ParentDashboardScreen(
                             )
                             DashboardMetricCard(
                                 label = "Cumulative CGPA",
-                                value = "${profile?.cgpa ?: 8.6} / 10",
+                                value = "${profile?.cgpa ?: 0.0} / 10",
                                 subtext = "Academic Rating",
                                 icon = Icons.Filled.School,
                                 color = LexNovaPurple, // Purple
@@ -261,7 +262,10 @@ fun ParentDashboardScreen(
                     
                     Row(
                         horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate(AppRoutes.PARENT_CIRCULARS) }
+                            .padding(vertical = 8.dp)
                     ) {
                         Text(
                             "View All Circular Notices",

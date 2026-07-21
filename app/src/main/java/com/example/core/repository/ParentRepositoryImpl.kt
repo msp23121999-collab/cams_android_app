@@ -1,6 +1,7 @@
 package com.example.core.repository
 
 import com.example.core.network.CamsApiService
+import com.example.core.network.ParentInquiryRequest
 import com.example.features.parent.models.*
 import com.example.core.datastore.ParentPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -83,7 +84,13 @@ class ParentRepositoryImpl(
                     motherMobile = dto.motherMobile ?: "",
                     motherEmail = dto.motherEmail ?: "",
                     certifications = (dto.certifications ?: emptyList()).map {
-                        ChildCertification(it.title, it.issuer, it.category, it.date, it.status)
+                        ChildCertification(
+                            title = it.title,
+                            authority = it.issuer,
+                            category = it.category,
+                            date = it.date,
+                            status = if (it.isVerified) "Verified" else "Pending"
+                        )
                     }
                 )
             } else {
@@ -149,8 +156,15 @@ class ParentRepositoryImpl(
                     amountPaid = dto.amountPaid,
                     pendingBalance = dto.pendingBalance,
                     dueDate = dto.dueDate,
-                    records = (dto.records ?: emptyList()).map {
-                        FeeLedgerRecord(it.id, it.title, it.amount, it.date, it.status)
+                    records = dto.records.map {
+                        FeeLedgerRecord(
+                            recordId = it.id,
+                            feeType = it.title,
+                            amount = it.amount,
+                            dueDate = it.date,
+                            status = it.status,
+                            remainingAmount = it.remainingAmount ?: it.amount
+                        )
                     }
                 )
             } else {
@@ -163,16 +177,37 @@ class ParentRepositoryImpl(
 
     override suspend fun getNotices(childId: String?): List<CollegeNotice> {
         return try {
-            val response = apiService.getNotices()
+            val response = apiService.getParentNotices()
             if (response.isSuccessful && response.body() != null) {
                 (response.body() ?: emptyList()).map {
-                    CollegeNotice(it.id, it.title, it.category ?: "General", "Medium", it.body, it.date ?: "N/A", it.date ?: "N/A", "All", "Admin", "CAMS")
+                    CollegeNotice(
+                        it.id, it.title, it.category ?: "General", it.priority ?: "Medium", it.body,
+                        it.date ?: "N/A", it.date ?: "N/A", it.audienceType ?: "All",
+                        it.publisherName ?: "Admin", it.publisherRole ?: "CAMS", it.attachmentUrl
+                    )
                 }
             } else {
                 emptyList()
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    override suspend fun submitInquiry(name: String, email: String, subject: String, message: String): Boolean {
+        return try {
+            apiService.submitParentInquiry(ParentInquiryRequest(name, email, subject, message)).isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override suspend fun getCollegeInfo(): com.example.core.network.CollegeInfoDto? {
+        return try {
+            val response = apiService.getCollegeInfo()
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -222,17 +257,17 @@ class ParentRepositoryImpl(
             val response = apiService.getParentChildTimetable(idToUse)
             if (response.isSuccessful && response.body() != null) {
                 val slots = response.body() ?: emptyList()
-                slots.groupBy { it.dayOfWeek }.map { (day, slotsForDay) ->
+                slots.groupBy { it.dayOfWeek.lowercase().replaceFirstChar { c -> c.uppercase() } }.map { (day, slotsForDay) ->
                     TimetableDay(
                         dayName = day,
-                        periods = slotsForDay.mapIndexed { index, slot ->
+                        periods = slotsForDay.sortedBy { it.startTime }.mapIndexed { index, slot ->
                             TimetablePeriod(
                                 periodNo = index + 1,
                                 time = "${slot.startTime} - ${slot.endTime}",
                                 subjectName = slot.subjectName,
                                 subjectCode = slot.subjectCode,
                                 room = slot.roomNo,
-                                instructor = slot.facultyName
+                                instructor = slot.facultyName ?: ""
                             )
                         }
                     )
@@ -246,15 +281,44 @@ class ParentRepositoryImpl(
     }
 
     override suspend fun changePassword(currentPassword: String, newPassword: String) {
-        try {
-            val response = apiService.changePassword(
-                com.example.core.network.ChangePasswordRequest(currentPassword, newPassword)
-            )
-            if (!response.isSuccessful) {
-                throw Exception("Failed to change password: ${response.code()}")
-            }
-        } catch (e: Exception) {
-            throw e
+        val response = apiService.changePassword(
+            com.example.core.network.ChangePasswordRequest(currentPassword, newPassword)
+        )
+        if (!response.isSuccessful) {
+            val detail = try {
+                val body = response.errorBody()?.string()
+                if (body.isNullOrBlank()) null
+                else org.json.JSONObject(body).optString("detail", "").ifBlank { null }
+            } catch (e: Exception) { null }
+            throw Exception(detail ?: "Failed to change password (error ${response.code()})")
         }
+    }
+
+    override suspend fun createFeeOrder(
+        recordId: String,
+        amount: Double,
+        childId: String?
+    ): retrofit2.Response<com.example.core.network.CreateOrderResponseDto> {
+        val idToUse = childId ?: currentChildId
+        return apiService.createParentFeeOrder(
+            recordId,
+            idToUse,
+            com.example.core.network.CreateOrderRequestDto(amount)
+        )
+    }
+
+    override suspend fun verifyFeePayment(
+        recordId: String,
+        orderId: String,
+        paymentId: String,
+        signature: String,
+        childId: String?
+    ): retrofit2.Response<com.example.core.network.VerifyPaymentResponseDto> {
+        val idToUse = childId ?: currentChildId
+        return apiService.verifyParentFeePayment(
+            recordId,
+            idToUse,
+            com.example.core.network.VerifyPaymentRequestDto(orderId, paymentId, signature)
+        )
     }
 }

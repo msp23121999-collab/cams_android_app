@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -21,11 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.network.FacultyMaterialDto
 import com.example.core.theme.*
 import com.example.core.ui.CamsCard
+import com.example.core.ui.NetworkErrorView
 import com.example.features.faculty.widgets.FacultyBaseScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,138 +37,100 @@ fun FacultyStudyMaterialsScreen(
     onNavigate: (String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
     var showUploadDialog by remember { mutableStateOf(false) }
-    
+    var materialPendingDelete by remember { mutableStateOf<FacultyMaterialDto?>(null) }
+
     val categories = listOf("All", "Notes", "QP", "Reference", "Lab")
 
-    FacultyBaseScreen(scrollable = false, 
-        title = "Study Materials",
-        subtitle = "Manage digital academic resources",
-        currentRoute = "/faculty/study-materials",
-        onNavigate = onNavigate
-    ) {
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = CamsNavy)
-            }
-        } else {
-            // 1. Search and Filter
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search materials...") },
-                leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    focusedBorderColor = CamsNavy,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                )
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                categories.forEach { cat ->
-                    val isSelected = selectedCategory == cat
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedCategory = cat },
-                        label = { Text(cat) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CamsNavy,
-                            selectedLabelColor = Color.White,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = CamsTextSecondary
-                        )
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            // 2. Statistics Card
-            CamsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    MaterialStat("Total Files", "${state.materials.size}", Icons.Filled.InsertDriveFile)
-                    MaterialStat("Downloads", "${state.materials.sumOf { it.downloads }}", Icons.Filled.Download)
-                    MaterialStat("Subjects", "${state.materials.map { it.subject }.distinct().size}", Icons.Filled.Subject)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // 3. Material List
-            Text("Recent Uploads", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        placeholder = { Text("Search materials...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        shape = RoundedCornerShape(25.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CamsNavy,
-                            unfocusedBorderColor = Color.LightGray
-                        ),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = CamsBackground,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
-                        modifier = Modifier.size(50.dp),
-                        onClick = { /* Open Filter Sheet */ }
-                    ) {
-                        Icon(Icons.Filled.FilterList, contentDescription = "Filter", tint = CamsTextPrimary, modifier = Modifier.padding(12.dp))
-                    }
-                }
+    materialPendingDelete?.let { material ->
+        AlertDialog(
+            onDismissRequest = { materialPendingDelete = null },
+            title = { Text("Delete Material?") },
+            text = { Text("This will permanently delete \"${material.title}\".") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteMaterial(material.id)
+                    materialPendingDelete = null
+                }) { Text("Delete", color = Color(0xFFEF4444)) }
+            },
+            dismissButton = { TextButton(onClick = { materialPendingDelete = null }) { Text("Cancel") } }
+        )
+    }
 
-                // Category Chips
-                androidx.compose.foundation.lazy.LazyRow(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(categories) { cat ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        FacultyBaseScreen(
+            scrollable = false,
+            title = "Study Materials",
+            subtitle = "Manage digital academic resources",
+            currentRoute = "/faculty/study-materials",
+            onNavigate = onNavigate
+        ) {
+            if (state.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CamsNavy)
+                }
+            } else if (state.error != null && state.materials.isEmpty()) {
+                NetworkErrorView(message = state.error ?: "Failed to load study materials", onRetry = { viewModel.loadMaterials() })
+            } else {
+                // Search Bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search materials...") },
+                    leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedBorderColor = CamsNavy,
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White
+                    ),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    categories.forEach { cat ->
                         FilterChip(
                             selected = selectedCategory == cat,
                             onClick = { selectedCategory = cat },
                             label = { Text(cat) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = CamsNavy,
-                                selectedLabelColor = Color.White
+                                selectedLabelColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                labelColor = CamsTextSecondary
                             )
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Materials List
+                CamsCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        MaterialStat("Total Files", "${state.materials.size}", Icons.Filled.InsertDriveFile)
+                        MaterialStat("Subjects", "${state.materials.map { it.subject }.distinct().size}", Icons.Filled.Subject)
+                        MaterialStat("Pending", "${state.materials.count { it.status == "Pending Approval" }}", Icons.Filled.HourglassTop)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text("Recent Uploads", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.height(12.dp))
+
                 val filtered = state.materials.filter {
-                    (selectedCategory == "All" || it.type == selectedCategory) &&
-                    it.title.contains(searchQuery, ignoreCase = true)
+                    (selectedCategory == "All" || it.category == selectedCategory) &&
+                        it.title.contains(searchQuery, ignoreCase = true)
                 }
 
                 if (filtered.isEmpty()) {
@@ -174,45 +138,73 @@ fun FacultyStudyMaterialsScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 80.dp), // padding for FAB
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(filtered) { m ->
-                            MaterialRow(m)
+                        items(filtered, key = { it.id }) { m ->
+                            MaterialRow(m, onDelete = { materialPendingDelete = m })
                         }
                     }
                 }
-
-            // FAB for uploading new material
-            Box(modifier = Modifier.fillMaxSize()) {
-                FloatingActionButton(
-                    onClick = { showUploadDialog = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(24.dp),
-                    containerColor = CamsNavy,
-                    contentColor = Color.White
-                ) {
-                    Icon(Icons.Filled.FileUpload, contentDescription = "Upload Material")
-                }
             }
         }
-        
-        if (showUploadDialog) {
-            UploadMaterialDialog(
-                onDismiss = { showUploadDialog = false },
-                onSubmit = { payload ->
-                    viewModel.uploadMaterial(payload) {
-                        showUploadDialog = false
-                    }
-                }
-            )
+
+        FloatingActionButton(
+            onClick = { showUploadDialog = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+            containerColor = CamsNavy,
+            contentColor = Color.White
+        ) {
+            Icon(Icons.Filled.FileUpload, contentDescription = "Upload Material")
         }
+    }
+
+    if (showUploadDialog) {
+        UploadMaterialDialog(
+            isSaving = state.isLoading,
+            onDismiss = { showUploadDialog = false },
+            onSubmit = onSubmit@{ fileUri, fileFormat, title, description, subject, unit, topic, category, status, onError ->
+                val filePart = com.example.core.network.MultipartUploadHelper.prepareFilePart("file", fileUri, context)
+                if (filePart == null) {
+                    onError("Could not read the selected file.")
+                    return@onSubmit
+                }
+                viewModel.uploadMaterialWithFile(
+                    filePart = filePart,
+                    fileFormat = fileFormat,
+                    title = title,
+                    description = description,
+                    subject = subject,
+                    unit = unit,
+                    topic = topic,
+                    category = category,
+                    status = status,
+                    onSuccess = { showUploadDialog = false },
+                    onError = onError
+                )
+            }
+        )
     }
 }
 
 @Composable
-fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.network.UploadMaterialRequestDto) -> Unit) {
+fun UploadMaterialDialog(
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (
+        fileUri: android.net.Uri,
+        fileFormat: String,
+        title: String,
+        description: String,
+        subject: String,
+        unit: String,
+        topic: String,
+        category: String,
+        status: String,
+        onError: (String) -> Unit
+    ) -> Unit
+) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
@@ -220,7 +212,26 @@ fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.netw
     var topic by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Notes") }
     var status by remember { mutableStateOf("Draft") }
-    
+    var selectedFileUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf<String?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            selectedFileUri = uri
+            selectedFileName = try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else uri.lastPathSegment
+                } ?: uri.lastPathSegment
+            } catch (e: Exception) {
+                uri.lastPathSegment
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Upload Study Material", fontWeight = FontWeight.Bold) },
@@ -231,52 +242,54 @@ fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.netw
                 OutlinedTextField(value = subject, onValueChange = { subject = it }, label = { Text("Subject") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = unit, onValueChange = { unit = it }, label = { Text("Unit") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = topic, onValueChange = { topic = it }, label = { Text("Topic") }, modifier = Modifier.fillMaxWidth())
-                
-                // Categories
+
                 Text("Category:", fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Notes", "QP", "Reference", "Lab").forEach { cat ->
-                        FilterChip(
-                            selected = category == cat,
-                            onClick = { category = cat },
-                            label = { Text(cat) }
-                        )
+                        FilterChip(selected = category == cat, onClick = { category = cat }, label = { Text(cat) })
                     }
                 }
-                
-                // Status
+
                 Text("Status:", fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Draft", "Pending Approval").forEach { stat ->
-                        FilterChip(
-                            selected = status == stat,
-                            onClick = { status = stat },
-                            label = { Text(stat) }
-                        )
+                        FilterChip(selected = status == stat, onClick = { status = stat }, label = { Text(stat) })
                     }
                 }
-                
-                // Placeholder for file selection
-                Text("File will be attached automatically in this demo.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                OutlinedButton(onClick = { launcher.launch("*/*") }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(selectedFileName ?: "Choose File")
+                }
+
+                val displayedError = validationError
+                if (displayedError != null) {
+                    Text(displayedError, color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val payload = com.example.core.network.UploadMaterialRequestDto(
-                    title = title,
-                    description = description,
-                    subject = subject,
-                    unit = unit,
-                    topic = topic,
-                    category = category,
-                    keywords = listOf(),
-                    fileUrl = "/mock-uploads/sample.pdf",
-                    fileFormat = "pdf",
-                    status = status
-                )
-                onSubmit(payload)
-            }, colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)) {
-                Text("Upload")
+            Button(
+                onClick = {
+                    validationError = when {
+                        title.isBlank() -> "Title is required"
+                        subject.isBlank() -> "Subject is required"
+                        selectedFileUri == null -> "Please choose a file to upload"
+                        else -> null
+                    }
+                    if (validationError == null) {
+                        val fileFormat = selectedFileName?.substringAfterLast('.', "pdf") ?: "pdf"
+                        onSubmit(selectedFileUri!!, fileFormat, title, description, subject, unit, topic, category, status) { error ->
+                            validationError = error
+                        }
+                    }
+                },
+                enabled = !isSaving,
+                colors = ButtonDefaults.buttonColors(containerColor = CamsNavy)
+            ) {
+                if (isSaving) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("Upload")
             }
         },
         dismissButton = {
@@ -291,9 +304,7 @@ fun UploadMaterialDialog(onDismiss: () -> Unit, onSubmit: (com.example.core.netw
 private fun MaterialStat(label: String, value: String, icon: ImageVector) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(CamsNavy.copy(alpha = 0.1f), CircleShape),
+            modifier = Modifier.size(40.dp).background(CamsNavy.copy(alpha = 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -303,26 +314,24 @@ private fun MaterialStat(label: String, value: String, icon: ImageVector) {
         Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
 @Composable
-fun MaterialRow(data: com.example.core.network.FacultyMaterialDto) {
+fun MaterialRow(data: FacultyMaterialDto, onDelete: () -> Unit = {}) {
+    var showMenu by remember { mutableStateOf(false) }
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(12.dp),
         shadowElevation = 1.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp)),
+                modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                val icon = when(data.type.lowercase()) {
+                val icon = when ((data.category ?: "").lowercase()) {
                     "notes" -> Icons.Filled.Description
                     "qp" -> Icons.Filled.Quiz
                     "lab" -> Icons.AutoMirrored.Filled.Assignment
@@ -330,22 +339,29 @@ fun MaterialRow(data: com.example.core.network.FacultyMaterialDto) {
                 }
                 Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(data.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(data.type, fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
+                    Text(data.category ?: "Notes", fontSize = 13.sp, color = CamsNavy, fontWeight = FontWeight.Medium)
                     Text(" • ", fontSize = 13.sp, color = Color.LightGray)
-                    Text(data.size, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(" • ", fontSize = 13.sp, color = Color.LightGray)
-                    Text(data.date, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(data.status, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (!data.uploadedDate.isNullOrBlank()) {
+                        Text(" • ", fontSize = 13.sp, color = Color.LightGray)
+                        Text(data.uploadedDate.take(10), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
-            
-            IconButton(onClick = { /* More options */ }) {
-                Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = "More options", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("Delete") }, onClick = { showMenu = false; onDelete() })
+                }
             }
         }
     }

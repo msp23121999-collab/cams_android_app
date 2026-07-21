@@ -9,10 +9,29 @@ from app.db.session import get_db
 from app.db.models.marks import InternalMark
 from app.db.models.student import Student
 from app.db.models.academic import Course, Section, Department
-from app.db.models.user import User
+from app.db.models.user import User, UserRole
+from app.db.models.academic import Timetable
 from app.core.dependencies import get_current_user, role_required
 
 router = APIRouter()
+
+STAFF_ROLES = [UserRole.FACULTY, UserRole.HOD]
+APPROVAL_ROLES = [UserRole.HOD, UserRole.PRINCIPAL, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+
+
+async def _assert_teaches_section_subject(current_user: User, section_id: str, subject_id: str, db: AsyncSession) -> None:
+    """Faculty may only enter/view marks for a section/subject they actually teach (per Timetable). HOD/above bypass this check."""
+    if current_user.role != UserRole.FACULTY:
+        return
+    stmt = select(Timetable.id).where(
+        Timetable.faculty_id == current_user.id,
+        Timetable.section_id == section_id,
+        Timetable.subject_id == subject_id,
+        Timetable.is_deleted.is_(False)
+    ).limit(1)
+    res = await db.execute(stmt)
+    if not res.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="You are not assigned to teach this section/subject")
 
 class InternalMarkRequest(BaseModel):
     student_id: str
@@ -46,8 +65,10 @@ async def get_internal_marks(
     section_id: str,
     subject_id: str,
     academic_year: Optional[str] = None,
+    current_user: User = Depends(role_required(STAFF_ROLES + APPROVAL_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
+    await _assert_teaches_section_subject(current_user, section_id, subject_id, db)
     target_section = await db.get(Section, section_id)
     if not target_section:
         stmt_sec = select(Section).where(
@@ -115,8 +136,10 @@ async def get_internal_marks(
 @router.post("/internal")
 async def save_internal_marks(
     payload: SaveInternalMarksPayload,
+    current_user: User = Depends(role_required(STAFF_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
+    await _assert_teaches_section_subject(current_user, payload.section_id, payload.subject_id, db)
     # Fetch existing marks
     marks_q = await db.execute(
         select(InternalMark)
@@ -160,9 +183,10 @@ async def save_internal_marks(
 @router.post("/internal/submit")
 async def submit_internal_marks(
     payload: SubmitMarksPayload,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(STAFF_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
+    await _assert_teaches_section_subject(current_user, payload.section_id, payload.subject_id, db)
     marks_q = await db.execute(
         select(InternalMark)
         .where(InternalMark.section_id == payload.section_id)
@@ -239,7 +263,7 @@ async def submit_internal_marks(
 
 @router.get("/internal/hod/pending")
 async def get_pending_hod_marks(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(APPROVAL_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
     # Fetch departments where the user is HOD
@@ -277,11 +301,27 @@ async def get_pending_hod_marks(
     
     return list(grouped.values())
 
+async def _assert_hod_owns_subject_department(current_user: User, subject_id: str, db: AsyncSession) -> None:
+    """HOD may only approve/message marks for courses in their own department."""
+    if current_user.role != UserRole.HOD:
+        return
+    dept_q = await db.execute(select(Department.id).where(Department.hod_id == current_user.id))
+    hod_dept_ids = set(dept_q.scalars().all())
+    if current_user.department_id:
+        hod_dept_ids.add(current_user.department_id)
+    course = await db.get(Course, subject_id)
+    if course and hod_dept_ids and course.dept_id not in hod_dept_ids:
+        raise HTTPException(status_code=403, detail="You can only manage marks for your own department")
+
+
 @router.post("/internal/hod/approve")
 async def approve_internal_marks(
     payload: ApproveMarksPayload,
+    current_user: User = Depends(role_required(APPROVAL_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
+    await _assert_hod_owns_subject_department(current_user, payload.subject_id, db)
+
     marks_q = await db.execute(
         select(InternalMark)
         .where(InternalMark.section_id == payload.section_id)
@@ -291,7 +331,7 @@ async def approve_internal_marks(
     marks = marks_q.scalars().all()
     if not marks:
         raise HTTPException(status_code=404, detail="No marks found to approve")
-        
+
     for m in marks:
         m.status = "APPROVED"
         
@@ -321,8 +361,11 @@ class HODMarkMessagePayload(BaseModel):
 @router.post("/internal/hod/message")
 async def save_hod_mark_message(
     payload: HODMarkMessagePayload,
+    current_user: User = Depends(role_required(APPROVAL_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
+    await _assert_hod_owns_subject_department(current_user, payload.subject_id, db)
+
     stmt = select(InternalMark).where(
         InternalMark.section_id == payload.section_id,
         InternalMark.subject_id == payload.subject_id,
@@ -349,6 +392,7 @@ class FacultyMarkMessagePayload(BaseModel):
 @router.post("/internal/faculty/message")
 async def save_faculty_mark_message(
     payload: FacultyMarkMessagePayload,
+    current_user: User = Depends(role_required(STAFF_ROLES)),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(InternalMark).where(
@@ -417,5 +461,86 @@ async def get_student_marks(
             "hod_message": m.hod_message if m and m.is_message_visible_to_student else None,
             "faculty_reply": m.faculty_reply if m and m.is_message_visible_to_student else None,
         })
-        
+
     return response_list
+
+
+@router.get("/internal/student/me/export-pdf")
+async def export_student_marks_pdf(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    student_q = await db.execute(select(Student).where(Student.user_id == current_user.id))
+    student = student_q.scalars().first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student record not found")
+
+    courses_q = await db.execute(
+        select(Course)
+        .where(
+            Course.degree_id == student.degree_id if student.degree_id else Course.dept_id == student.department_id,
+            Course.semester == student.semester,
+            Course.is_deleted.is_(False)
+        )
+    )
+    courses = courses_q.scalars().all()
+
+    marks_q = await db.execute(
+        select(InternalMark).where(InternalMark.student_id == student.id)
+    )
+    marks_map = {m.subject_id: m for m in marks_q.scalars().all()}
+
+    def row(course: Course) -> str:
+        m = marks_map.get(course.id)
+        is_approved = (m.status == "APPROVED") if m else False
+        if not is_approved:
+            return f"<tr><td>{course.name}</td><td colspan='6' style='text-align:center;color:#B45309;'>Pending Approval</td></tr>"
+        return (
+            f"<tr><td>{course.name}</td>"
+            f"<td>{float(m.internal_exam_mark)}</td>"
+            f"<td>{float(m.assignment_mark)}</td>"
+            f"<td>{float(m.presentation_mark)}</td>"
+            f"<td>{float(m.viva_voice_mark)}</td>"
+            f"<td>{float(m.attendance_mark)}</td>"
+            f"<td>{float(m.total_mark)}</td></tr>"
+        )
+
+    rows_html = "".join(row(c) for c in courses)
+    full_name = student.full_name or current_user.full_name or "Student"
+
+    html = f"""
+    <html>
+    <head>
+    <style>
+        body {{ font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #222; }}
+        h1 {{ font-size: 18pt; margin-bottom: 0; }}
+        .subtitle {{ font-size: 10pt; color: #666; margin-top: 2px; margin-bottom: 20px; }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        th, td {{ padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }}
+        th {{ background: #f0f0f0; }}
+    </style>
+    </head>
+    <body>
+        <h1>Internal Marks</h1>
+        <div class="subtitle">{full_name} ({student.roll_no})</div>
+        <table>
+            <tr><th>Subject</th><th>Exam</th><th>Assignment</th><th>Presentation</th><th>Viva</th><th>Attendance</th><th>Total</th></tr>
+            {rows_html}
+        </table>
+    </body>
+    </html>
+    """
+
+    import io
+    from xhtml2pdf import pisa
+    pdf_buffer = io.BytesIO()
+    pisa.CreatePDF(src=html, dest=pdf_buffer)
+    pdf_buffer.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    filename = f"internal_marks_{student.roll_no}.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
